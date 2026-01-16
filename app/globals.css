@@ -1,0 +1,187 @@
+/* globals.css */
+
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+/* Smooth page transitions */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Focus styles for accessibility */
+*:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+
+/* Gentle animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        /* Prevent font scaling on mobile */
+        -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+        font-family: var(--font-family-sans);
+        color: #1e293b;
+        /* Smooth touch scrolling */
+        -webkit-overflow-scrolling: touch;
+    }
+
+    *:focus-visible {
+        outline: 2px solid var(--color-hospital-blue);
+        outline-offset: 2px;
+    }
+
+    /* Minimum tap target size for mobile (44x44px recommended) */
+    button,
+    a,
+    [role="button"] {
+        min-height: 44px;
+    }
+
+    /* Better text selection on mobile */
+    ::selection {
+        background-color: rgba(59, 130, 246, 0.2);
+    }
+}
+
+@layer utilities {
+    .animate-fade-in {
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    .animate-spin {
+        animation: spin 1s linear infinite;
+    }
+
+    /* Safe area padding for notched phones */
+    .safe-top {
+        padding-top: env(safe-area-inset-top);
+    }
+
+    .safe-bottom {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* Hide scrollbar but keep functionality */
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Reduce motion for users who prefer it */
+    @media (prefers-reduced-motion: reduce) {
+
+        .animate-fade-in,
+        .animate-spin {
+            animation: none;
+        }
+    }
+}
+
+/* Define custom theme colors for Tailwind v4 */
+:root {
+    --color-background: #ffffff;
+    --color-text-dark: #1a1a1a;
+    --color-text-muted: #6b7280;
+    --color-soft-pink: #ffc0cb;
+    --color-primary: #3b82f6;
+    --color-border: #e5e7eb;
+    --color-accent: #f3e8ff;
+    --color-ring: #ffc0cb;
+
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+    --font-family-sans: 'Inter', sans-serif;
+}
+
+body {
+    background-color: var(--color-background);
+    color: var(--color-text-dark);
+    font-family: var(--font-family-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+    color: var(--color-primary);
+    transition: color 0.15s ease;
+}
+
+a:hover {
+    opacity: 0.8;
+}
+
+.btn-focus:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
+}
+
+/* Hero section background */
+.hero-background {
+    position: relative;
+    background-image: url('https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=1920&q=80');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.hero-background::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    /* Top is lighter, bottom is darker for text contrast */
+    background: linear-gradient(to bottom,
+            rgba(255, 255, 255, 0.85) 0%,
+            rgba(255, 255, 255, 0.70) 40%,
+            rgba(30, 58, 138, 0.25) 100%);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+}
+
+@media (min-width: 768px) {
+    .hero-background {
+        background-image: linear-gradient(to right,
+                rgba(255, 255, 255, 0.95) 0%,
+                rgba(255, 255, 255, 0.88) 50%,
+                rgba(255, 255, 255, 0.75) 100%), url('https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=1920&q=80');
+        background-position: right center;
+    }
+}
