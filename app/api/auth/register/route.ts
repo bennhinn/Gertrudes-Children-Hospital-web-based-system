@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
-import { sendWelcomeEmail } from '@/lib/email';
+
+export const dynamic = 'force-dynamic';
 
 const VALID_ROLES = ['caregiver', 'doctor', 'lab_tech', 'pharmacist', 'supplier', 'receptionist', 'admin'] as const
 
@@ -45,10 +46,11 @@ export async function POST(request: Request) {
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
-    // Create auth user
+    // Create auth user with email_confirmed_at set (auto-verified)
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
+      email_confirm: true, // This auto-confirms the email
       user_metadata: { full_name },
       app_metadata: { role },
     })
@@ -120,38 +122,13 @@ export async function POST(request: Request) {
       console.log(`Role entry created successfully in ${roleTable} for user:`, userId)
     }
 
-    // Generate email verification link
-    let verifyUrl: string | undefined
-    try {
-      const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-        type: 'signup',
-        email,
-        password,
-      })
-      if (linkError) {
-        console.error('Verification link error:', linkError)
-      } else {
-        verifyUrl = linkData?.properties?.action_link
-      }
-    } catch (linkErr) {
-      console.error('Verification link exception:', linkErr)
-    }
-
-    // Send welcome/verification email using Resend
-    try {
-      await sendWelcomeEmail({
-        to: email,
-        name: full_name,
-        role,
-        verifyUrl,
-      });
-    } catch (emailErr) {
-      console.error('Email send error:', emailErr);
-      // Optionally, you can return a warning or continue silently
-    }
+    console.log('✅ User registered successfully:', userId)
 
     return NextResponse.json(
-      { user: { id: data.user.id, email: data.user.email } },
+      { 
+        user: { id: data.user.id, email: data.user.email },
+        message: 'Registration successful. You can now log in.'
+      },
       { status: 201 }
     )
   } catch (err) {
