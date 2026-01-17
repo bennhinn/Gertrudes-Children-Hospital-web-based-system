@@ -1,7 +1,9 @@
 // Role helpers and guards
 import { createClient } from './supabase/server'
 import type { UserRole } from './rbac'
-import nodemailer from 'nodemailer'
+import { text, html } from 'framer-motion/client'
+import { string } from 'zod'
+
 
 export async function getSession() {
   const supabase = await createClient()
@@ -38,21 +40,7 @@ export async function sendEmail({
   text?: string
   html?: string
 }) {
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT),
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  })
-
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM,
-    to,
-    subject,
-    text,
-    html,
-  })
+  // Use the Resend-based sendEmail from lib/email
+  const { sendEmail: resendSendEmail } = await import('./email');
+  return resendSendEmail({ to, subject, text, html });
 }

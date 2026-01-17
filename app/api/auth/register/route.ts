@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
-import { sendEmail } from '@/lib/auth' // adjust path if needed
+import { sendWelcomeEmail } from '@/lib/email';
 
 const VALID_ROLES = ['caregiver', 'doctor', 'lab_tech', 'pharmacist', 'supplier', 'receptionist', 'admin'] as const
 
@@ -137,16 +137,16 @@ export async function POST(request: Request) {
       console.error('Verification link exception:', linkErr)
     }
 
-    // Send welcome/confirmation email with verification link
+    // Send welcome/verification email using Resend
     try {
-      await sendEmail({
+      await sendWelcomeEmail({
         to: email,
-        subject: 'Welcome to GCH!',
-        text: `Hi ${full_name},\n\nThank you for registering at GCH. Please verify your email to complete your registration:\n${verifyUrl ?? '[verification link unavailable]'}\n\nIf you did not request this, please ignore this email.`,
-        html: `<p>Hi ${full_name},</p><p>Thank you for registering at GCH. Please verify your email to complete your registration:</p><p><a href="${verifyUrl ?? '#'}">Verify Email</a></p><p>If you did not request this, please ignore this email.</p>`,
-      })
+        name: full_name,
+        role,
+        verifyUrl,
+      });
     } catch (emailErr) {
-      console.error('Email send error:', emailErr)
+      console.error('Email send error:', emailErr);
       // Optionally, you can return a warning or continue silently
     }
 
