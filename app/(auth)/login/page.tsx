@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -8,6 +7,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 import { Suspense } from 'react'
+import { i } from 'framer-motion/client'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -57,11 +57,11 @@ export default function LoginPage() {
       }
 
       // Check if email is confirmed
-      if (!data.user?.email_confirmed_at) {
-        setError('Please verify your email address before signing in. Check your inbox for a verification link.')
-        setLoading(false)
-        return
-      }
+      //if (!data.user?.email_confirmed_at) {
+        //setError('Please verify your email address before signing in. Check your inbox for a verification link.')
+        //setLoading(false)
+        //return
+      //}//
 
       // Get user role from profiles table (source of truth)
       const { data: profile } = await supabase
