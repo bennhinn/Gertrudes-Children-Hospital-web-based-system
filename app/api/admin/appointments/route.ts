@@ -1,3 +1,4 @@
+// /api/admin/appointments/route.ts
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -23,6 +24,9 @@ export async function GET() {
             .from('appointments')
             .select(`
                 id,
+                child_id,
+                caregiver_id,
+                doctor_id,
                 scheduled_for,
                 status,
                 notes,
@@ -42,6 +46,63 @@ export async function GET() {
         return NextResponse.json(appointments || []);
     } catch (error) {
         console.error('Error fetching appointments:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+}
+
+export async function POST(request: Request) {
+    try {
+        const supabase = await createClient();
+
+        // Get current user and verify admin role
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const role = user.app_metadata?.role;
+        if (role !== 'admin') {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        const body = await request.json();
+        const { child_id, caregiver_id, doctor_id, scheduled_for, status, notes } = body;
+
+        // Validate required fields
+        if (!child_id || !caregiver_id || !scheduled_for) {
+            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        }
+
+        // Create appointment
+        const appointmentData: any = {
+            child_id,
+            caregiver_id,
+            scheduled_for,
+            status: status || 'pending',
+            notes: notes || null
+        };
+
+        // Only add doctor_id if provided
+        if (doctor_id) {
+            appointmentData.doctor_id = doctor_id;
+        }
+
+        const { data: newAppointment, error: createError } = await supabase
+            .from('appointments')
+            .insert(appointmentData)
+            .select()
+            .single();
+
+        if (createError) {
+            console.error('Error creating appointment:', createError);
+            return NextResponse.json({ error: createError.message }, { status: 500 });
+        }
+
+        return NextResponse.json(newAppointment, { status: 201 });
+
+    } catch (error) {
+        console.error('Error creating appointment:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

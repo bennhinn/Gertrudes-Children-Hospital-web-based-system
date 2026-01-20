@@ -86,7 +86,7 @@ export default function AdminDashboardPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-lg bg-linear-to-br from-orange-500 to-orange-600 text-white">
+                <Card className="border-none shadow-lg bg-linear-to-br from-orange-400 to-orange-600 text-white">
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div>

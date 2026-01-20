@@ -3,6 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Modal, ModalHeader, ModalTitle, ModalContent, ModalFooter } from '@/components/ui/modal';
+import { Label } from '@/components/ui/label';
 import useSWR from 'swr';
 import { useState } from 'react';
 
@@ -28,6 +30,29 @@ interface StaffMember {
 export default function StaffPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [departmentFilter, setDepartmentFilter] = useState('all');
+    const [viewStaff, setViewStaff] = useState<StaffMember | null>(null);
+    const [editStaff, setEditStaff] = useState<StaffMember | null>(null);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    
+    const [editForm, setEditForm] = useState({
+        full_name: '',
+        phone: '',
+        role: '',
+        specialization: '',
+        license_number: ''
+    });
+
+    const [addForm, setAddForm] = useState({
+        email: '',
+        password: '',
+        full_name: '',
+        phone: '',
+        role: 'doctor',
+        specialization: '',
+        license_number: ''
+    });
+
     const { data: staff, error, isLoading, mutate } = useSWR<StaffMember[]>('/api/admin/staff', fetcher);
 
     const filteredStaff = staff?.filter((member) => {
@@ -60,6 +85,77 @@ export default function StaffPage() {
         return icons[role] || '👤';
     };
 
+    const handleView = (member: StaffMember) => {
+        setViewStaff(member);
+    };
+
+    const handleEdit = (member: StaffMember) => {
+        setEditStaff(member);
+        setEditForm({
+            full_name: member.profile?.full_name || '',
+            phone: member.profile?.phone || '',
+            role: member.role || '',
+            specialization: member.specialization || '',
+            license_number: member.license_number || ''
+        });
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editStaff) return;
+        
+        setIsSaving(true);
+        try {
+            const response = await fetch(`/api/admin/staff/${editStaff.user_id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(editForm),
+            });
+
+            if (!response.ok) throw new Error('Failed to update staff member');
+
+            await mutate();
+            setEditStaff(null);
+        } catch (error) {
+            console.error('Error updating staff:', error);
+            alert('Failed to update staff member. Please try again.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleAddStaff = async () => {
+        setIsSaving(true);
+        try {
+            const response = await fetch('/api/admin/staff', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(addForm),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to add staff member');
+            }
+
+            await mutate();
+            setShowAddModal(false);
+            setAddForm({
+                email: '',
+                password: '',
+                full_name: '',
+                phone: '',
+                role: 'doctor',
+                specialization: '',
+                license_number: ''
+            });
+        } catch (error) {
+            console.error('Error adding staff:', error);
+            alert(error instanceof Error ? error.message : 'Failed to add staff member. Please try again.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     if (error) {
         return (
             <div className="flex items-center justify-center min-h-100">
@@ -79,7 +175,10 @@ export default function StaffPage() {
                     <h1 className="text-3xl font-bold text-slate-800">Staff Management</h1>
                     <p className="mt-1 text-slate-600">Manage doctors, nurses, and other staff members</p>
                 </div>
-                <Button className="bg-linear-to-r from-blue-500 to-purple-600 text-white">
+                <Button 
+                    className="bg-linear-to-r from-blue-500 to-purple-600 text-white"
+                    onClick={() => setShowAddModal(true)}
+                >
                     + Add Staff Member
                 </Button>
             </div>
@@ -180,15 +279,243 @@ export default function StaffPage() {
                                     </div>
                                 </div>
                                 <div className="mt-4 pt-4 border-t border-slate-100 flex gap-2">
-                                    <Button variant="secondary" size="sm" className="flex-1">View Profile</Button>
-                                    <Button variant="secondary" size="sm" className="flex-1">Edit</Button>
+                                    <Button variant="secondary" size="sm" className="flex-1" onClick={() => handleView(member)}>
+                                        View Profile
+                                    </Button>
+                                    <Button variant="secondary" size="sm" className="flex-1" onClick={() => handleEdit(member)}>
+                                        Edit
+                                    </Button>
                                 </div>
                             </CardContent>
                         </Card>
                     ))
                 )}
             </div>
+
+            {/* View Staff Modal */}
+            <Modal isOpen={!!viewStaff} onClose={() => setViewStaff(null)}>
+                <ModalHeader>
+                    <ModalTitle>Staff Profile</ModalTitle>
+                </ModalHeader>
+                <ModalContent>
+                    {viewStaff && (
+                        <>
+                            <div className="flex items-center justify-center">
+                                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-purple-600 text-white text-2xl font-medium">
+                                    {viewStaff.profile?.full_name?.[0]?.toUpperCase() || '?'}
+                                </div>
+                            </div>
+                            <div className="space-y-3">
+                                <div>
+                                    <p className="text-xs text-slate-500 font-medium">Full Name</p>
+                                    <p className="text-sm font-medium text-slate-800 mt-1">{viewStaff.profile?.full_name || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-slate-500 font-medium">Email</p>
+                                    <p className="text-sm font-medium text-slate-800 mt-1">{viewStaff.profile?.email || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-slate-500 font-medium">Phone</p>
+                                    <p className="text-sm font-medium text-slate-800 mt-1">{viewStaff.profile?.phone || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-slate-500 font-medium">Role</p>
+                                    <div className="mt-1">
+                                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(viewStaff.role)}`}>
+                                            {getRoleIcon(viewStaff.role)} {viewStaff.role?.replace('_', ' ')}
+                                        </span>
+                                    </div>
+                                </div>
+                                {viewStaff.specialization && (
+                                    <div>
+                                        <p className="text-xs text-slate-500 font-medium">Specialization</p>
+                                        <p className="text-sm font-medium text-slate-800 mt-1">{viewStaff.specialization}</p>
+                                    </div>
+                                )}
+                                {viewStaff.license_number && (
+                                    <div>
+                                        <p className="text-xs text-slate-500 font-medium">License Number</p>
+                                        <p className="text-sm font-medium text-slate-800 mt-1">{viewStaff.license_number}</p>
+                                    </div>
+                                )}
+                                <div>
+                                    <p className="text-xs text-slate-500 font-medium">User ID</p>
+                                    <p className="text-sm font-mono text-slate-600 mt-1">{viewStaff.user_id}</p>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </ModalContent>
+                <ModalFooter>
+                    <Button onClick={() => setViewStaff(null)}>Close</Button>
+                </ModalFooter>
+            </Modal>
+
+            {/* Edit Staff Modal */}
+            <Modal isOpen={!!editStaff} onClose={() => setEditStaff(null)}>
+                <ModalHeader>
+                    <ModalTitle>Edit Staff Member</ModalTitle>
+                </ModalHeader>
+                <ModalContent>
+                    <div>
+                        <Label htmlFor="edit-name">Full Name</Label>
+                        <Input
+                            id="edit-name"
+                            value={editForm.full_name}
+                            onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                            placeholder="Enter full name"
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="edit-phone">Phone</Label>
+                        <Input
+                            id="edit-phone"
+                            type="tel"
+                            value={editForm.phone}
+                            onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                            placeholder="Enter phone number"
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="edit-role">Role</Label>
+                        <select
+                            id="edit-role"
+                            value={editForm.role}
+                            onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                            className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="doctor">Doctor</option>
+                            <option value="receptionist">Receptionist</option>
+                            <option value="lab_tech">Lab Technician</option>
+                            <option value="pharmacist">Pharmacist</option>
+                            <option value="supplier">Supplier</option>
+                        </select>
+                    </div>
+                    {editForm.role === 'doctor' && (
+                        <>
+                            <div>
+                                <Label htmlFor="edit-specialization">Specialization</Label>
+                                <Input
+                                    id="edit-specialization"
+                                    value={editForm.specialization}
+                                    onChange={(e) => setEditForm({ ...editForm, specialization: e.target.value })}
+                                    placeholder="e.g., Cardiology"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="edit-license">License Number</Label>
+                                <Input
+                                    id="edit-license"
+                                    value={editForm.license_number}
+                                    onChange={(e) => setEditForm({ ...editForm, license_number: e.target.value })}
+                                    placeholder="Enter license number"
+                                />
+                            </div>
+                        </>
+                    )}
+                </ModalContent>
+                <ModalFooter>
+                    <Button variant="secondary" onClick={() => setEditStaff(null)} disabled={isSaving}>
+                        Cancel
+                    </Button>
+                    <Button onClick={handleSaveEdit} disabled={isSaving}>
+                        {isSaving ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                </ModalFooter>
+            </Modal>
+
+            {/* Add Staff Modal */}
+            <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)}>
+                <ModalHeader>
+                    <ModalTitle>Add New Staff Member</ModalTitle>
+                </ModalHeader>
+                <ModalContent>
+                    <div>
+                        <Label htmlFor="add-email">Email *</Label>
+                        <Input
+                            id="add-email"
+                            type="email"
+                            value={addForm.email}
+                            onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
+                            placeholder="Enter email address"
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="add-password">Password *</Label>
+                        <Input
+                            id="add-password"
+                            type="password"
+                            value={addForm.password}
+                            onChange={(e) => setAddForm({ ...addForm, password: e.target.value })}
+                            placeholder="Enter password"
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="add-name">Full Name *</Label>
+                        <Input
+                            id="add-name"
+                            value={addForm.full_name}
+                            onChange={(e) => setAddForm({ ...addForm, full_name: e.target.value })}
+                            placeholder="Enter full name"
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="add-phone">Phone</Label>
+                        <Input
+                            id="add-phone"
+                            type="tel"
+                            value={addForm.phone}
+                            onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })}
+                            placeholder="Enter phone number"
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="add-role">Role *</Label>
+                        <select
+                            id="add-role"
+                            value={addForm.role}
+                            onChange={(e) => setAddForm({ ...addForm, role: e.target.value })}
+                            className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="doctor">Doctor</option>
+                            <option value="receptionist">Receptionist</option>
+                            <option value="lab_tech">Lab Technician</option>
+                            <option value="pharmacist">Pharmacist</option>
+                            <option value="supplier">Supplier</option>
+                        </select>
+                    </div>
+                    {addForm.role === 'doctor' && (
+                        <>
+                            <div>
+                                <Label htmlFor="add-specialization">Specialization</Label>
+                                <Input
+                                    id="add-specialization"
+                                    value={addForm.specialization}
+                                    onChange={(e) => setAddForm({ ...addForm, specialization: e.target.value })}
+                                    placeholder="e.g., Cardiology"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="add-license">License Number</Label>
+                                <Input
+                                    id="add-license"
+                                    value={addForm.license_number}
+                                    onChange={(e) => setAddForm({ ...addForm, license_number: e.target.value })}
+                                    placeholder="Enter license number"
+                                />
+                            </div>
+                        </>
+                    )}
+                </ModalContent>
+                <ModalFooter>
+                    <Button variant="secondary" onClick={() => setShowAddModal(false)} disabled={isSaving}>
+                        Cancel
+                    </Button>
+                    <Button onClick={handleAddStaff} disabled={isSaving}>
+                        {isSaving ? 'Adding...' : 'Add Staff Member'}
+                    </Button>
+                </ModalFooter>
+            </Modal>
         </div>
     );
 }
-
