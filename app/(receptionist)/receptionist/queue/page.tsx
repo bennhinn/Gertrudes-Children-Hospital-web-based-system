@@ -25,7 +25,7 @@ interface CheckIn {
         child: {
             id: string
             full_name: string
-            dob: string
+            date_of_birth: string
             gender: string
         }
         caregiver: {
@@ -78,7 +78,7 @@ export default function QueueManagementPage() {
           appointment:appointments(
             id,
             scheduled_for,
-            child:children(id, full_name, dob, gender),
+            child:children(id, full_name, date_of_birth, gender),
             caregiver:caregivers(id, profiles(full_name, phone)),
             doctor:doctors(id, profiles(full_name))
           )
@@ -171,9 +171,9 @@ export default function QueueManagementPage() {
         return `${hours}h ${mins}m`
     }
 
-    function getAge(dob: string) {
+    function getAge(dateOfBirth: string) {
         const today = new Date()
-        const birthDate = new Date(dob)
+        const birthDate = new Date(dateOfBirth)
         let age = today.getFullYear() - birthDate.getFullYear()
         const m = today.getMonth() - birthDate.getMonth()
         if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
@@ -248,7 +248,7 @@ export default function QueueManagementPage() {
                 <button
                     onClick={() => setFilter('waiting')}
                     className={`rounded-xl p-4 text-left transition-all ${filter === 'waiting' ? 'ring-2 ring-yellow-500' : ''
-                        } bg-linear-to-br from-yellow-50 to-orange-50 shadow-md hover:shadow-lg`}
+                        } bg-gradient-to-br from-yellow-50 to-orange-50 shadow-md hover:shadow-lg`}
                 >
                     <p className="text-sm text-yellow-700">Waiting</p>
                     <p className="text-2xl font-bold text-yellow-600">{stats.waiting}</p>
@@ -256,7 +256,7 @@ export default function QueueManagementPage() {
                 <button
                     onClick={() => setFilter('in_consultation')}
                     className={`rounded-xl p-4 text-left transition-all ${filter === 'in_consultation' ? 'ring-2 ring-blue-500' : ''
-                        } bg-linear-to-br from-blue-50 to-indigo-50 shadow-md hover:shadow-lg`}
+                        } bg-gradient-to-br from-blue-50 to-indigo-50 shadow-md hover:shadow-lg`}
                 >
                     <p className="text-sm text-blue-700">With Doctor</p>
                     <p className="text-2xl font-bold text-blue-600">{stats.inConsultation}</p>
@@ -264,7 +264,7 @@ export default function QueueManagementPage() {
                 <button
                     onClick={() => setFilter('completed')}
                     className={`rounded-xl p-4 text-left transition-all ${filter === 'completed' ? 'ring-2 ring-green-500' : ''
-                        } bg-linear-to-br from-green-50 to-emerald-50 shadow-md hover:shadow-lg`}
+                        } bg-gradient-to-br from-green-50 to-emerald-50 shadow-md hover:shadow-lg`}
                 >
                     <p className="text-sm text-green-700">Completed</p>
                     <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
@@ -306,10 +306,10 @@ export default function QueueManagementPage() {
                                         {/* Patient Info */}
                                         <div className="flex items-start gap-4">
                                             <div className={`flex h-14 w-14 items-center justify-center rounded-xl text-xl font-bold text-white ${checkIn.status === 'waiting'
-                                                    ? 'bg-linear-to-br from-yellow-400 to-orange-500'
+                                                    ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
                                                     : checkIn.status === 'in_consultation'
-                                                        ? 'bg-linear-to-br from-blue-400 to-blue-600'
-                                                        : 'bg-linear-to-br from-green-400 to-green-600'
+                                                        ? 'bg-gradient-to-br from-blue-400 to-blue-600'
+                                                        : 'bg-gradient-to-br from-green-400 to-green-600'
                                                 }`}>
                                                 #{checkIn.queue_number}
                                             </div>
@@ -322,7 +322,7 @@ export default function QueueManagementPage() {
                                                 </div>
                                                 <p className="mt-1 text-sm text-slate-600">
                                                     {checkIn.appointment?.child?.gender === 'male' ? '👦' : '👧'}{' '}
-                                                    {checkIn.appointment?.child?.dob ? getAge(checkIn.appointment.child.dob) : 'Age unknown'} •{' '}
+                                                    {checkIn.appointment?.child?.date_of_birth ? getAge(checkIn.appointment.child.date_of_birth) : 'Age unknown'} •{' '}
                                                     {checkIn.reason || 'General checkup'}
                                                 </p>
                                                 <p className="mt-1 text-xs text-slate-500">

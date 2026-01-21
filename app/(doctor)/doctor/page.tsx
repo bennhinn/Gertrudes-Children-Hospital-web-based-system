@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import QuickPrescriptionModal from '@/components/QuickPrescriptionModal'
+import QuickLabOrderModal from '@/components/QuickLabOrderModal'
 
 interface QueueStats {
     waitingForMe: number
@@ -16,6 +18,7 @@ interface QueueStats {
 
 interface QueuePatient {
     id: string
+    child_id: string
     queue_number: number
     checked_in_at: string
     status: string
@@ -28,20 +31,23 @@ interface QueuePatient {
     } | null
     appointment: {
         id: string
-        child: {
+        child_id: string
+        doctor_id: string | null
+    } | null
+    child: {
+        id: string
+        full_name: string
+        date_of_birth: string
+        gender: string
+        medical_notes: string | null
+        caregiver?: {
             id: string
-            full_name: string
-            dob: string
-            gender: string
-            medical_notes: string | null
-        }
-        caregiver: {
             profiles: {
                 full_name: string
                 phone: string
             }
         }
-    }
+    } | null
 }
 
 interface RecentConsultation {
@@ -64,59 +70,99 @@ export default function DoctorDashboard() {
     const [recentConsultations, setRecentConsultations] = useState<RecentConsultation[]>([])
     const [loading, setLoading] = useState(true)
     const [doctorId, setDoctorId] = useState<string | null>(null)
+    const [debugInfo, setDebugInfo] = useState<string>('')
+    const [error, setError] = useState<string | null>(null)
+    
+    // Modal states
+    const [showPrescriptionModal, setShowPrescriptionModal] = useState(false)
+    const [showLabOrderModal, setShowLabOrderModal] = useState(false)
 
     const loadDashboardData = useCallback(async () => {
+        setLoading(true)
+        setError(null)
+        setDebugInfo('')
+        
         try {
             const supabase = createClient()
-            const { data: { user } } = await supabase.auth.getUser()
+            const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-            if (!user) return
+            if (authError || !user) {
+                setError('Not authenticated')
+                return
+            }
 
             // Get doctor ID
-            const { data: doctorData } = await supabase
+            const { data: doctorData, error: doctorError } = await supabase
                 .from('doctors')
-                .select('id')
-                .eq('user_id', user.id)
+                .select('id, specialty')
+                .eq('id', user.id)
                 .single()
+
+            if (doctorError) {
+                setError(`Doctor profile error: ${doctorError.message}`)
+                console.error('Doctor error:', doctorError)
+            }
 
             if (doctorData) {
                 setDoctorId(doctorData.id)
+                setDebugInfo(`Doctor ID: ${doctorData.id}`)
+            } else {
+                setError('No doctor profile found. Make sure you have a record in the doctors table.')
+                return
             }
 
             const today = new Date()
             today.setHours(0, 0, 0, 0)
 
-            // Get waiting patients (status = 'in_consultation' or from appointments assigned to this doctor)
-            const { data: waitingPatients } = await supabase
+            // Get waiting patients with full details
+            const { data: waitingPatients, error: queueError } = await supabase
                 .from('check_ins')
                 .select(`
           *,
-          appointment:appointments(
-            id,
-            doctor_id,
-            child:children(id, full_name, dob, gender, medical_notes),
-            caregiver:caregivers(profiles(full_name, phone))
+          appointment:appointments(id, child_id, doctor_id),
+          child:children(
+            id, 
+            full_name, 
+            date_of_birth, 
+            gender, 
+            medical_notes,
+            caregiver:caregivers(
+              id,
+              profiles(full_name, phone)
+            )
           )
         `)
                 .gte('checked_in_at', today.toISOString())
                 .in('status', ['waiting', 'in_consultation'])
                 .order('queue_number', { ascending: true })
 
+            if (queueError) {
+                setError(`Queue error: ${queueError.message}`)
+                console.error('Queue error:', queueError)
+            }
+
+            setDebugInfo(prev => prev + ` | Waiting/In consultation: ${waitingPatients?.length || 0}`)
+
             // Filter patients waiting for this doctor or unassigned
             const myQueue = (waitingPatients || []).filter(p =>
                 !p.appointment?.doctor_id || p.appointment?.doctor_id === doctorData?.id
             )
+            
+            setDebugInfo(prev => prev + ` | My queue: ${myQueue.length}`)
             setQueue(myQueue)
 
             // Get completed consultations today
-            const { data: completedToday } = await supabase
+            const { data: completedToday, error: consultError } = await supabase
                 .from('consultations')
                 .select('id, completed_at, diagnosis, child:children(full_name)')
                 .eq('doctor_id', doctorData?.id || '')
                 .gte('completed_at', today.toISOString())
                 .order('completed_at', { ascending: false })
 
-            // Map the data to match our interface (Supabase returns arrays for relations)
+            if (consultError) {
+                console.error('Consultations error:', consultError)
+            }
+
             const mappedConsultations: RecentConsultation[] = (completedToday || []).slice(0, 5).map(c => ({
                 id: c.id,
                 completed_at: c.completed_at,
@@ -137,11 +183,12 @@ export default function DoctorDashboard() {
             setStats({
                 waitingForMe: myQueue.filter(p => p.status === 'waiting').length,
                 completedToday: (completedToday || []).length,
-                avgConsultTime: 15, // TODO: Calculate from actual data
+                avgConsultTime: 15,
                 pendingLabResults: (pendingLabs || []).length,
             })
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error loading dashboard data:', error)
+            setError(error.message || 'Failed to load dashboard data')
         } finally {
             setLoading(false)
         }
@@ -150,7 +197,6 @@ export default function DoctorDashboard() {
     useEffect(() => {
         loadDashboardData()
 
-        // Real-time subscription
         const supabase = createClient()
         const channel = supabase
             .channel('doctor-dashboard')
@@ -171,9 +217,9 @@ export default function DoctorDashboard() {
         }
     }, [loadDashboardData])
 
-    function getAge(dob: string) {
+    function getAge(dateOfBirth: string) {
         const today = new Date()
-        const birthDate = new Date(dob)
+        const birthDate = new Date(dateOfBirth)
         let age = today.getFullYear() - birthDate.getFullYear()
         const m = today.getMonth() - birthDate.getMonth()
         if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
@@ -202,14 +248,13 @@ export default function DoctorDashboard() {
         try {
             const supabase = createClient()
 
-            // Update check-in status to in_consultation
             await supabase
                 .from('check_ins')
                 .update({ status: 'in_consultation' })
                 .eq('id', checkIn.id)
 
-            // Redirect to consultation page
-            window.location.href = `/doctor/consultations/${checkIn.appointment.id}`
+            const consultId = checkIn.appointment?.id || checkIn.child_id
+            window.location.href = `/doctor/consultations/${consultId}`
         } catch (error) {
             console.error('Error starting consultation:', error)
         }
@@ -234,8 +279,35 @@ export default function DoctorDashboard() {
 
     return (
         <div className="space-y-6 pb-20 lg:pb-6">
+            {/* Modals */}
+            {doctorId && (
+                <>
+                    <QuickPrescriptionModal
+                        open={showPrescriptionModal}
+                        onClose={() => setShowPrescriptionModal(false)}
+                        doctorId={doctorId}
+                    />
+                    <QuickLabOrderModal
+                        open={showLabOrderModal}
+                        onClose={() => setShowLabOrderModal(false)}
+                        doctorId={doctorId}
+                    />
+                </>
+            )}
+
+           
+            {error && (
+                <Card className="border-red-200 bg-red-50">
+                    <CardContent className="p-4">
+                        <p className="text-sm font-medium text-red-800">
+                            ⚠️ Error: {error}
+                        </p>
+                    </CardContent>
+                </Card>
+            )}
+
             {/* Welcome Header */}
-            <div className="rounded-2xl bg-linear-to-br from-purple-500 via-purple-600 to-indigo-600 p-6 text-white shadow-xl">
+            <div className="rounded-2xl bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-600 p-6 text-white shadow-xl">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold">Doctor Dashboard</h1>
@@ -263,7 +335,7 @@ export default function DoctorDashboard() {
                 <Card className="border-none shadow-lg">
                     <CardContent className="p-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-yellow-100 to-orange-200 text-2xl">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-yellow-100 to-orange-200 text-2xl">
                                 <span className="relative">
                                     ⏳
                                     {stats.waitingForMe > 0 && (
@@ -285,7 +357,7 @@ export default function DoctorDashboard() {
                 <Card className="border-none shadow-lg">
                     <CardContent className="p-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-green-100 to-emerald-200 text-2xl">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-green-100 to-emerald-200 text-2xl">
                                 ✅
                             </div>
                             <div>
@@ -299,7 +371,7 @@ export default function DoctorDashboard() {
                 <Card className="border-none shadow-lg">
                     <CardContent className="p-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-blue-100 to-blue-200 text-2xl">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-100 to-blue-200 text-2xl">
                                 ⏱️
                             </div>
                             <div>
@@ -313,7 +385,7 @@ export default function DoctorDashboard() {
                 <Card className="border-none shadow-lg">
                     <CardContent className="p-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-purple-100 to-purple-200 text-2xl">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-100 to-purple-200 text-2xl">
                                 🔬
                             </div>
                             <div>
@@ -338,11 +410,19 @@ export default function DoctorDashboard() {
                                 <span>Patient Queue</span>
                             </Button>
                         </Link>
-                        <Button variant="secondary" className="h-auto flex-col gap-2 py-4" disabled>
+                        <Button 
+                            variant="secondary" 
+                            className="h-auto flex-col gap-2 py-4"
+                            onClick={() => setShowPrescriptionModal(true)}
+                        >
                             <span className="text-2xl">📝</span>
                             <span>Quick Prescription</span>
                         </Button>
-                        <Button variant="secondary" className="h-auto flex-col gap-2 py-4" disabled>
+                        <Button 
+                            variant="secondary" 
+                            className="h-auto flex-col gap-2 py-4"
+                            onClick={() => setShowLabOrderModal(true)}
+                        >
                             <span className="text-2xl">🧪</span>
                             <span>Order Lab Test</span>
                         </Button>
@@ -386,17 +466,17 @@ export default function DoctorDashboard() {
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
                                                 <div className={`flex h-12 w-12 items-center justify-center rounded-xl text-lg font-bold text-white ${patient.status === 'in_consultation'
-                                                        ? 'bg-linear-to-br from-purple-400 to-purple-600'
-                                                        : 'bg-linear-to-br from-yellow-400 to-orange-500'
+                                                        ? 'bg-gradient-to-br from-purple-400 to-purple-600'
+                                                        : 'bg-gradient-to-br from-yellow-400 to-orange-500'
                                                     }`}>
                                                     #{patient.queue_number}
                                                 </div>
                                                 <div>
                                                     <p className="font-semibold text-slate-800">
-                                                        {patient.appointment?.child?.full_name || 'Unknown'}
+                                                        {patient.child?.full_name || 'Unknown'}
                                                     </p>
                                                     <p className="text-xs text-slate-500">
-                                                        {patient.appointment?.child?.dob ? getAge(patient.appointment.child.dob) : ''} •{' '}
+                                                        {patient.child?.date_of_birth ? getAge(patient.child.date_of_birth) : ''} •{' '}
                                                         {patient.reason}
                                                     </p>
                                                     <p className="text-xs text-slate-400">
@@ -418,7 +498,6 @@ export default function DoctorDashboard() {
                                             )}
                                         </div>
 
-                                        {/* Vitals if available */}
                                         {patient.vitals && Object.values(patient.vitals).some(v => v) && (
                                             <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-200 pt-3">
                                                 {patient.vitals.temperature && (

@@ -201,9 +201,22 @@ export default async function DashboardPage() {
                 </div>
                 <div className="flex items-center justify-between gap-3 sm:justify-end">
                   <Badge variant={statusVariant(apt.status)}>{apt.status}</Badge>
-                  <Button variant="ghost" size="sm" className="text-xs sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
-                    View QR →
-                  </Button>
+                  {/* Only show View QR button for pending and confirmed appointments */}
+                  {(apt.status === 'pending' || apt.status === 'confirmed') && (
+                    <Link href={`/caregiver-appointments?viewQR=${apt.id}`}>
+                      <Button variant="ghost" size="sm" className="text-xs sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
+                        View QR →
+                      </Button>
+                    </Link>
+                  )}
+                  {/* Show View Details for completed/cancelled */}
+                  {(apt.status === 'completed' || apt.status === 'cancelled') && (
+                    <Link href="/caregiver-appointments">
+                      <Button variant="ghost" size="sm" className="text-xs sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
+                        View Details →
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               </div>
             ))}

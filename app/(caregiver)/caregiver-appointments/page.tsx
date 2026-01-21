@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled'
 
@@ -27,6 +27,9 @@ interface Appointment {
 
 export default function AppointmentsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const viewQRId = searchParams.get('viewQR')
+  
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [children, setChildren] = useState<any[]>([])
@@ -41,6 +44,18 @@ export default function AppointmentsPage() {
   useEffect(() => {
     loadData()
   }, [])
+
+  // Auto-open QR modal when navigating from dashboard
+  useEffect(() => {
+    if (viewQRId && appointments.length > 0) {
+      const appointment = appointments.find(apt => apt.id === viewQRId)
+      if (appointment && (appointment.status === 'pending' || appointment.status === 'confirmed')) {
+        handleViewQR(appointment)
+        // Clear the URL parameter after opening
+        router.replace('/caregiver-appointments', { scroll: false })
+      }
+    }
+  }, [viewQRId, appointments])
 
   async function loadData() {
     const supabase = createClient()
@@ -106,13 +121,17 @@ export default function AppointmentsPage() {
     try {
       const supabase = createClient()
 
+      // Convert local datetime to UTC for database storage
+      const localDate = new Date(scheduledFor)
+      const utcDate = localDate.toISOString()
+
       const { data: newAppointment, error: insertError } = await supabase
         .from('appointments')
         .insert({
           child_id: childId,
           caregiver_id: caregiverId,
           doctor_id: doctorId || null,
-          scheduled_for: scheduledFor,
+          scheduled_for: utcDate,
           notes: notes || null,
           status: 'pending',
         })
@@ -224,15 +243,35 @@ export default function AppointmentsPage() {
     }).format(date)
   }
 
-  function calculateAge(dateOfBirth: string) {
+  function formatAge(dateOfBirth: string) {
+    if (!dateOfBirth) return 'N/A'
+    
     const today = new Date()
     const birthDate = new Date(dateOfBirth)
-    let age = today.getFullYear() - birthDate.getFullYear()
-    const monthDiff = today.getMonth() - birthDate.getMonth()
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--
+    
+    // Check if the date is valid
+    if (isNaN(birthDate.getTime())) return 'N/A'
+    
+    let years = today.getFullYear() - birthDate.getFullYear()
+    let months = today.getMonth() - birthDate.getMonth()
+    
+    // Adjust for cases where birthday hasn't occurred this year
+    if (months < 0 || (months === 0 && today.getDate() < birthDate.getDate())) {
+      years--
+      months += 12
     }
-    return age
+    
+    // Ensure months is not negative
+    if (months < 0) months = 0
+    
+    // Format based on age
+    if (years === 0) {
+      return months === 1 ? '1 month' : `${months} months`
+    } else if (years === 1) {
+      return months === 0 ? '1 year' : `1 year ${months} months`
+    } else {
+      return months === 0 ? `${years} years` : `${years} years ${months} months`
+    }
   }
 
   if (children.length === 0) {
@@ -297,7 +336,7 @@ export default function AppointmentsPage() {
                   <option value="">Choose a child</option>
                   {children.map((child) => (
                     <option key={child.id} value={child.id}>
-                      {child.full_name}
+                      {child.full_name} ({formatAge(child.date_of_birth)})
                     </option>
                   ))}
                 </select>
@@ -399,7 +438,7 @@ export default function AppointmentsPage() {
                       </Badge>
                     </div>
                     <p className="text-xs sm:text-sm text-slate-500 mb-2 sm:mb-0">
-                      Age: {appointment.child?.date_of_birth ? calculateAge(appointment.child.date_of_birth) : 'N/A'} years
+                      Age: {formatAge(appointment.child?.date_of_birth || '')}
                     </p>
 
                     {/* Appointment Details */}

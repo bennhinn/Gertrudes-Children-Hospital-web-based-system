@@ -12,7 +12,7 @@ interface Patient {
     child: {
         id: string
         full_name: string
-        dob: string
+        date_of_birth: string
         gender: string
     }
     caregiver: {
@@ -32,7 +32,7 @@ interface Appointment {
     child: {
         id: string
         full_name: string
-        dob: string
+        date_of_birth: string
         gender: string
     }
     caregiver: {
@@ -92,7 +92,7 @@ export default function CheckInPage() {
                 .from('appointments')
                 .select(`
           *,
-          child:children(id, full_name, dob, gender),
+          child:children(id, full_name, date_of_birth, gender),
           caregiver:caregivers(id, profiles(full_name, phone))
         `)
                 .gte('scheduled_for', today.toISOString())
@@ -258,7 +258,7 @@ export default function CheckInPage() {
                     .from('appointments')
                     .select(`
                         *,
-                        child:children(id, full_name, dob, gender),
+                        child:children(id, full_name, date_of_birth, gender),
                         caregiver:caregivers(id, profiles(full_name, phone))
                     `)
                     .eq('check_in_code', trimmedData)
@@ -308,7 +308,7 @@ export default function CheckInPage() {
                 .from('appointments')
                 .select(`
                     *,
-                    child:children(id, full_name, dob, gender),
+                    child:children(id, full_name, date_of_birth, gender),
                     caregiver:caregivers(id, profiles(full_name, phone))
                 `)
                 .eq('id', appointmentId)
@@ -417,9 +417,9 @@ export default function CheckInPage() {
         })
     }
 
-    function getAge(dob: string) {
+    function getAge(dateOfBirth: string) {
         const today = new Date()
-        const birthDate = new Date(dob)
+        const birthDate = new Date(dateOfBirth)
         let age = today.getFullYear() - birthDate.getFullYear()
         const m = today.getMonth() - birthDate.getMonth()
         if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
@@ -443,7 +443,7 @@ export default function CheckInPage() {
                         </div>
                         <h2 className="mb-2 text-2xl font-bold text-green-700">Check-In Successful!</h2>
                         <p className="mb-6 text-slate-600">{checkInResult.patientName} has been checked in</p>
-                        <div className="mb-6 rounded-2xl bg-linear-to-br from-blue-500 to-blue-600 p-6 text-white">
+                        <div className="mb-6 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 p-6 text-white">
                             <p className="text-sm opacity-80">Queue Number</p>
                             <p className="text-6xl font-bold">{checkInResult.queueNumber}</p>
                         </div>
@@ -653,7 +653,7 @@ export default function CheckInPage() {
                                                                 {result.child.full_name}
                                                             </p>
                                                             <p className="text-xs text-slate-500">
-                                                                {result.child.dob ? getAge(result.child.dob) : ''} •{' '}
+                                                                {result.child.date_of_birth ? getAge(result.child.date_of_birth) : ''} •{' '}
                                                                 Caregiver: {result.caregiver?.profiles?.full_name || 'Unknown'}
                                                             </p>
                                                         </div>
@@ -720,7 +720,7 @@ export default function CheckInPage() {
                         </CardHeader>
                         <CardContent className="p-6">
                             {/* Patient Info */}
-                            <div className="mb-6 rounded-xl bg-linear-to-br from-blue-50 to-indigo-50 p-4">
+                            <div className="mb-6 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
                                 <div className="flex items-center gap-4">
                                     <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-white text-3xl shadow-sm">
                                         {selectedAppointment.child.gender === 'male' ? '👦' : '👧'}
@@ -730,7 +730,7 @@ export default function CheckInPage() {
                                             {selectedAppointment.child.full_name}
                                         </h3>
                                         <p className="text-sm text-slate-600">
-                                            {selectedAppointment.child.dob ? getAge(selectedAppointment.child.dob) : ''} •{' '}
+                                            {selectedAppointment.child.date_of_birth ? getAge(selectedAppointment.child.date_of_birth) : ''} •{' '}
                                             {selectedAppointment.child.gender}
                                         </p>
                                         <p className="text-xs text-slate-500">

@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 
 interface QueuePatient {
     id: string
+    child_id: string
     queue_number: number
     checked_in_at: string
     status: 'waiting' | 'in_consultation' | 'completed'
@@ -23,21 +24,22 @@ interface QueuePatient {
         id: string
         scheduled_for: string
         notes: string | null
-        child: {
-            id: string
-            full_name: string
-            dob: string
-            gender: string
-            medical_notes: string | null
-        }
-        caregiver: {
+        doctor_id: string | null
+    } | null
+    child: {
+        id: string
+        full_name: string
+        date_of_birth: string
+        gender: string
+        medical_notes: string | null
+        caregiver?: {
             id: string
             profiles: {
                 full_name: string
                 phone: string
             }
         }
-    }
+    } | null
 }
 
 type FilterStatus = 'all' | 'waiting' | 'in_consultation'
@@ -47,6 +49,7 @@ export default function DoctorQueuePage() {
     const [loading, setLoading] = useState(true)
     const [filter, setFilter] = useState<FilterStatus>('all')
     const [activePatient, setActivePatient] = useState<QueuePatient | null>(null)
+    const [doctorId, setDoctorId] = useState<string | null>(null)
 
     const loadQueue = useCallback(async () => {
         try {
@@ -58,14 +61,18 @@ export default function DoctorQueuePage() {
             const today = new Date()
             today.setHours(0, 0, 0, 0)
 
-            // Get doctor ID
+            // Get doctor ID - doctors.id references profiles.id directly
             const { data: doctorData } = await supabase
                 .from('doctors')
                 .select('id')
-                .eq('user_id', user.id)
+                .eq('id', user.id)
                 .single()
 
-            // Get today's queue
+            if (doctorData) {
+                setDoctorId(doctorData.id)
+            }
+
+            // Get today's queue with proper joins
             const { data, error } = await supabase
                 .from('check_ins')
                 .select(`
@@ -74,9 +81,18 @@ export default function DoctorQueuePage() {
             id,
             scheduled_for,
             notes,
-            doctor_id,
-            child:children(id, full_name, dob, gender, medical_notes),
-            caregiver:caregivers(id, profiles(full_name, phone))
+            doctor_id
+          ),
+          child:children(
+            id, 
+            full_name, 
+            date_of_birth, 
+            gender, 
+            medical_notes,
+            caregiver:caregivers(
+              id,
+              profiles(full_name, phone)
+            )
           )
         `)
                 .gte('checked_in_at', today.toISOString())
@@ -123,9 +139,9 @@ export default function DoctorQueuePage() {
         }
     }, [loadQueue])
 
-    function getAge(dob: string) {
+    function getAge(dateOfBirth: string) {
         const today = new Date()
-        const birthDate = new Date(dob)
+        const birthDate = new Date(dateOfBirth)
         let age = today.getFullYear() - birthDate.getFullYear()
         const m = today.getMonth() - birthDate.getMonth()
         if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
@@ -171,22 +187,14 @@ export default function DoctorQueuePage() {
 
         try {
             const supabase = createClient()
-            const { data: { user } } = await supabase.auth.getUser()
-
-            // Get doctor ID
-            const { data: doctorData } = await supabase
-                .from('doctors')
-                .select('id')
-                .eq('user_id', user?.id || '')
-                .single()
 
             // Create consultation record
             await supabase
                 .from('consultations')
                 .insert({
-                    appointment_id: activePatient.appointment.id,
-                    doctor_id: doctorData?.id,
-                    child_id: activePatient.appointment.child.id,
+                    appointment_id: activePatient.appointment?.id,
+                    doctor_id: doctorId,
+                    child_id: activePatient.child?.id,
                     completed_at: new Date().toISOString(),
                     diagnosis: 'General checkup completed', // TODO: Add proper form
                     notes: '',
@@ -201,11 +209,13 @@ export default function DoctorQueuePage() {
                 })
                 .eq('id', activePatient.id)
 
-            // Update appointment status
-            await supabase
-                .from('appointments')
-                .update({ status: 'completed' })
-                .eq('id', activePatient.appointment.id)
+            // Update appointment status if exists
+            if (activePatient.appointment?.id) {
+                await supabase
+                    .from('appointments')
+                    .update({ status: 'completed' })
+                    .eq('id', activePatient.appointment.id)
+            }
 
             setActivePatient(null)
             loadQueue()
@@ -250,7 +260,7 @@ export default function DoctorQueuePage() {
             {/* Active Patient Card */}
             {activePatient && (
                 <Card className="border-2 border-purple-500 shadow-xl">
-                    <CardHeader className="bg-linear-to-r from-purple-500 to-purple-600 text-white">
+                    <CardHeader className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
                         <CardTitle className="flex items-center gap-2">
                             <span className="text-2xl">🩺</span>
                             Current Consultation
@@ -260,21 +270,21 @@ export default function DoctorQueuePage() {
                         <div className="flex flex-wrap items-start justify-between gap-6">
                             <div className="flex items-start gap-4">
                                 <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-purple-100 text-4xl">
-                                    {activePatient.appointment.child.gender === 'male' ? '👦' : '👧'}
+                                    {activePatient.child?.gender === 'male' ? '👦' : '👧'}
                                 </div>
                                 <div>
                                     <h3 className="text-2xl font-bold text-slate-800">
-                                        {activePatient.appointment.child.full_name}
+                                        {activePatient.child?.full_name || 'Unknown'}
                                     </h3>
                                     <p className="text-slate-600">
-                                        {activePatient.appointment.child.dob ? getAge(activePatient.appointment.child.dob) : ''} •{' '}
-                                        {activePatient.appointment.child.gender}
+                                        {activePatient.child?.date_of_birth ? getAge(activePatient.child.date_of_birth) : ''} •{' '}
+                                        {activePatient.child?.gender}
                                     </p>
                                     <p className="mt-2 text-sm text-slate-500">
                                         Reason: {activePatient.reason}
                                     </p>
                                     <p className="text-sm text-slate-500">
-                                        Caregiver: {activePatient.appointment.caregiver?.profiles?.full_name || 'Unknown'}
+                                        Caregiver: {activePatient.child?.caregiver?.profiles?.full_name || 'Unknown'}
                                     </p>
                                 </div>
                             </div>
@@ -314,10 +324,10 @@ export default function DoctorQueuePage() {
                         </div>
 
                         {/* Medical Notes */}
-                        {activePatient.appointment.child.medical_notes && (
+                        {activePatient.child?.medical_notes && (
                             <div className="mt-4 rounded-xl bg-yellow-50 p-4">
                                 <p className="text-sm font-medium text-yellow-800">⚠️ Medical Notes</p>
-                                <p className="mt-1 text-sm text-yellow-700">{activePatient.appointment.child.medical_notes}</p>
+                                <p className="mt-1 text-sm text-yellow-700">{activePatient.child.medical_notes}</p>
                             </div>
                         )}
 
@@ -393,23 +403,23 @@ export default function DoctorQueuePage() {
                                     <div className="flex flex-wrap items-center justify-between gap-4">
                                         <div className="flex items-center gap-4">
                                             <div className={`flex h-14 w-14 items-center justify-center rounded-xl text-xl font-bold text-white ${patient.status === 'in_consultation'
-                                                    ? 'bg-linear-to-br from-purple-400 to-purple-600'
-                                                    : 'bg-linear-to-br from-yellow-400 to-orange-500'
+                                                    ? 'bg-gradient-to-br from-purple-400 to-purple-600'
+                                                    : 'bg-gradient-to-br from-yellow-400 to-orange-500'
                                                 }`}>
                                                 #{patient.queue_number}
                                             </div>
                                             <div>
                                                 <div className="flex items-center gap-2">
                                                     <h3 className="font-semibold text-slate-800">
-                                                        {patient.appointment?.child?.full_name || 'Unknown'}
+                                                        {patient.child?.full_name || 'Unknown'}
                                                     </h3>
                                                     {patient.status === 'in_consultation' && (
                                                         <Badge variant="purple">In Session</Badge>
                                                     )}
                                                 </div>
                                                 <p className="text-sm text-slate-600">
-                                                    {patient.appointment?.child?.gender === 'male' ? '👦' : '👧'}{' '}
-                                                    {patient.appointment?.child?.dob ? getAge(patient.appointment.child.dob) : ''} •{' '}
+                                                    {patient.child?.gender === 'male' ? '👦' : '👧'}{' '}
+                                                    {patient.child?.date_of_birth ? getAge(patient.child.date_of_birth) : ''} •{' '}
                                                     {patient.reason}
                                                 </p>
                                                 <p className="text-xs text-slate-500">

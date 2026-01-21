@@ -16,7 +16,7 @@ interface Appointment {
     child: {
         id: string
         full_name: string
-        dob: string
+        date_of_birth: string
         gender: string
     }
     caregiver: {
@@ -42,12 +42,23 @@ export default function AppointmentsPage() {
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-    const [dateFilter, setDateFilter] = useState<DateFilter>('today')
+    const [dateFilter, setDateFilter] = useState<DateFilter>('all') // Changed default to 'all'
+    const [error, setError] = useState<string | null>(null)
+    const [debugInfo, setDebugInfo] = useState<string>('')
 
     const loadAppointments = useCallback(async () => {
         setLoading(true)
+        setError(null)
+        setDebugInfo('')
+        
         try {
             const supabase = createClient()
+
+            // Check authentication
+            const { data: { user }, error: authError } = await supabase.auth.getUser()
+            if (authError || !user) {
+                throw new Error('Not authenticated')
+            }
 
             // Calculate date range
             const today = new Date()
@@ -76,14 +87,29 @@ export default function AppointmentsPage() {
                     break
             }
 
+            // First, try a simple query to see if we can fetch appointments at all
+            const { data: simpleData, error: simpleError } = await supabase
+                .from('appointments')
+                .select('*')
+                .limit(5)
+
+            console.log('Simple query result:', simpleData, simpleError)
+            
+            if (simpleError) {
+                setDebugInfo(`Simple query error: ${simpleError.message}`)
+            } else {
+                setDebugInfo(`Found ${simpleData?.length || 0} appointments in simple query`)
+            }
+
+            // Now try the full query with relationships
             let query = supabase
                 .from('appointments')
                 .select(`
-          *,
-          child:children(id, full_name, dob, gender),
-          caregiver:caregivers(id, profiles(full_name, phone)),
-          doctor:doctors(id, profiles(full_name))
-        `)
+                    *,
+                    child:children(id, full_name, date_of_birth, gender),
+                    caregiver:caregivers(id, profiles(full_name, phone)),
+                    doctor:doctors(id, profiles(full_name))
+                `)
                 .order('scheduled_for', { ascending: true })
 
             if (dateFilter !== 'all') {
@@ -97,12 +123,22 @@ export default function AppointmentsPage() {
                 query = query.eq('status', statusFilter)
             }
 
-            const { data, error } = await query
+            const { data, error: queryError } = await query
 
-            if (error) throw error
+            console.log('Full query result:', data, queryError)
+
+            if (queryError) {
+                throw new Error(`Query error: ${queryError.message}`)
+            }
+            
             setAppointments(data || [])
-        } catch (error) {
+            
+            if (!data || data.length === 0) {
+                setDebugInfo(prev => prev + ` | No appointments found with current filters (Date: ${dateFilter}, Status: ${statusFilter})`)
+            }
+        } catch (error: any) {
             console.error('Error loading appointments:', error)
+            setError(error.message || 'Failed to load appointments')
         } finally {
             setLoading(false)
         }
@@ -154,18 +190,16 @@ export default function AppointmentsPage() {
     }
 
     function getStatusBadge(status: string) {
-        switch (status) {
-            case 'pending':
-                return <Badge variant="yellow">Pending</Badge>
-            case 'confirmed':
-                return <Badge variant="blue">Confirmed</Badge>
-            case 'completed':
-                return <Badge variant="green">Completed</Badge>
-            case 'cancelled':
-                return <Badge variant="gray">Cancelled</Badge>
-            default:
-                return <Badge variant="gray">{status}</Badge>
-        }
+        const variants = {
+            pending: 'yellow',
+            confirmed: 'blue',
+            completed: 'green',
+            cancelled: 'gray'
+        } as const
+        
+        return <Badge variant={variants[status as keyof typeof variants] || 'gray'}>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+        </Badge>
     }
 
     async function handleCheckIn(appointment: Appointment) {
@@ -206,12 +240,30 @@ export default function AppointmentsPage() {
                 <p className="text-slate-500">View and manage all appointments</p>
             </div>
 
+            {error && (
+                <Card className="border-red-200 bg-red-50">
+                    <CardContent className="p-4">
+                        <p className="text-sm font-medium text-red-800">
+                            ⚠️ Error: {error}
+                        </p>
+                        <p className="mt-2 text-xs text-red-600">
+                            Check console for more details. Common issues:
+                        </p>
+                        <ul className="mt-1 list-inside list-disc text-xs text-red-600">
+                            <li>Row Level Security (RLS) policies blocking access</li>
+                            <li>Missing foreign key relationships in database</li>
+                            <li>Incorrect table or column names</li>
+                        </ul>
+                    </CardContent>
+                </Card>
+            )}
+
             {/* Filters */}
             <Card className="border-none shadow-lg">
                 <CardContent className="p-4">
                     <div className="flex flex-wrap gap-4">
                         {/* Search */}
-                        <div className="flex-1 min-w-50">
+                        <div className="flex-1 min-w-[200px]">
                             <Input
                                 placeholder="Search by patient or caregiver name..."
                                 value={searchQuery}
@@ -225,10 +277,10 @@ export default function AppointmentsPage() {
                             onChange={(e) => setDateFilter(e.target.value as DateFilter)}
                             className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
+                            <option value="all">All Time</option>
                             <option value="today">Today</option>
                             <option value="tomorrow">Tomorrow</option>
                             <option value="week">This Week</option>
-                            <option value="all">All Time</option>
                         </select>
 
                         {/* Status Filter */}
@@ -268,7 +320,11 @@ export default function AppointmentsPage() {
                         <div className="py-12 text-center">
                             <p className="text-4xl">📅</p>
                             <p className="mt-4 text-lg font-medium text-slate-600">No appointments found</p>
-                            <p className="text-slate-400">Try adjusting your filters</p>
+                            <p className="text-slate-400">
+                                {dateFilter !== 'all' || statusFilter !== 'all'
+                                    ? 'Try adjusting your filters'
+                                    : 'No appointments have been created yet'}
+                            </p>
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -288,7 +344,7 @@ export default function AppointmentsPage() {
 
                                             {/* Patient Info */}
                                             <div className="flex items-center gap-3">
-                                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-blue-100 to-purple-100 text-xl">
+                                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-purple-100 text-xl">
                                                     {apt.child?.gender === 'male' ? '👦' : '👧'}
                                                 </div>
                                                 <div>
@@ -296,7 +352,7 @@ export default function AppointmentsPage() {
                                                         {apt.child?.full_name || 'Unknown'}
                                                     </p>
                                                     <p className="text-sm text-slate-500">
-                                                        {apt.child?.dob ? getAge(apt.child.dob) : ''} •{' '}
+                                                        {apt.child?.date_of_birth ? getAge(apt.child.date_of_birth) : ''} •{' '}
                                                         {apt.caregiver?.profiles?.full_name || 'Unknown Caregiver'}
                                                     </p>
                                                     {apt.doctor && (
