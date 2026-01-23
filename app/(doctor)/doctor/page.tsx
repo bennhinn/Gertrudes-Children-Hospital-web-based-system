@@ -171,20 +171,28 @@ export default function DoctorDashboard() {
             }))
             setRecentConsultations(mappedConsultations)
 
-            // Get pending lab results
-            const { data: pendingLabs } = await supabase
+            // FIX: Get pending lab results (completed tests not yet reviewed)
+            const { data: pendingLabs, error: labError } = await supabase
                 .from('lab_orders')
-                .select('id')
+                .select('id, status, reviewed_at, doctor_id, test_type')
                 .eq('doctor_id', doctorData?.id || '')
                 .eq('status', 'completed')
                 .is('reviewed_at', null)
+
+            if (labError) {
+                console.error('Pending labs error:', labError)
+            }
+            
+            console.log('🔬 Pending lab results for doctor:', doctorData?.id)
+            console.log('🔬 Query returned:', pendingLabs?.length || 0, 'pending lab results')
+            console.log('🔬 Pending labs details:', pendingLabs)
 
             // Calculate stats
             setStats({
                 waitingForMe: myQueue.filter(p => p.status === 'waiting').length,
                 completedToday: (completedToday || []).length,
                 avgConsultTime: 15,
-                pendingLabResults: (pendingLabs || []).length,
+                pendingLabResults: (pendingLabs || []).length, // FIX: Use the actual count
             })
         } catch (error: any) {
             console.error('Error loading dashboard data:', error)
@@ -386,7 +394,15 @@ export default function DoctorDashboard() {
                     <CardContent className="p-6">
                         <div className="flex items-center gap-4">
                             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-100 to-purple-200 text-2xl">
-                                🔬
+                                <span className="relative">
+                                    🔬
+                                    {stats.pendingLabResults > 0 && (
+                                        <span className="absolute -right-1 -top-1 flex h-3 w-3">
+                                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-purple-400 opacity-75"></span>
+                                            <span className="relative inline-flex h-3 w-3 rounded-full bg-purple-500"></span>
+                                        </span>
+                                    )}
+                                </span>
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-slate-500">Pending Lab Results</p>

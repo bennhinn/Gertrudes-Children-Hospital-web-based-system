@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 interface LabOrder {
     id: string
@@ -17,21 +18,22 @@ interface LabOrder {
     child: {
         id: string
         full_name: string
-        dob: string
+        date_of_birth: string
         gender: string
-    }
+    } | null
     doctor: {
         id: string
         profiles: {
             full_name: string
         }
-    }
+    } | null
 }
 
 type StatusFilter = 'all' | 'pending' | 'collected' | 'in_progress'
 type UrgencyFilter = 'all' | 'stat' | 'urgent' | 'routine'
 
 export default function LabOrdersPage() {
+    const router = useRouter()
     const [orders, setOrders] = useState<LabOrder[]>([])
     const [loading, setLoading] = useState(true)
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
@@ -42,12 +44,13 @@ export default function LabOrdersPage() {
         try {
             const supabase = createClient()
 
+            // Use the specific FK name to avoid ambiguity
             let query = supabase
                 .from('lab_orders')
                 .select(`
           *,
-          child:children(id, full_name, dob, gender),
-          doctor:doctors(id, profiles(full_name))
+          child:children(id, full_name, date_of_birth, gender),
+          doctor:doctors!lab_orders_doctor_id_fkey(id, profiles(full_name))
         `)
                 .in('status', ['pending', 'collected', 'in_progress'])
                 .order('ordered_at', { ascending: false })
@@ -91,19 +94,59 @@ export default function LabOrdersPage() {
         }
     }, [loadOrders])
 
-    async function updateOrderStatus(orderId: string, newStatus: string) {
+    async function updateOrderStatus(orderId: string, newStatus: string, orderInfo?: { testType: string, patientName: string }) {
+        // Show confirmation for collecting samples
+        if (newStatus === 'collected' && orderInfo) {
+            const confirmed = window.confirm(
+                `Collect sample for:\n\n` +
+                `Test: ${orderInfo.testType || 'Lab Test'}\n` +
+                `Patient: ${orderInfo.patientName}\n\n` +
+                `Click OK to confirm sample collection.`
+            )
+            if (!confirmed) return
+        }
+
         setUpdating(orderId)
         try {
             const supabase = createClient()
+            const { data: { user } } = await supabase.auth.getUser()
 
-            await supabase
+            const updateData: any = { status: newStatus }
+            
+            // Add timestamp and user based on status
+            if (newStatus === 'collected') {
+                updateData.collected_at = new Date().toISOString()
+                if (user?.id) {
+                    updateData.collected_by = user.id
+                }
+            } else if (newStatus === 'in_progress') {
+                updateData.started_at = new Date().toISOString()
+            }
+
+            console.log('Updating order:', orderId, 'with data:', updateData)
+
+            const { data, error } = await supabase
                 .from('lab_orders')
-                .update({ status: newStatus })
+                .update(updateData)
                 .eq('id', orderId)
+                .select()
 
-            loadOrders()
-        } catch (error) {
+            if (error) {
+                console.error('Supabase error:', error)
+                throw error
+            }
+
+            console.log('Update successful:', data)
+
+            // Show success message
+            if (newStatus === 'collected') {
+                alert(`✅ Sample collected successfully!\n\nThe sample is ready for processing.`)
+            }
+
+            await loadOrders()
+        } catch (error: any) {
             console.error('Error updating order:', error)
+            alert(`❌ Failed to update order status.\n\nError: ${error.message || 'Unknown error'}\n\nPlease try again.`)
         } finally {
             setUpdating(null)
         }
@@ -133,9 +176,9 @@ export default function LabOrdersPage() {
         }
     }
 
-    function getAge(dob: string) {
+    function getAge(dateOfBirth: string) {
         const today = new Date()
-        const birthDate = new Date(dob)
+        const birthDate = new Date(dateOfBirth)
         let age = today.getFullYear() - birthDate.getFullYear()
         const m = today.getMonth() - birthDate.getMonth()
         if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
@@ -207,7 +250,7 @@ export default function LabOrdersPage() {
                 <button
                     onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
                     className={`rounded-xl p-4 text-left transition-all ${statusFilter === 'pending' ? 'ring-2 ring-yellow-500' : ''
-                        } bg-linear-to-br from-yellow-50 to-orange-50 shadow-md hover:shadow-lg`}
+                        } bg-gradient-to-br from-yellow-50 to-orange-50 shadow-md hover:shadow-lg`}
                 >
                     <p className="text-sm text-yellow-700">Pending</p>
                     <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
@@ -215,7 +258,7 @@ export default function LabOrdersPage() {
                 <button
                     onClick={() => setStatusFilter(statusFilter === 'collected' ? 'all' : 'collected')}
                     className={`rounded-xl p-4 text-left transition-all ${statusFilter === 'collected' ? 'ring-2 ring-blue-500' : ''
-                        } bg-linear-to-br from-blue-50 to-indigo-50 shadow-md hover:shadow-lg`}
+                        } bg-gradient-to-br from-blue-50 to-indigo-50 shadow-md hover:shadow-lg`}
                 >
                     <p className="text-sm text-blue-700">Collected</p>
                     <p className="text-2xl font-bold text-blue-600">{stats.collected}</p>
@@ -223,7 +266,7 @@ export default function LabOrdersPage() {
                 <button
                     onClick={() => setStatusFilter(statusFilter === 'in_progress' ? 'all' : 'in_progress')}
                     className={`rounded-xl p-4 text-left transition-all ${statusFilter === 'in_progress' ? 'ring-2 ring-purple-500' : ''
-                        } bg-linear-to-br from-purple-50 to-purple-100 shadow-md hover:shadow-lg`}
+                        } bg-gradient-to-br from-purple-50 to-purple-100 shadow-md hover:shadow-lg`}
                 >
                     <p className="text-sm text-purple-700">Processing</p>
                     <p className="text-2xl font-bold text-purple-600">{stats.inProgress}</p>
@@ -281,10 +324,10 @@ export default function LabOrdersPage() {
                                     <div className="flex flex-wrap items-start justify-between gap-4">
                                         <div className="flex items-start gap-4">
                                             <div className={`flex h-14 w-14 items-center justify-center rounded-xl text-2xl text-white ${order.urgency === 'stat'
-                                                    ? 'bg-linear-to-br from-red-400 to-red-600'
+                                                    ? 'bg-gradient-to-br from-red-400 to-red-600'
                                                     : order.urgency === 'urgent'
-                                                        ? 'bg-linear-to-br from-yellow-400 to-orange-500'
-                                                        : 'bg-linear-to-br from-blue-400 to-blue-600'
+                                                        ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
+                                                        : 'bg-gradient-to-br from-blue-400 to-blue-600'
                                                 }`}>
                                                 🧪
                                             </div>
@@ -299,7 +342,7 @@ export default function LabOrdersPage() {
                                                 )}
                                                 <p className="mt-1 text-sm text-slate-600">
                                                     Patient: {order.child?.full_name || 'Unknown'} •{' '}
-                                                    {order.child?.dob ? getAge(order.child.dob) : ''}
+                                                    {order.child?.date_of_birth ? getAge(order.child.date_of_birth) : ''}
                                                 </p>
                                                 <p className="text-xs text-slate-500">
                                                     Ordered by Dr. {order.doctor?.profiles?.full_name || 'Unknown'} • {getTimeAgo(order.ordered_at)}
@@ -312,7 +355,14 @@ export default function LabOrdersPage() {
                                             {order.status === 'pending' && (
                                                 <Button
                                                     size="sm"
-                                                    onClick={() => updateOrderStatus(order.id, 'collected')}
+                                                    onClick={() => updateOrderStatus(
+                                                        order.id, 
+                                                        'collected',
+                                                        {
+                                                            testType: order.test_type,
+                                                            patientName: order.child?.full_name || 'Unknown'
+                                                        }
+                                                    )}
                                                     disabled={updating === order.id}
                                                     className="bg-blue-600 hover:bg-blue-700"
                                                 >
@@ -332,6 +382,7 @@ export default function LabOrdersPage() {
                                             {order.status === 'in_progress' && (
                                                 <Button
                                                     size="sm"
+                                                    onClick={() => router.push('/lab/results')}
                                                     className="bg-green-600 hover:bg-green-700"
                                                 >
                                                     📊 Enter Results

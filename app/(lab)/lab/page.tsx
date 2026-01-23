@@ -22,17 +22,19 @@ interface LabOrder {
     status: string
     ordered_at: string
     special_instructions: string | null
+    completed_at?: string
     child: {
         id: string
         full_name: string
-        dob: string
+        date_of_birth: string
         gender: string
-    }
+    } | null
     doctor: {
+        id: string
         profiles: {
             full_name: string
         }
-    }
+    } | null
 }
 
 export default function LabDashboard() {
@@ -44,6 +46,7 @@ export default function LabDashboard() {
     })
     const [pendingOrders, setPendingOrders] = useState<LabOrder[]>([])
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
     const loadDashboardData = useCallback(async () => {
         try {
@@ -51,15 +54,22 @@ export default function LabDashboard() {
             const today = new Date()
             today.setHours(0, 0, 0, 0)
 
-            // Get all lab orders
-            const { data: orders } = await supabase
+            // Get all lab orders with proper joins
+            // Note: lab_orders has two FKs to doctors (doctor_id and reviewed_by)
+            // We need to specify which one using the FK name
+            const { data: orders, error: ordersError } = await supabase
                 .from('lab_orders')
                 .select(`
           *,
-          child:children(id, full_name, dob, gender),
-          doctor:doctors(profiles(full_name))
+          child:children(id, full_name, date_of_birth, gender),
+          doctor:doctors!lab_orders_doctor_id_fkey(id, profiles(full_name))
         `)
                 .order('ordered_at', { ascending: false })
+
+            if (ordersError) {
+                console.error('Lab orders error:', ordersError)
+                setError(`Failed to load lab orders: ${ordersError.message}`)
+            }
 
             const ordersData = orders || []
 
@@ -68,6 +78,7 @@ export default function LabDashboard() {
             const inProgress = ordersData.filter(o => o.status === 'in_progress' || o.status === 'collected')
             const completedToday = ordersData.filter(o =>
                 o.status === 'completed' &&
+                o.completed_at &&
                 new Date(o.completed_at) >= today
             )
 
@@ -94,8 +105,9 @@ export default function LabDashboard() {
                 return urgencyOrder[a.urgency as keyof typeof urgencyOrder] - urgencyOrder[b.urgency as keyof typeof urgencyOrder]
             })
             setPendingOrders(sortedPending.slice(0, 10))
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error loading dashboard:', error)
+            setError(error.message || 'Failed to load dashboard data')
         } finally {
             setLoading(false)
         }
@@ -131,9 +143,9 @@ export default function LabDashboard() {
         }
     }
 
-    function getAge(dob: string) {
+    function getAge(dateOfBirth: string) {
         const today = new Date()
-        const birthDate = new Date(dob)
+        const birthDate = new Date(dateOfBirth)
         let age = today.getFullYear() - birthDate.getFullYear()
         const m = today.getMonth() - birthDate.getMonth()
         if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
@@ -157,6 +169,27 @@ export default function LabDashboard() {
         return `${Math.floor(hours / 24)}d ago`
     }
 
+    async function collectSample(orderId: string) {
+        try {
+            const supabase = createClient()
+            
+            const { error } = await supabase
+                .from('lab_orders')
+                .update({ 
+                    status: 'collected',
+                    collected_at: new Date().toISOString()
+                })
+                .eq('id', orderId)
+
+            if (error) throw error
+
+            loadDashboardData()
+        } catch (error) {
+            console.error('Error collecting sample:', error)
+            alert('Failed to update sample status')
+        }
+    }
+
     if (loading) {
         return (
             <div className="space-y-6">
@@ -176,8 +209,19 @@ export default function LabDashboard() {
 
     return (
         <div className="space-y-6 pb-20 lg:pb-6">
+            {/* Error Display */}
+            {error && (
+                <Card className="border-red-200 bg-red-50">
+                    <CardContent className="p-4">
+                        <p className="text-sm font-medium text-red-800">
+                            ⚠️ Error: {error}
+                        </p>
+                    </CardContent>
+                </Card>
+            )}
+
             {/* Welcome Header */}
-            <div className="rounded-2xl bg-linear-to-br from-yellow-400 via-yellow-500 to-green-500 p-6 text-white shadow-xl">
+            <div className="rounded-2xl bg-gradient-to-br from-yellow-400 via-yellow-500 to-green-500 p-6 text-white shadow-xl">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold">Laboratory Dashboard</h1>
@@ -205,7 +249,7 @@ export default function LabDashboard() {
                 <Card className="border-none shadow-lg">
                     <CardContent className="p-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-yellow-100 to-orange-200 text-2xl">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-yellow-100 to-orange-200 text-2xl">
                                 <span className="relative">
                                     📋
                                     {stats.pendingTests > 0 && (
@@ -227,7 +271,7 @@ export default function LabDashboard() {
                 <Card className="border-none shadow-lg">
                     <CardContent className="p-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-blue-100 to-blue-200 text-2xl">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-100 to-blue-200 text-2xl">
                                 🔬
                             </div>
                             <div>
@@ -241,7 +285,7 @@ export default function LabDashboard() {
                 <Card className="border-none shadow-lg">
                     <CardContent className="p-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-green-100 to-emerald-200 text-2xl">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-green-100 to-emerald-200 text-2xl">
                                 ✅
                             </div>
                             <div>
@@ -255,7 +299,7 @@ export default function LabDashboard() {
                 <Card className="border-none shadow-lg">
                     <CardContent className="p-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-red-100 to-red-200 text-2xl">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-red-100 to-red-200 text-2xl">
                                 ⚠️
                             </div>
                             <div>
@@ -331,10 +375,10 @@ export default function LabDashboard() {
                                     <div className="flex flex-wrap items-center justify-between gap-4">
                                         <div className="flex items-center gap-3">
                                             <div className={`flex h-12 w-12 items-center justify-center rounded-xl text-xl font-bold text-white ${order.urgency === 'stat'
-                                                    ? 'bg-linear-to-br from-red-400 to-red-600'
+                                                    ? 'bg-gradient-to-br from-red-400 to-red-600'
                                                     : order.urgency === 'urgent'
-                                                        ? 'bg-linear-to-br from-yellow-400 to-orange-500'
-                                                        : 'bg-linear-to-br from-blue-400 to-blue-600'
+                                                        ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
+                                                        : 'bg-gradient-to-br from-blue-400 to-blue-600'
                                                 }`}>
                                                 🧪
                                             </div>
@@ -345,7 +389,7 @@ export default function LabDashboard() {
                                                 </div>
                                                 <p className="text-sm text-slate-600">
                                                     {order.child?.full_name || 'Unknown'} •{' '}
-                                                    {order.child?.dob ? getAge(order.child.dob) : ''}
+                                                    {order.child?.date_of_birth ? getAge(order.child.date_of_birth) : ''}
                                                 </p>
                                                 <p className="text-xs text-slate-500">
                                                     Dr. {order.doctor?.profiles?.full_name || 'Unknown'} • {getTimeAgo(order.ordered_at)}
@@ -353,7 +397,11 @@ export default function LabDashboard() {
                                             </div>
                                         </div>
 
-                                        <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                                        <Button 
+                                            size="sm" 
+                                            className="bg-green-600 hover:bg-green-700"
+                                            onClick={() => collectSample(order.id)}
+                                        >
                                             Collect Sample
                                         </Button>
                                     </div>
