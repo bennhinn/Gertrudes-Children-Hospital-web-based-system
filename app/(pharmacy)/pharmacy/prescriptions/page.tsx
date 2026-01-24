@@ -12,21 +12,20 @@ interface Prescription {
     urgency: string
     prescribed_at: string
     notes: string | null
+    child_id: string
+    doctor_id: string
     prescription_items: PrescriptionItem[]
-    consultation: {
+    child: {
         id: string
-        child: {
-            id: string
+        full_name: string
+        date_of_birth: string
+    } | null
+    doctor: {
+        id: string
+        profiles: {
             full_name: string
-            dob: string
-        }
-        doctor: {
-            id: string
-            profiles: {
-                full_name: string
-            }
-        }
-    }
+        } | null
+    } | null
 }
 
 interface PrescriptionItem {
@@ -54,21 +53,21 @@ export default function PharmacyPrescriptionsPage() {
         try {
             const supabase = createClient()
 
+            // FIX: Direct joins to child and doctor tables
             const { data, error } = await supabase
                 .from('prescriptions')
                 .select(`
           *,
           prescription_items(*),
-          consultation:consultations(
-            id,
-            child:children(id, full_name, dob),
-            doctor:doctors(id, profiles(full_name))
-          )
+          child:children(id, full_name, date_of_birth),
+          doctor:doctors(id, profiles(full_name))
         `)
                 .in('status', ['pending', 'preparing'])
                 .order('prescribed_at', { ascending: true })
 
             if (error) throw error
+
+            console.log('📋 Loaded prescriptions:', data?.length || 0)
 
             // Sort by urgency
             const sortedData = (data || []).sort((a, b) => {
@@ -110,19 +109,27 @@ export default function PharmacyPrescriptionsPage() {
             const updateData: Record<string, unknown> = { status: newStatus }
             if (newStatus === 'dispensed') {
                 updateData.dispensed_at = new Date().toISOString()
+                const { data: { user } } = await supabase.auth.getUser()
+                if (user) {
+                    updateData.pharmacist_id = user.id
+                }
             }
 
-            await supabase
+            const { error } = await supabase
                 .from('prescriptions')
                 .update(updateData)
                 .eq('id', id)
 
+            if (error) throw error
+
             if (selectedPrescription?.id === id && newStatus === 'dispensed') {
                 setSelectedPrescription(null)
+                alert('✅ Prescription dispensed successfully!')
             }
             loadPrescriptions()
         } catch (error) {
             console.error('Error updating prescription:', error)
+            alert('❌ Failed to update prescription')
         } finally {
             setUpdating(null)
         }
@@ -201,7 +208,7 @@ export default function PharmacyPrescriptionsPage() {
                 <button
                     onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
                     className={`rounded-xl p-4 text-left transition-all ${statusFilter === 'pending' ? 'ring-2 ring-yellow-500' : ''
-                        } bg-linear-to-br from-yellow-50 to-orange-50 shadow-md hover:shadow-lg`}
+                        } bg-gradient-to-br from-yellow-50 to-orange-50 shadow-md hover:shadow-lg`}
                 >
                     <p className="text-sm text-yellow-700">Pending</p>
                     <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
@@ -209,7 +216,7 @@ export default function PharmacyPrescriptionsPage() {
                 <button
                     onClick={() => setStatusFilter(statusFilter === 'preparing' ? 'all' : 'preparing')}
                     className={`rounded-xl p-4 text-left transition-all ${statusFilter === 'preparing' ? 'ring-2 ring-blue-500' : ''
-                        } bg-linear-to-br from-blue-50 to-indigo-50 shadow-md hover:shadow-lg`}
+                        } bg-gradient-to-br from-blue-50 to-indigo-50 shadow-md hover:shadow-lg`}
                 >
                     <p className="text-sm text-blue-700">Preparing</p>
                     <p className="text-2xl font-bold text-blue-600">{stats.preparing}</p>
@@ -223,14 +230,14 @@ export default function PharmacyPrescriptionsPage() {
                         key={filter}
                         onClick={() => setUrgencyFilter(filter)}
                         className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${urgencyFilter === filter
-                                ? filter === 'stat'
-                                    ? 'bg-red-500 text-white'
-                                    : filter === 'urgent'
-                                        ? 'bg-yellow-500 text-white'
-                                        : filter === 'routine'
-                                            ? 'bg-blue-500 text-white'
-                                            : 'bg-slate-800 text-white'
-                                : 'bg-white text-slate-600 hover:bg-slate-100'
+                            ? filter === 'stat'
+                                ? 'bg-red-500 text-white'
+                                : filter === 'urgent'
+                                    ? 'bg-yellow-500 text-white'
+                                    : filter === 'routine'
+                                        ? 'bg-blue-500 text-white'
+                                        : 'bg-slate-800 text-white'
+                            : 'bg-white text-slate-600 hover:bg-slate-100'
                             }`}
                     >
                         {filter === 'all' ? 'All' : filter.charAt(0).toUpperCase() + filter.slice(1)}
@@ -259,33 +266,33 @@ export default function PharmacyPrescriptionsPage() {
                                         key={prescription.id}
                                         onClick={() => setSelectedPrescription(prescription)}
                                         className={`w-full rounded-xl border p-4 text-left transition-all hover:shadow-md ${selectedPrescription?.id === prescription.id
-                                                ? 'border-cyan-500 bg-cyan-50 ring-2 ring-cyan-500'
-                                                : prescription.urgency === 'stat'
-                                                    ? 'border-red-200 bg-red-50/50'
-                                                    : prescription.urgency === 'urgent'
-                                                        ? 'border-yellow-200 bg-yellow-50/50'
-                                                        : 'border-slate-100 bg-white'
+                                            ? 'border-cyan-500 bg-cyan-50 ring-2 ring-cyan-500'
+                                            : prescription.urgency === 'stat'
+                                                ? 'border-red-200 bg-red-50/50'
+                                                : prescription.urgency === 'urgent'
+                                                    ? 'border-yellow-200 bg-yellow-50/50'
+                                                    : 'border-slate-100 bg-white'
                                             }`}
                                     >
                                         <div className="flex items-center gap-4">
                                             <div className={`flex h-12 w-12 items-center justify-center rounded-xl text-xl text-white ${prescription.urgency === 'stat'
-                                                    ? 'bg-linear-to-br from-red-400 to-red-600'
-                                                    : prescription.urgency === 'urgent'
-                                                        ? 'bg-linear-to-br from-yellow-400 to-orange-500'
-                                                        : 'bg-linear-to-br from-cyan-400 to-teal-500'
+                                                ? 'bg-gradient-to-br from-red-400 to-red-600'
+                                                : prescription.urgency === 'urgent'
+                                                    ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
+                                                    : 'bg-gradient-to-br from-cyan-400 to-teal-500'
                                                 }`}>
                                                 💊
                                             </div>
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2">
                                                     <h3 className="font-semibold text-slate-800">
-                                                        {prescription.consultation?.child?.full_name || 'Unknown'}
+                                                        {prescription.child?.full_name || 'Unknown'}
                                                     </h3>
                                                     {prescription.urgency === 'stat' && (
-                                                        <Badge variant="red" className="animate-pulse">STAT</Badge>
+                                                        <Badge variant="default" className="animate-pulse bg-red-500 text-white">STAT</Badge>
                                                     )}
                                                     {prescription.urgency === 'urgent' && (
-                                                        <Badge variant="yellow">Urgent</Badge>
+                                                        <Badge className="bg-yellow-500 hover:bg-yellow-600">Urgent</Badge>
                                                     )}
                                                 </div>
                                                 <p className="text-sm text-slate-500">
@@ -293,7 +300,7 @@ export default function PharmacyPrescriptionsPage() {
                                                 </p>
                                                 <p className="text-xs text-slate-400">{getTimeAgo(prescription.prescribed_at)}</p>
                                             </div>
-                                            <Badge variant={prescription.status === 'pending' ? 'yellow' : 'blue'}>
+                                            <Badge className={prescription.status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 'bg-blue-50 text-blue-700 border-blue-200'}>
                                                 {prescription.status === 'pending' ? 'Pending' : 'Preparing'}
                                             </Badge>
                                         </div>
@@ -322,12 +329,12 @@ export default function PharmacyPrescriptionsPage() {
                         ) : (
                             <div className="space-y-6">
                                 {/* Patient Info */}
-                                <div className="rounded-xl bg-linear-to-br from-cyan-50 to-teal-50 p-4">
+                                <div className="rounded-xl bg-gradient-to-br from-cyan-50 to-teal-50 p-4">
                                     <h3 className="font-semibold text-slate-800">Patient Information</h3>
                                     <div className="mt-2 space-y-1 text-sm text-slate-600">
-                                        <p><strong>Name:</strong> {selectedPrescription.consultation?.child?.full_name}</p>
-                                        <p><strong>Age:</strong> {selectedPrescription.consultation?.child?.dob ? getAge(selectedPrescription.consultation.child.dob) : 'N/A'}</p>
-                                        <p><strong>Prescribing Doctor:</strong> Dr. {selectedPrescription.consultation?.doctor?.profiles?.full_name || 'Unknown'}</p>
+                                        <p><strong>Name:</strong> {selectedPrescription.child?.full_name || 'Unknown'}</p>
+                                        <p><strong>Age:</strong> {selectedPrescription.child?.date_of_birth ? getAge(selectedPrescription.child.date_of_birth) : 'N/A'}</p>
+                                        <p><strong>Prescribing Doctor:</strong> Dr. {selectedPrescription.doctor?.profiles?.full_name || 'Unknown'}</p>
                                     </div>
                                 </div>
 
@@ -338,7 +345,7 @@ export default function PharmacyPrescriptionsPage() {
                                         {selectedPrescription.prescription_items?.map((item, index) => (
                                             <div key={item.id} className="rounded-xl border border-slate-200 p-4">
                                                 <div className="flex items-start justify-between">
-                                                    <div>
+                                                    <div className="flex-1">
                                                         <div className="flex items-center gap-2">
                                                             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-100 text-xs font-bold text-cyan-700">
                                                                 {index + 1}
@@ -348,8 +355,8 @@ export default function PharmacyPrescriptionsPage() {
                                                         <div className="mt-2 space-y-1 text-sm text-slate-600">
                                                             <p><strong>Dosage:</strong> {item.dosage}</p>
                                                             <p><strong>Frequency:</strong> {item.frequency}</p>
-                                                            <p><strong>Duration:</strong> {item.duration}</p>
-                                                            <p><strong>Quantity:</strong> {item.quantity}</p>
+                                                            <p><strong>Duration:</strong> {item.duration || 'Not specified'}</p>
+                                                            <p><strong>Quantity:</strong> {item.quantity || 'Not specified'}</p>
                                                             {item.instructions && (
                                                                 <p className="mt-2 rounded-lg bg-yellow-50 p-2 text-yellow-800">
                                                                     ⚠️ {item.instructions}

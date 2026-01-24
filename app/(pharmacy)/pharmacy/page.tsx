@@ -19,20 +19,19 @@ interface Prescription {
     status: string
     urgency: string
     prescribed_at: string
+    child_id: string
+    doctor_id: string
     prescription_items: PrescriptionItem[]
-    consultation: {
+    child: {
         id: string
-        child: {
-            id: string
+        full_name: string
+    } | null
+    doctor: {
+        id: string
+        profiles: {
             full_name: string
-        }
-        doctor: {
-            id: string
-            profiles: {
-                full_name: string
-            }
-        }
-    }
+        } | null
+    } | null
 }
 
 interface PrescriptionItem {
@@ -57,20 +56,23 @@ export default function PharmacyDashboardPage() {
             const supabase = createClient()
             const today = new Date().toISOString().split('T')[0]
 
-            // Load pending prescriptions
-            const { data: prescriptionsData } = await supabase
+            // FIX: Load prescriptions with direct child and doctor joins
+            const { data: prescriptionsData, error } = await supabase
                 .from('prescriptions')
                 .select(`
           *,
           prescription_items(*),
-          consultation:consultations(
-            id,
-            child:children(id, full_name),
-            doctor:doctors(id, profiles(full_name))
-          )
+          child:children(id, full_name),
+          doctor:doctors(id, profiles(full_name))
         `)
                 .in('status', ['pending', 'preparing'])
                 .order('prescribed_at', { ascending: true })
+
+            if (error) {
+                console.error('Error loading prescriptions:', error)
+            }
+
+            console.log('📋 Loaded prescriptions:', prescriptionsData?.length || 0)
 
             // Sort by urgency (stat first)
             const sortedPrescriptions = (prescriptionsData || []).sort((a, b) => {
@@ -99,6 +101,13 @@ export default function PharmacyDashboardPage() {
                 preparing: preparingCount,
                 dispensedToday: dispensedCount || 0,
                 urgentPrescriptions: urgentCount,
+            })
+
+            console.log('📊 Stats:', {
+                pending: pendingCount,
+                preparing: preparingCount,
+                dispensedToday: dispensedCount || 0,
+                urgent: urgentCount
             })
         } catch (error) {
             console.error('Error loading dashboard:', error)
@@ -153,7 +162,7 @@ export default function PharmacyDashboardPage() {
     return (
         <div className="space-y-6 pb-20 lg:pb-6">
             {/* Welcome Header */}
-            <div className="overflow-hidden rounded-2xl bg-linear-to-r from-cyan-500 via-teal-500 to-emerald-600 p-6 text-white shadow-xl">
+            <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-600 p-6 text-white shadow-xl">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold">Pharmacy Dashboard</h1>
@@ -181,7 +190,7 @@ export default function PharmacyDashboardPage() {
 
             {/* Stats Grid */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <Card className="border-none bg-linear-to-br from-yellow-50 to-orange-50 shadow-lg">
+                <Card className="border-none bg-gradient-to-br from-yellow-50 to-orange-50 shadow-lg">
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div>
@@ -195,7 +204,7 @@ export default function PharmacyDashboardPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-none bg-linear-to-br from-blue-50 to-indigo-50 shadow-lg">
+                <Card className="border-none bg-gradient-to-br from-blue-50 to-indigo-50 shadow-lg">
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div>
@@ -209,7 +218,7 @@ export default function PharmacyDashboardPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-none bg-linear-to-br from-green-50 to-emerald-50 shadow-lg">
+                <Card className="border-none bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg">
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div>
@@ -223,7 +232,7 @@ export default function PharmacyDashboardPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-none bg-linear-to-br from-red-50 to-rose-50 shadow-lg">
+                <Card className="border-none bg-gradient-to-br from-red-50 to-rose-50 shadow-lg">
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div>
@@ -241,19 +250,19 @@ export default function PharmacyDashboardPage() {
             {/* Quick Actions */}
             <div className="grid gap-4 sm:grid-cols-3">
                 <Link href="/pharmacy/prescriptions">
-                    <Button className="h-auto w-full flex-col gap-2 bg-linear-to-r from-cyan-500 to-teal-600 py-6 shadow-lg hover:from-cyan-600 hover:to-teal-700">
+                    <Button className="h-auto w-full flex-col gap-2 bg-gradient-to-r from-cyan-500 to-teal-600 py-6 shadow-lg hover:from-cyan-600 hover:to-teal-700">
                         <span className="text-3xl">📋</span>
                         <span className="font-medium">View All Prescriptions</span>
                     </Button>
                 </Link>
                 <Link href="/pharmacy/dispensed">
-                    <Button className="h-auto w-full flex-col gap-2 bg-linear-to-r from-green-500 to-emerald-600 py-6 shadow-lg hover:from-green-600 hover:to-emerald-700">
+                    <Button className="h-auto w-full flex-col gap-2 bg-gradient-to-r from-green-500 to-emerald-600 py-6 shadow-lg hover:from-green-600 hover:to-emerald-700">
                         <span className="text-3xl">📦</span>
                         <span className="font-medium">Dispensed History</span>
                     </Button>
                 </Link>
                 <Link href="/pharmacy/inventory">
-                    <Button className="h-auto w-full flex-col gap-2 bg-linear-to-r from-purple-500 to-violet-600 py-6 shadow-lg hover:from-purple-600 hover:to-violet-700">
+                    <Button className="h-auto w-full flex-col gap-2 bg-gradient-to-r from-purple-500 to-violet-600 py-6 shadow-lg hover:from-purple-600 hover:to-violet-700">
                         <span className="text-3xl">📊</span>
                         <span className="font-medium">Check Inventory</span>
                     </Button>
@@ -268,7 +277,7 @@ export default function PharmacyDashboardPage() {
                         Prescription Queue
                     </CardTitle>
                     <Link href="/pharmacy/prescriptions">
-                        <Badge variant="blue" className="cursor-pointer hover:opacity-80">
+                        <Badge variant="outline" className="cursor-pointer hover:opacity-80 bg-blue-50 text-blue-700 border-blue-200">
                             View All →
                         </Badge>
                     </Link>
@@ -295,31 +304,31 @@ export default function PharmacyDashboardPage() {
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-4">
                                             <div className={`flex h-12 w-12 items-center justify-center rounded-xl text-xl text-white ${prescription.urgency === 'stat'
-                                                    ? 'bg-linear-to-br from-red-400 to-red-600 animate-pulse'
+                                                    ? 'bg-gradient-to-br from-red-400 to-red-600 animate-pulse'
                                                     : prescription.urgency === 'urgent'
-                                                        ? 'bg-linear-to-br from-yellow-400 to-orange-500'
-                                                        : 'bg-linear-to-br from-cyan-400 to-teal-500'
+                                                        ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
+                                                        : 'bg-gradient-to-br from-cyan-400 to-teal-500'
                                                 }`}>
                                                 💊
                                             </div>
                                             <div>
                                                 <div className="flex items-center gap-2">
                                                     <h3 className="font-semibold text-slate-800">
-                                                        {prescription.consultation?.child?.full_name || 'Unknown Patient'}
+                                                        {prescription.child?.full_name || 'Unknown Patient'}
                                                     </h3>
                                                     {prescription.urgency === 'stat' && (
-                                                        <Badge variant="red" className="animate-pulse">STAT</Badge>
+                                                        <Badge variant="destructive" className="animate-pulse">STAT</Badge>
                                                     )}
                                                     {prescription.urgency === 'urgent' && (
-                                                        <Badge variant="yellow">Urgent</Badge>
+                                                        <Badge className="bg-yellow-500 hover:bg-yellow-600">Urgent</Badge>
                                                     )}
-                                                    <Badge variant={prescription.status === 'pending' ? 'yellow' : 'blue'}>
+                                                    <Badge variant={prescription.status === 'pending' ? 'outline' : 'outline'} className={prescription.status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 'bg-blue-50 text-blue-700 border-blue-200'}>
                                                         {prescription.status === 'pending' ? 'Pending' : 'Preparing'}
                                                     </Badge>
                                                 </div>
                                                 <p className="text-sm text-slate-500">
                                                     {prescription.prescription_items?.length || 0} medication(s) •{' '}
-                                                    Dr. {prescription.consultation?.doctor?.profiles?.full_name || 'Unknown'}
+                                                    Dr. {prescription.doctor?.profiles?.full_name || 'Unknown'}
                                                 </p>
                                                 <p className="text-xs text-slate-400">{getTimeAgo(prescription.prescribed_at)}</p>
                                             </div>

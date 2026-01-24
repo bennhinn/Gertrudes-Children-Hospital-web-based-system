@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -24,7 +24,18 @@ interface Child {
 interface Medication {
   id: string
   name: string
-  description: string
+  description: string | null
+  stock: number
+}
+
+interface PrescriptionItem {
+  medication_id: string
+  medication_name: string
+  dosage: string
+  frequency: string
+  duration: string
+  quantity: number
+  instructions: string
 }
 
 interface QuickPrescriptionModalProps {
@@ -43,17 +54,22 @@ export default function QuickPrescriptionModal({
   const [loading, setLoading] = useState(false)
   const [children, setChildren] = useState<Child[]>([])
   const [medications, setMedications] = useState<Medication[]>([])
-
+  const [prescriptionItems, setPrescriptionItems] = useState<PrescriptionItem[]>([])
+  
   const [formData, setFormData] = useState({
     child_id: preSelectedChildId || '',
-    medication_name: '',
+    urgency: 'routine',
+    notes: '',
+  })
+
+  const [currentItem, setCurrentItem] = useState({
     medication_id: '',
+    medication_name: '',
     dosage: '',
-    frequency: 'Once daily',
-    duration: '7 days',
+    frequency: '',
+    duration: '',
+    quantity: 1,
     instructions: '',
-    quantity: '',
-    refills: '0',
   })
 
   useEffect(() => {
@@ -75,7 +91,7 @@ export default function QuickPrescriptionModal({
       .from('children')
       .select('id, full_name, date_of_birth')
       .order('full_name')
-
+    
     if (data) setChildren(data)
   }
 
@@ -83,50 +99,106 @@ export default function QuickPrescriptionModal({
     const supabase = createClient()
     const { data } = await supabase
       .from('medications')
-      .select('id, name, description')
+      .select('id, name, description, stock')
+      .gt('stock', 0) // Only show medications with stock
       .order('name')
-
+    
     if (data) setMedications(data)
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  function handleMedicationSelect(medicationId: string) {
+    const medication = medications.find(m => m.id === medicationId)
+    if (medication) {
+      setCurrentItem({
+        ...currentItem,
+        medication_id: medicationId,
+        medication_name: medication.name,
+      })
+    }
+  }
+
+  function addPrescriptionItem() {
+    if (!currentItem.medication_id || !currentItem.dosage || !currentItem.frequency) {
+      alert('Please fill in medication, dosage, and frequency')
+      return
+    }
+
+    setPrescriptionItems([...prescriptionItems, { ...currentItem }])
+    
+    // Reset current item
+    setCurrentItem({
+      medication_id: '',
+      medication_name: '',
+      dosage: '',
+      frequency: '',
+      duration: '',
+      quantity: 1,
+      instructions: '',
+    })
+  }
+
+  function removePrescriptionItem(index: number) {
+    setPrescriptionItems(prescriptionItems.filter((_, i) => i !== index))
+  }
+
+  async function handleSubmit() {
+    if (!formData.child_id) {
+      alert('Please select a patient')
+      return
+    }
+
+    if (prescriptionItems.length === 0) {
+      alert('Please add at least one medication')
+      return
+    }
+
     setLoading(true)
 
     try {
       const supabase = createClient()
 
       // Create prescription
-      const { error } = await supabase.from('prescriptions').insert({
-        child_id: formData.child_id,
-        doctor_id: doctorId,
-        medication_name: formData.medication_name,
-        medication_id: formData.medication_id || null,
-        dosage: formData.dosage,
-        frequency: formData.frequency,
-        duration: formData.duration,
-        instructions: formData.instructions,
-        quantity: formData.quantity ? parseInt(formData.quantity) : null,
-        refills: parseInt(formData.refills),
-        status: 'pending',
-      })
+      const { data: prescription, error: prescriptionError } = await supabase
+        .from('prescriptions')
+        .insert([{
+          child_id: formData.child_id,
+          doctor_id: doctorId,
+          urgency: formData.urgency,
+          notes: formData.notes || null,
+          status: 'pending',
+        }])
+        .select()
+        .single()
 
-      if (error) throw error
+      if (prescriptionError) throw prescriptionError
+
+      // Create prescription items
+      const items = prescriptionItems.map(item => ({
+        prescription_id: prescription.id,
+        medication_id: item.medication_id,
+        medication_name: item.medication_name,
+        dosage: item.dosage,
+        frequency: item.frequency,
+        duration: item.duration || null,
+        quantity: item.quantity,
+        instructions: item.instructions || null,
+      }))
+
+      const { error: itemsError } = await supabase
+        .from('prescription_items')
+        .insert(items)
+
+      if (itemsError) throw itemsError
 
       // Reset form
       setFormData({
         child_id: '',
-        medication_name: '',
-        medication_id: '',
-        dosage: '',
-        frequency: 'Once daily',
-        duration: '7 days',
-        instructions: '',
-        quantity: '',
-        refills: '0',
+        urgency: 'routine',
+        notes: '',
       })
+      setPrescriptionItems([])
 
-      alert('Prescription created successfully!')
+      alert(`✅ Prescription created successfully with ${items.length} medication(s)!`)
       onClose()
     } catch (error: any) {
       console.error('Error creating prescription:', error)
@@ -138,22 +210,21 @@ export default function QuickPrescriptionModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[700px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
-            <span>📝</span>
+            <span>💊</span>
             Quick Prescription
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           {/* Patient Selection */}
           <div>
             <Label htmlFor="child">Patient *</Label>
             <Select
               value={formData.child_id}
               onValueChange={(value) => setFormData({ ...formData, child_id: value })}
-              required
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select patient" />
@@ -168,160 +239,170 @@ export default function QuickPrescriptionModal({
             </Select>
           </div>
 
-          {/* Medication Selection */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="medication">Medication (from list)</Label>
-              <Select
-                value={formData.medication_id}
-                onValueChange={(value) => {
-                  const med = medications.find(m => m.id === value)
-                  setFormData({
-                    ...formData,
-                    medication_id: value,
-                    medication_name: med?.name || formData.medication_name
-                  })
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select from stock" />
-                </SelectTrigger>
-                <SelectContent>
-                  {medications.map((med) => (
-                    <SelectItem key={med.id} value={med.id}>
-                      {med.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="medication_name">Or enter medication name *</Label>
-              <Input
-                id="medication_name"
-                value={formData.medication_name}
-                onChange={(e) => setFormData({ ...formData, medication_name: e.target.value })}
-                placeholder="e.g., Paracetamol"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Dosage and Frequency */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="dosage">Dosage *</Label>
-              <Input
-                id="dosage"
-                value={formData.dosage}
-                onChange={(e) => setFormData({ ...formData, dosage: e.target.value })}
-                placeholder="e.g., 500mg"
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="frequency">Frequency *</Label>
-              <Select
-                value={formData.frequency}
-                onValueChange={(value) => setFormData({ ...formData, frequency: value })}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Once daily">Once daily</SelectItem>
-                  <SelectItem value="Twice daily">Twice daily</SelectItem>
-                  <SelectItem value="Three times daily">Three times daily</SelectItem>
-                  <SelectItem value="Four times daily">Four times daily</SelectItem>
-                  <SelectItem value="Every 4 hours">Every 4 hours</SelectItem>
-                  <SelectItem value="Every 6 hours">Every 6 hours</SelectItem>
-                  <SelectItem value="Every 8 hours">Every 8 hours</SelectItem>
-                  <SelectItem value="Every 12 hours">Every 12 hours</SelectItem>
-                  <SelectItem value="As needed">As needed</SelectItem>
-                  <SelectItem value="Before meals">Before meals</SelectItem>
-                  <SelectItem value="After meals">After meals</SelectItem>
-                  <SelectItem value="At bedtime">At bedtime</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Duration and Quantity */}
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div>
-              <Label htmlFor="duration">Duration *</Label>
-              <Select
-                value={formData.duration}
-                onValueChange={(value) => setFormData({ ...formData, duration: value })}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="3 days">3 days</SelectItem>
-                  <SelectItem value="5 days">5 days</SelectItem>
-                  <SelectItem value="7 days">7 days</SelectItem>
-                  <SelectItem value="10 days">10 days</SelectItem>
-                  <SelectItem value="14 days">14 days</SelectItem>
-                  <SelectItem value="21 days">21 days</SelectItem>
-                  <SelectItem value="30 days">30 days</SelectItem>
-                  <SelectItem value="60 days">60 days</SelectItem>
-                  <SelectItem value="90 days">90 days</SelectItem>
-                  <SelectItem value="Until review">Until review</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="quantity">Quantity</Label>
-              <Input
-                id="quantity"
-                type="number"
-                value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                placeholder="e.g., 30"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="refills">Refills</Label>
-              <Input
-                id="refills"
-                type="number"
-                min="0"
-                max="10"
-                value={formData.refills}
-                onChange={(e) => setFormData({ ...formData, refills: e.target.value })}
-              />
-            </div>
-          </div>
-
-          {/* Instructions */}
+          {/* Urgency */}
           <div>
-            <Label htmlFor="instructions">Instructions</Label>
+            <Label htmlFor="urgency">Urgency *</Label>
+            <Select
+              value={formData.urgency}
+              onValueChange={(value) => setFormData({ ...formData, urgency: value })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="routine">🟢 Routine</SelectItem>
+                <SelectItem value="urgent">🟡 Urgent</SelectItem>
+                <SelectItem value="stat">🔴 STAT (Immediate)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Add Medication */}
+          <div className="rounded-xl border-2 border-dashed border-slate-300 p-4">
+            <h3 className="mb-3 font-semibold text-slate-800">Add Medication</h3>
+            <div className="space-y-3">
+              <div>
+                <Label>Medication *</Label>
+                <Select
+                  value={currentItem.medication_id}
+                  onValueChange={handleMedicationSelect}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select medication" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {medications.length === 0 ? (
+                      <div className="p-2 text-center text-sm text-slate-500">
+                        No medications in stock
+                      </div>
+                    ) : (
+                      medications.map((med) => (
+                        <SelectItem key={med.id} value={med.id}>
+                          {med.name} (Stock: {med.stock})
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label>Dosage *</Label>
+                  <Input
+                    value={currentItem.dosage}
+                    onChange={(e) => setCurrentItem({ ...currentItem, dosage: e.target.value })}
+                    placeholder="e.g., 500mg"
+                  />
+                </div>
+                <div>
+                  <Label>Frequency *</Label>
+                  <Input
+                    value={currentItem.frequency}
+                    onChange={(e) => setCurrentItem({ ...currentItem, frequency: e.target.value })}
+                    placeholder="e.g., 3 times daily"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label>Duration</Label>
+                  <Input
+                    value={currentItem.duration}
+                    onChange={(e) => setCurrentItem({ ...currentItem, duration: e.target.value })}
+                    placeholder="e.g., 7 days"
+                  />
+                </div>
+                <div>
+                  <Label>Quantity</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={currentItem.quantity}
+                    onChange={(e) => setCurrentItem({ ...currentItem, quantity: parseInt(e.target.value) || 1 })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label>Special Instructions</Label>
+                <Textarea
+                  value={currentItem.instructions}
+                  onChange={(e) => setCurrentItem({ ...currentItem, instructions: e.target.value })}
+                  placeholder="e.g., Take with food, avoid alcohol..."
+                  rows={2}
+                />
+              </div>
+
+              <Button 
+                onClick={addPrescriptionItem} 
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                type="button"
+              >
+                ➕ Add to Prescription
+              </Button>
+            </div>
+          </div>
+
+          {/* Prescription Items List */}
+          {prescriptionItems.length > 0 && (
+            <div className="rounded-xl bg-green-50 p-4">
+              <h3 className="mb-3 font-semibold text-green-800">
+                Prescription Items ({prescriptionItems.length})
+              </h3>
+              <div className="space-y-2">
+                {prescriptionItems.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between rounded-lg bg-white p-3">
+                    <div>
+                      <p className="font-medium text-slate-800">{item.medication_name}</p>
+                      <p className="text-sm text-slate-600">
+                        {item.dosage} • {item.frequency} • {item.duration || 'No duration'} • Qty: {item.quantity}
+                      </p>
+                      {item.instructions && (
+                        <p className="text-xs text-slate-500 mt-1">📝 {item.instructions}</p>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => removePrescriptionItem(index)}
+                      className="text-red-600 hover:bg-red-50"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Notes */}
+          <div>
+            <Label htmlFor="notes">Additional Notes</Label>
             <Textarea
-              id="instructions"
-              value={formData.instructions}
-              onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
-              placeholder="Additional instructions for the patient..."
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              placeholder="Additional information or special considerations..."
               rows={3}
             />
           </div>
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="secondary" onClick={onClose}>
+            <Button variant="secondary" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading} className="bg-purple-600 hover:bg-purple-700">
-              {loading ? 'Creating...' : 'Create Prescription'}
+            <Button
+              onClick={handleSubmit}
+              disabled={loading || prescriptionItems.length === 0}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {loading ? 'Creating...' : `Create Prescription (${prescriptionItems.length} items)`}
             </Button>
           </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   )

@@ -57,23 +57,35 @@ export default function PatientsPage() {
     const dateOfBirth = formData.get('date_of_birth') as string
     const gender = formData.get('gender') as string
     const bloodType = formData.get('blood_type') as string
-    const allergies = formData.get('allergies') as string
+    const allergiesInput = formData.get('allergies') as string
     const medicalNotes = formData.get('medical_notes') as string
 
     try {
       const supabase = createClient()
 
+      // Convert allergies text to array if it's not empty
+      // Split by commas and trim whitespace
+      const allergiesValue = allergiesInput?.trim() 
+        ? allergiesInput.split(',').map(a => a.trim()).filter(a => a)
+        : null
+
+      const insertData: any = {
+        caregiver_id: caregiverId,
+        full_name: fullName,
+        date_of_birth: dateOfBirth,
+        gender: gender,
+        blood_type: bloodType || null,
+        medical_notes: medicalNotes || null,
+      }
+
+      // Only add allergies if we have values
+      if (allergiesValue && allergiesValue.length > 0) {
+        insertData.allergies = allergiesValue
+      }
+
       const { error: insertError } = await supabase
         .from('children')
-        .insert({
-          caregiver_id: caregiverId,
-          full_name: fullName,
-          date_of_birth: dateOfBirth,
-          gender: gender,
-          blood_type: bloodType || null,
-          allergies: allergies || null,
-          medical_notes: medicalNotes || null,
-        })
+        .insert(insertData)
 
       if (insertError) throw insertError
 
@@ -83,6 +95,7 @@ export default function PatientsPage() {
       // Reset form
       e.currentTarget.reset()
     } catch (err: any) {
+      console.error('Insert error:', err)
       setError(err.message || 'Failed to add child')
     } finally {
       setLoading(false)
@@ -107,6 +120,13 @@ export default function PatientsPage() {
       day: 'numeric',
       year: 'numeric',
     }).format(date)
+  }
+
+  // Format allergies for display (convert array to string if needed)
+  function formatAllergies(allergies: any): string | null {
+    if (!allergies) return null
+    if (Array.isArray(allergies)) return allergies.join(', ')
+    return allergies
   }
 
   return (
@@ -225,9 +245,10 @@ export default function PatientsPage() {
                   id="allergies"
                   name="allergies"
                   rows={2}
-                  placeholder="List any known allergies..."
+                  placeholder="Separate multiple allergies with commas (e.g., Peanuts, Penicillin, Eggs)"
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
                 />
+                <p className="mt-1 text-xs text-slate-500">Tip: Separate multiple allergies with commas</p>
               </div>
 
               <div>
@@ -324,7 +345,7 @@ export default function PatientsPage() {
                       {child.allergies && (
                         <div className="rounded-lg bg-red-50 p-2.5 sm:p-3 border border-red-100">
                           <p className="text-[10px] sm:text-xs font-medium text-red-700 mb-0.5 sm:mb-1">Allergies:</p>
-                          <p className="text-[10px] sm:text-xs text-red-600 line-clamp-2">{child.allergies}</p>
+                          <p className="text-[10px] sm:text-xs text-red-600 line-clamp-2">{formatAllergies(child.allergies)}</p>
                         </div>
                       )}
                       {child.medical_notes && (
