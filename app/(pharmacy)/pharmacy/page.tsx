@@ -277,7 +277,7 @@ export default function PharmacyDashboardPage() {
                         Prescription Queue
                     </CardTitle>
                     <Link href="/pharmacy/prescriptions">
-                        <Badge variant="outline" className="cursor-pointer hover:opacity-80 bg-blue-50 text-blue-700 border-blue-200">
+                        <Badge className="cursor-pointer hover:opacity-80 bg-blue-50 text-blue-700 border-blue-200">
                             View All →
                         </Badge>
                     </Link>
@@ -317,12 +317,12 @@ export default function PharmacyDashboardPage() {
                                                         {prescription.child?.full_name || 'Unknown Patient'}
                                                     </h3>
                                                     {prescription.urgency === 'stat' && (
-                                                        <Badge variant="destructive" className="animate-pulse">STAT</Badge>
+                                                        <Badge className="bg-red-600 text-white animate-pulse">STAT</Badge>
                                                     )}
                                                     {prescription.urgency === 'urgent' && (
                                                         <Badge className="bg-yellow-500 hover:bg-yellow-600">Urgent</Badge>
                                                     )}
-                                                    <Badge variant={prescription.status === 'pending' ? 'outline' : 'outline'} className={prescription.status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 'bg-blue-50 text-blue-700 border-blue-200'}>
+                                                    <Badge className={prescription.status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 'bg-blue-50 text-blue-700 border-blue-200'}>
                                                         {prescription.status === 'pending' ? 'Pending' : 'Preparing'}
                                                     </Badge>
                                                 </div>
