@@ -1,4 +1,3 @@
-// /api/admin/appointments/route.ts
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -7,16 +6,27 @@ export async function GET() {
     try {
         const supabase = await createClient();
 
-        // Get current user and verify admin role
+        // Get current user
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
         if (authError || !user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const role = user.app_metadata?.role;
-        if (role !== 'admin') {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        // FIX: Get role from profiles table, not app_metadata
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        console.log('🔍 User role from profiles:', profile?.role); // Debug log
+
+        if (profile?.role !== 'admin') {
+            return NextResponse.json({ 
+                error: 'Forbidden',
+                debug: { role: profile?.role, userId: user.id }
+            }, { status: 403 });
         }
 
         // Fetch all appointments with related data
@@ -54,15 +64,21 @@ export async function POST(request: Request) {
     try {
         const supabase = await createClient();
 
-        // Get current user and verify admin role
+        // Get current user
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
         if (authError || !user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const role = user.app_metadata?.role;
-        if (role !== 'admin') {
+        // FIX: Get role from profiles table
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        if (profile?.role !== 'admin') {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 

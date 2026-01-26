@@ -35,14 +35,20 @@ export default function AdminLayout({
         return
       }
 
-      const role = user.app_metadata?.role || user.user_metadata?.role
-      if (role !== 'admin') {
+      // FIX: Get role from profiles table instead of app_metadata
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, full_name')
+        .eq('id', user.id)
+        .single()
+
+      if (!profile || profile.role !== 'admin') {
         router.push('/dashboard')
         return
       }
 
       setUser({
-        fullName: user.user_metadata?.full_name || 'Admin',
+        fullName: profile.full_name || user.user_metadata?.full_name || 'Admin',
         email: user.email || '',
       })
       setLoading(false)
@@ -92,10 +98,11 @@ export default function AdminLayout({
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    className={`flex items-center gap-3 rounded-lg px-4 py-3 transition-colors ${isActive
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
+                    className={`flex items-center gap-3 rounded-lg px-4 py-3 transition-colors ${
+                      isActive
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
                         : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
-                      }`}
+                    }`}
                   >
                     <span className="text-xl">{item.icon}</span>
                     <span className="font-medium">{item.label}</span>
@@ -110,7 +117,7 @@ export default function AdminLayout({
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700">
           <div className="flex items-center gap-3 rounded-lg bg-slate-700/50 p-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-lg font-bold">
-              {user?.fullName[0].toUpperCase()}
+              {user?.fullName?.[0]?.toUpperCase() || 'A'}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm truncate">{user?.fullName}</p>
@@ -158,8 +165,9 @@ export default function AdminLayout({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center gap-0.5 px-3 py-2 min-w-[56px] ${isActive ? 'text-blue-600' : 'text-slate-500'
-                  }`}
+                className={`flex flex-col items-center gap-0.5 px-3 py-2 min-w-[56px] ${
+                  isActive ? 'text-blue-600' : 'text-slate-500'
+                }`}
               >
                 <span className="text-xl">{item.icon}</span>
                 <span className="text-[10px] font-medium">{item.label.split(' ')[0]}</span>
@@ -171,4 +179,3 @@ export default function AdminLayout({
     </div>
   )
 }
-

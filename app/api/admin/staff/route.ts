@@ -7,15 +7,21 @@ export async function GET() {
     try {
         const supabase = await createClient();
 
-        // Get current user and verify admin role
+        // Get current user
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
         if (authError || !user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const role = user.app_metadata?.role;
-        if (role !== 'admin') {
+        // FIX: Get role from profiles table
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        if (profile?.role !== 'admin') {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
@@ -57,13 +63,12 @@ export async function GET() {
                 if (profile.role === 'doctor') {
                     const { data: doctor } = await supabase
                         .from('doctors')
-                        .select('specialization, license_number')
-                        .eq('user_id', profile.id)
+                        .select('specialty, bio') // FIX: Changed from specialization to specialty to match your schema
+                        .eq('id', profile.id) // FIX: Changed from user_id to id
                         .single();
                     
                     if (doctor) {
-                        staffMember.specialization = doctor.specialization;
-                        staffMember.license_number = doctor.license_number;
+                        staffMember.specialization = doctor.specialty;
                     }
                 }
 
@@ -82,15 +87,21 @@ export async function POST(request: Request) {
     try {
         const supabase = await createClient();
 
-        // Get current user and verify admin role
+        // Get current user
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
         if (authError || !user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const role = user.app_metadata?.role;
-        if (role !== 'admin') {
+        // FIX: Get role from profiles table
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        if (profile?.role !== 'admin') {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
@@ -144,14 +155,67 @@ export async function POST(request: Request) {
             const { error: doctorError } = await supabase
                 .from('doctors')
                 .insert({
-                    user_id: newUser.user.id,
-                    specialization: specialization || null,
-                    license_number: license_number || null
+                    id: newUser.user.id, // FIX: Changed from user_id to id to match schema
+                    specialty: specialization || null, // FIX: Changed from specialization to specialty
+                    bio: null,
+                    photo_url: null
                 });
 
             if (doctorError) {
                 console.error('Error creating doctor record:', doctorError);
                 // Continue anyway, profile was created
+            }
+        }
+
+        // FIX: Add similar logic for other staff roles
+        if (staffRole === 'lab_tech') {
+            const { error: labTechError } = await supabase
+                .from('lab_technicians')
+                .insert({
+                    id: newUser.user.id,
+                    department: null
+                });
+
+            if (labTechError) {
+                console.error('Error creating lab tech record:', labTechError);
+            }
+        }
+
+        if (staffRole === 'pharmacist') {
+            const { error: pharmacistError } = await supabase
+                .from('pharmacists')
+                .insert({
+                    id: newUser.user.id
+                });
+
+            if (pharmacistError) {
+                console.error('Error creating pharmacist record:', pharmacistError);
+            }
+        }
+
+        if (staffRole === 'receptionist') {
+            const { error: receptionistError } = await supabase
+                .from('receptionists')
+                .insert({
+                    id: newUser.user.id
+                });
+
+            if (receptionistError) {
+                console.error('Error creating receptionist record:', receptionistError);
+            }
+        }
+
+        if (staffRole === 'supplier') {
+            const { error: supplierError } = await supabase
+                .from('suppliers')
+                .insert({
+                    id: newUser.user.id,
+                    company_name: null,
+                    contact_info: null
+                });
+
+            if (supplierError) {
+                console.error('Error creating supplier record:', supplierError);
             }
         }
 

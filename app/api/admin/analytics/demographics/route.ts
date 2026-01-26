@@ -7,16 +7,28 @@ export async function GET() {
     try {
         const supabase = await createClient();
         
+        // Get current user
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Get all children with their date of birth
+        // FIX: Get role from profiles table
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        if (profile?.role !== 'admin') {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        // FIX: Changed 'dob' to 'date_of_birth'
         const { data: children, error } = await supabase
             .from('children')
-            .select('dob')
-            .not('dob', 'is', null);
+            .select('date_of_birth')
+            .not('date_of_birth', 'is', null);
 
         if (error) {
             console.error('Error fetching children:', error);
@@ -35,7 +47,8 @@ export async function GET() {
         const today = new Date();
 
         children?.forEach(child => {
-            const birthDate = new Date(child.dob);
+            // FIX: Changed child.dob to child.date_of_birth
+            const birthDate = new Date(child.date_of_birth);
             const age = today.getFullYear() - birthDate.getFullYear();
             const monthDiff = today.getMonth() - birthDate.getMonth();
             

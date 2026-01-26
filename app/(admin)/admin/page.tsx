@@ -15,7 +15,7 @@ export default function AdminDashboardPage() {
 
     if (statsError || activityError) {
         return (
-            <div className="flex items-center justify-center min-h-100">
+            <div className="flex items-center justify-center min-h-[400px]">
                 <div className="text-center">
                     <p className="text-red-500 text-lg font-medium">Error loading dashboard data</p>
                     <p className="text-slate-500 mt-2">Please try refreshing the page</p>
@@ -28,12 +28,12 @@ export default function AdminDashboardPage() {
         return (
             <div className="space-y-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800">Admin Dashboard</h1>
+                    <h1 className="text-3xl font-bold text-slate-900">Admin Dashboard</h1>
                     <p className="mt-1 text-slate-600">System overview and management</p>
                 </div>
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {[...Array(6)].map((_, i) => (
-                        <Card key={i} className="border-none shadow-lg bg-slate-200 animate-pulse h-28" />
+                        <Card key={i} className="border-none shadow-lg bg-slate-200 animate-pulse h-32" />
                     ))}
                 </div>
             </div>
@@ -41,83 +41,83 @@ export default function AdminDashboardPage() {
     }
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 pb-8">
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-bold text-slate-800">Admin Dashboard</h1>
+                <h1 className="text-3xl font-bold text-slate-900">Admin Dashboard</h1>
                 <p className="mt-1 text-slate-600">System overview and management</p>
             </div>
 
             {/* Stats Grid */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <Card className="border-none shadow-lg bg-linear-to-br from-blue-500 to-blue-600 text-white">
+                <Card className="border-none shadow-xl bg-gradient-to-br from-blue-500 to-blue-600 overflow-hidden relative">
                     <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between relative z-10">
                             <div>
-                                <p className="text-blue-100 text-sm">Total Users</p>
-                                <p className="text-3xl font-bold mt-1">{stats?.totalUsers ?? 0}</p>
+                                <p className="text-white/90 text-sm font-medium">Total Users</p>
+                                <p className="text-4xl font-bold mt-2 text-white">{stats?.totalUsers ?? 0}</p>
                             </div>
-                            <div className="text-4xl opacity-80">👥</div>
+                            <div className="text-5xl opacity-20 text-white">👥</div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-lg bg-linear-to-br from-purple-500 to-purple-600 text-white">
+                <Card className="border-none shadow-xl bg-gradient-to-br from-purple-500 to-purple-600 overflow-hidden relative">
                     <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between relative z-10">
                             <div>
-                                <p className="text-purple-100 text-sm">Registered Children</p>
-                                <p className="text-3xl font-bold mt-1">{stats?.totalChildren ?? 0}</p>
+                                <p className="text-white/90 text-sm font-medium">Registered Children</p>
+                                <p className="text-4xl font-bold mt-2 text-white">{stats?.totalChildren ?? 0}</p>
                             </div>
-                            <div className="text-4xl opacity-80">👶</div>
+                            <div className="text-5xl opacity-20 text-white">👶</div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-lg bg-linear-to-br from-green-500 to-green-600 text-white">
+                <Card className="border-none shadow-xl bg-gradient-to-br from-green-500 to-green-600 overflow-hidden relative">
                     <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between relative z-10">
                             <div>
-                                <p className="text-green-100 text-sm">Total Doctors</p>
-                                <p className="text-3xl font-bold mt-1">{stats?.totalDoctors ?? 0}</p>
+                                <p className="text-white/90 text-sm font-medium">Total Doctors</p>
+                                <p className="text-4xl font-bold mt-2 text-white">{stats?.totalDoctors ?? 0}</p>
                             </div>
-                            <div className="text-4xl opacity-80">👨‍⚕️</div>
+                            <div className="text-5xl opacity-20 text-white">👨‍⚕️</div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-lg bg-linear-to-br from-orange-400 to-orange-600 text-white">
+                <Card className="border-none shadow-xl bg-gradient-to-br from-orange-500 to-orange-600 overflow-hidden relative">
                     <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between relative z-10">
                             <div>
-                                <p className="text-orange-100 text-sm">Total Appointments</p>
-                                <p className="text-3xl font-bold mt-1">{stats?.totalAppointments ?? 0}</p>
+                                <p className="text-white/90 text-sm font-medium">Total Appointments</p>
+                                <p className="text-4xl font-bold mt-2 text-white">{stats?.totalAppointments ?? 0}</p>
                             </div>
-                            <div className="text-4xl opacity-80">📅</div>
+                            <div className="text-5xl opacity-20 text-white">📅</div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-lg bg-linear-to-br from-yellow-500 to-yellow-600 text-white">
+                <Card className="border-none shadow-xl bg-gradient-to-br from-yellow-500 to-yellow-600 overflow-hidden relative">
                     <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between relative z-10">
                             <div>
-                                <p className="text-yellow-100 text-sm">Pending Appointments</p>
-                                <p className="text-3xl font-bold mt-1">{stats?.pendingAppointments ?? 0}</p>
+                                <p className="text-white/90 text-sm font-medium">Pending Appointments</p>
+                                <p className="text-4xl font-bold mt-2 text-white">{stats?.pendingAppointments ?? 0}</p>
                             </div>
-                            <div className="text-4xl opacity-80">⏳</div>
+                            <div className="text-5xl opacity-20 text-white">⏳</div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-lg bg-linear-to-br from-cyan-500 to-cyan-600 text-white">
+                <Card className="border-none shadow-xl bg-gradient-to-br from-cyan-500 to-cyan-600 overflow-hidden relative">
                     <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between relative z-10">
                             <div>
-                                <p className="text-cyan-100 text-sm">Today&apos;s Appointments</p>
-                                <p className="text-3xl font-bold mt-1">{stats?.todayAppointments ?? 0}</p>
+                                <p className="text-white/90 text-sm font-medium">Today&apos;s Appointments</p>
+                                <p className="text-4xl font-bold mt-2 text-white">{stats?.todayAppointments ?? 0}</p>
                             </div>
-                            <div className="text-4xl opacity-80">📆</div>
+                            <div className="text-5xl opacity-20 text-white">📆</div>
                         </div>
                     </CardContent>
                 </Card>
@@ -126,37 +126,45 @@ export default function AdminDashboardPage() {
             {/* Recent Activity & Quick Actions */}
             <div className="grid gap-6 lg:grid-cols-2">
                 {/* Recent Appointments */}
-                <Card className="border-none shadow-lg">
-                    <CardHeader>
-                        <CardTitle>Recent Appointments</CardTitle>
+                <Card className="border-none shadow-xl">
+                    <CardHeader className="border-b bg-slate-50">
+                        <CardTitle className="text-lg font-bold text-slate-900">Recent Appointments</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-6">
                         {!activity || activity.length === 0 ? (
-                            <p className="text-slate-500 text-center py-8">No recent appointments</p>
+                            <div className="text-center py-12">
+                                <div className="text-5xl mb-4">📅</div>
+                                <p className="text-slate-500 font-medium">No recent appointments</p>
+                            </div>
                         ) : (
                             <div className="space-y-3">
                                 {activity.map((apt: any) => (
                                     <div
                                         key={apt.id}
-                                        className="flex items-center justify-between rounded-lg bg-slate-50 p-4"
+                                        className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-4 hover:shadow-md transition-shadow"
                                     >
                                         <div>
-                                            <p className="font-medium text-slate-800">
+                                            <p className="font-semibold text-slate-900">
                                                 {apt.child?.full_name || 'Unknown'}
                                             </p>
-                                            <p className="text-sm text-slate-500">
-                                                {apt.scheduled_for ? new Date(apt.scheduled_for).toLocaleDateString() : 'No date'}
+                                            <p className="text-sm text-slate-600 mt-1">
+                                                {apt.scheduled_for ? new Date(apt.scheduled_for).toLocaleDateString('en-US', { 
+                                                    month: 'short', 
+                                                    day: 'numeric', 
+                                                    year: 'numeric' 
+                                                }) : 'No date'}
                                             </p>
                                         </div>
                                         <span
-                                            className={`rounded-full px-3 py-1 text-xs font-medium ${apt.status === 'pending'
+                                            className={`rounded-full px-4 py-1.5 text-xs font-semibold ${
+                                                apt.status === 'pending'
                                                     ? 'bg-yellow-100 text-yellow-800'
                                                     : apt.status === 'confirmed'
                                                         ? 'bg-blue-100 text-blue-800'
                                                         : apt.status === 'completed'
                                                             ? 'bg-green-100 text-green-800'
                                                             : 'bg-slate-100 text-slate-800'
-                                                }`}
+                                            }`}
                                         >
                                             {apt.status || 'unknown'}
                                         </span>
@@ -168,53 +176,61 @@ export default function AdminDashboardPage() {
                 </Card>
 
                 {/* Quick Actions */}
-                <Card className="border-none shadow-lg">
-                    <CardHeader>
-                        <CardTitle>Quick Actions</CardTitle>
+                <Card className="border-none shadow-xl">
+                    <CardHeader className="border-b bg-slate-50">
+                        <CardTitle className="text-lg font-bold text-slate-900">Quick Actions</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-6">
                         <div className="grid gap-3">
                             <Link
                                 href="/admin/users"
-                                className="flex items-center gap-4 rounded-lg bg-linear-to-r from-blue-50 to-blue-100 p-4 hover:from-blue-100 hover:to-blue-200 transition-colors"
+                                className="flex items-center gap-4 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 p-4 border border-blue-200 hover:shadow-md transition-all"
                             >
-                                <span className="text-2xl">👥</span>
+                                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500 text-2xl shadow-sm">
+                                    👥
+                                </div>
                                 <div>
-                                    <p className="font-medium text-slate-800">Manage Users</p>
+                                    <p className="font-semibold text-slate-900">Manage Users</p>
                                     <p className="text-sm text-slate-600">View and edit user accounts</p>
                                 </div>
                             </Link>
 
                             <Link
                                 href="/admin/staff"
-                                className="flex items-center gap-4 rounded-lg bg-linear-to-r from-purple-50 to-purple-100 p-4 hover:from-purple-100 hover:to-purple-200 transition-colors"
+                                className="flex items-center gap-4 rounded-xl bg-gradient-to-r from-purple-50 to-purple-100 p-4 border border-purple-200 hover:shadow-md transition-all"
                             >
-                                <span className="text-2xl">👨‍⚕️</span>
+                                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-500 text-2xl shadow-sm">
+                                    👨‍⚕️
+                                </div>
                                 <div>
-                                    <p className="font-medium text-slate-800">Manage Staff</p>
+                                    <p className="font-semibold text-slate-900">Manage Staff</p>
                                     <p className="text-sm text-slate-600">Doctors, nurses, and other staff</p>
                                 </div>
                             </Link>
 
                             <Link
                                 href="/admin/appointments"
-                                className="flex items-center gap-4 rounded-lg bg-linear-to-r from-green-50 to-green-100 p-4 hover:from-green-100 hover:to-green-200 transition-colors"
+                                className="flex items-center gap-4 rounded-xl bg-gradient-to-r from-green-50 to-green-100 p-4 border border-green-200 hover:shadow-md transition-all"
                             >
-                                <span className="text-2xl">📅</span>
+                                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500 text-2xl shadow-sm">
+                                    📅
+                                </div>
                                 <div>
-                                    <p className="font-medium text-slate-800">View Appointments</p>
+                                    <p className="font-semibold text-slate-900">View Appointments</p>
                                     <p className="text-sm text-slate-600">All system appointments</p>
                                 </div>
                             </Link>
 
                             <Link
-                                href="/settings"
-                                className="flex items-center gap-4 rounded-lg bg-linear-to-r from-slate-50 to-slate-100 p-4 hover:from-slate-100 hover:to-slate-200 transition-colors"
+                                href="/admin/reports"
+                                className="flex items-center gap-4 rounded-xl bg-gradient-to-r from-orange-50 to-orange-100 p-4 border border-orange-200 hover:shadow-md transition-all"
                             >
-                                <span className="text-2xl">⚙️</span>
+                                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-500 text-2xl shadow-sm">
+                                    📊
+                                </div>
                                 <div>
-                                    <p className="font-medium text-slate-800">System Settings</p>
-                                    <p className="text-sm text-slate-600">Configure system preferences</p>
+                                    <p className="font-semibold text-slate-900">View Reports</p>
+                                    <p className="text-sm text-slate-600">Analytics and insights</p>
                                 </div>
                             </Link>
                         </div>
@@ -224,4 +240,3 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
-

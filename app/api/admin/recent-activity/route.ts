@@ -6,15 +6,21 @@ export async function GET() {
     try {
         const supabase = await createClient();
 
-        // Get current user and verify admin role
+        // Get current user
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
         if (authError || !user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const role = user.app_metadata?.role;
-        if (role !== 'admin') {
+        // FIX: Get role from profiles table
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        if (profile?.role !== 'admin') {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
