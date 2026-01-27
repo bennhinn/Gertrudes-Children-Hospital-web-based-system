@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 import React from 'react'
 
-type Variant = 'primary' | 'secondary' | 'ghost'
+type Variant = 'primary' | 'secondary' | 'ghost' 
 type Size = 'sm' | 'md' | 'lg'
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {

@@ -7,8 +7,11 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { createClient } from '@/lib/supabase/client'
+import { CheckCircle2, Package, History, Plus, Loader2, FileText, Download } from 'lucide-react'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 interface Medication {
     id: string
@@ -16,425 +19,233 @@ interface Medication {
     description: string | null
     stock: number
     supplier_id: string | null
-    supplier: {
-        full_name: string
-    } | null
 }
 
-type StockFilter = 'all' | 'low' | 'out' | 'good'
+interface SupplyOrder {
+    id: string
+    requested_at: string
+    delivered_at?: string
+    quantity: number
+    status: string
+    medication_id: string
+    medication: {
+        name: string
+        stock: number
+    }
+}
 
 export default function PharmacyInventoryPage() {
     const [medications, setMedications] = useState<Medication[]>([])
+    const [orders, setOrders] = useState<SupplyOrder[]>([])
     const [loading, setLoading] = useState(true)
-    const [stockFilter, setStockFilter] = useState<StockFilter>('all')
     const [searchTerm, setSearchTerm] = useState('')
     const [showAddModal, setShowAddModal] = useState(false)
-    const [showEditModal, setShowEditModal] = useState(false)
-    const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null)
     const [saving, setSaving] = useState(false)
+    const [formData, setFormData] = useState({ name: '', stock: 0 })
 
-    const [formData, setFormData] = useState({
-        name: '',
-        description: '',
-        stock: 0,
-    })
-
-    const loadMedications = useCallback(async () => {
+    const loadData = useCallback(async () => {
         try {
             const supabase = createClient()
+            const { data: medData } = await supabase.from('medications').select('*').order('name', { ascending: true })
+            const { data: orderData } = await supabase.from('supply_orders')
+                .select(`id, requested_at, delivered_at, quantity, status, medication_id, medication:medications(name, stock)`)
+                .order('requested_at', { ascending: false })
 
-            const { data, error } = await supabase
-                .from('medications')
-                .select(`
-          *,
-          supplier:profiles(full_name)
-        `)
-                .order('name', { ascending: true })
-
-            if (error) throw error
-
-            console.log('💊 Loaded medications:', data?.length || 0)
-            setMedications(data || [])
-        } catch (error) {
-            console.error('Error loading medications:', error)
-        } finally {
-            setLoading(false)
-        }
+            setMedications(medData || [])
+            setOrders((orderData || []).map((order: any) => ({
+                ...order,
+                medication: Array.isArray(order.medication) ? order.medication[0] : (order.medication || { name: 'Unknown', stock: 0 })
+            })))
+        } catch (error) { console.error(error) } finally { setLoading(false) }
     }, [])
 
     useEffect(() => {
-        loadMedications()
-
+        loadData()
         const supabase = createClient()
-        const channel = supabase
-            .channel('medications-inventory')
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'medications' },
-                () => loadMedications()
-            )
+        const channel = supabase.channel('pharmacy-realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'medications' }, () => loadData())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'supply_orders' }, () => loadData())
             .subscribe()
+        return () => { supabase.removeChannel(channel) }
+    }, [loadData])
 
-        return () => {
-            supabase.removeChannel(channel)
-        }
-    }, [loadMedications])
+    // --- PDF GENERATOR LOGIC ---
+    const generatePDF = (order: SupplyOrder) => {
+        const doc = new jsPDF()
+        
+        // Header
+        doc.setFontSize(20)
+        doc.text("PHARMACY SUPPLY RECEIPT", 14, 22)
+        doc.setFontSize(10)
+        doc.setTextColor(100)
+        doc.text(`Order ID: ${order.id}`, 14, 30)
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 35)
+
+        // Table Data
+        autoTable(doc, {
+            startY: 45,
+            head: [['Item Name', 'Quantity', 'Status', 'Date Requested', 'Date Delivered']],
+            body: [[
+                order.medication.name,
+                order.quantity.toString(),
+                order.status.toUpperCase(),
+                new Date(order.requested_at).toLocaleDateString(),
+                order.delivered_at ? new Date(order.delivered_at).toLocaleDateString() : 'N/A'
+            ]],
+            theme: 'striped',
+            headStyles: { fillColor: [107, 33, 168] } // Purple color
+        })
+
+        doc.save(`Receipt_${order.medication.name}_${order.id.slice(0, 5)}.pdf`)
+    }
+
+    async function handleCreateOrder(medication: Medication) {
+        const qty = prompt(`Request restock for ${medication.name}:`, "50")
+        if (!qty || isNaN(parseInt(qty))) return
+        setSaving(true)
+        try {
+            const supabase = createClient()
+            const { data: { user } } = await supabase.auth.getUser()
+            await supabase.from('supply_orders').insert([{
+                medication_id: medication.id,
+                supplier_id: medication.supplier_id,
+                pharmacist_id: user?.id,
+                quantity: parseInt(qty),
+                status: 'pending'
+            }])
+            loadData()
+        } catch (error: any) { alert(error.message) } finally { setSaving(false) }
+    }
+
+    async function handleMarkAsDelivered(order: SupplyOrder) {
+        if (!confirm(`Confirm delivery?`)) return
+        setSaving(true)
+        try {
+            const supabase = createClient()
+            await supabase.from('supply_orders').update({ 
+                status: 'delivered', 
+                delivered_at: new Date().toISOString() 
+            }).eq('id', order.id)
+
+            const newStock = (order.medication.stock || 0) + order.quantity
+            await supabase.from('medications').update({ stock: newStock }).eq('id', order.medication_id)
+            loadData()
+        } catch (error: any) { alert(error.message) } finally { setSaving(false) }
+    }
 
     async function handleAddMedication() {
+        if (!formData.name.trim()) return
         setSaving(true)
-
         try {
             const supabase = createClient()
-
-            const { error } = await supabase
-                .from('medications')
-                .insert([{
-                    name: formData.name,
-                    description: formData.description || null,
-                    stock: formData.stock,
-                }])
-
-            if (error) throw error
-
-            alert('✅ Medication added successfully!')
+            await supabase.from('medications').insert([formData])
             setShowAddModal(false)
-            setFormData({ name: '', description: '', stock: 0 })
-            loadMedications()
-        } catch (error: any) {
-            console.error('Error adding medication:', error)
-            alert(`❌ Failed to add medication: ${error.message}`)
-        } finally {
-            setSaving(false)
-        }
+            setFormData({ name: '', stock: 0 })
+            loadData()
+        } catch (error: any) { alert(error.message) } finally { setSaving(false) }
     }
 
-    async function handleUpdateMedication() {
-        if (!selectedMedication) return
-
-        setSaving(true)
-
-        try {
-            const supabase = createClient()
-
-            const { error } = await supabase
-                .from('medications')
-                .update({
-                    name: formData.name,
-                    description: formData.description || null,
-                    stock: formData.stock,
-                })
-                .eq('id', selectedMedication.id)
-
-            if (error) throw error
-
-            alert('✅ Medication updated successfully!')
-            setShowEditModal(false)
-            setSelectedMedication(null)
-            loadMedications()
-        } catch (error: any) {
-            console.error('Error updating medication:', error)
-            alert(`❌ Failed to update medication: ${error.message}`)
-        } finally {
-            setSaving(false)
-        }
-    }
-
-    async function handleDeleteMedication(id: string, name: string) {
-        if (!confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
-            return
-        }
-
-        try {
-            const supabase = createClient()
-
-            const { error } = await supabase
-                .from('medications')
-                .delete()
-                .eq('id', id)
-
-            if (error) throw error
-
-            alert('✅ Medication deleted successfully!')
-            loadMedications()
-        } catch (error: any) {
-            console.error('Error deleting medication:', error)
-            alert(`❌ Failed to delete medication: ${error.message}`)
-        }
-    }
-
-    function openEditModal(medication: Medication) {
-        setSelectedMedication(medication)
-        setFormData({
-            name: medication.name,
-            description: medication.description || '',
-            stock: medication.stock,
-        })
-        setShowEditModal(true)
-    }
-
-    function getStockStatus(stock: number): { label: string; color: string; bg: string } {
-        if (stock === 0) return { label: 'Out of Stock', color: 'text-red-700', bg: 'bg-red-100' }
-        if (stock < 20) return { label: 'Low Stock', color: 'text-yellow-700', bg: 'bg-yellow-100' }
-        return { label: 'In Stock', color: 'text-green-700', bg: 'bg-green-100' }
-    }
-
-    const filteredMedications = medications.filter(m => {
-        if (searchTerm && !m.name.toLowerCase().includes(searchTerm.toLowerCase())) {
-            return false
-        }
-        if (stockFilter === 'out' && m.stock !== 0) return false
-        if (stockFilter === 'low' && (m.stock === 0 || m.stock >= 20)) return false
-        if (stockFilter === 'good' && m.stock < 20) return false
-        return true
-    })
-
-    const stats = {
-        total: medications.length,
-        outOfStock: medications.filter(m => m.stock === 0).length,
-        lowStock: medications.filter(m => m.stock > 0 && m.stock < 20).length,
-        inStock: medications.filter(m => m.stock >= 20).length,
-    }
-
-    if (loading) {
-        return (
-            <div className="space-y-6">
-                <div className="h-24 animate-pulse rounded-xl bg-slate-200"></div>
-                <div className="h-64 animate-pulse rounded-xl bg-slate-200"></div>
-            </div>
-        )
-    }
+    if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-purple-600" /></div>
 
     return (
-        <div className="space-y-6 pb-20 lg:pb-6">
-            <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Add New Medication</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <div>
-                            <Label htmlFor="name">Medication Name *</Label>
-                            <Input
-                                id="name"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                placeholder="e.g., Paracetamol 500mg"
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="stock">Initial Stock Quantity *</Label>
-                            <Input
-                                id="stock"
-                                type="number"
-                                min="0"
-                                value={formData.stock}
-                                onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="description">Description</Label>
-                            <Textarea
-                                id="description"
-                                value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                placeholder="Optional description, usage, or notes..."
-                                rows={3}
-                            />
-                        </div>
-                        <div className="flex justify-end gap-3">
-                            <Button variant="secondary" onClick={() => setShowAddModal(false)}>
-                                Cancel
-                            </Button>
-                            <Button onClick={handleAddMedication} disabled={saving} className="bg-purple-600 hover:bg-purple-700">
-                                {saving ? 'Adding...' : 'Add Medication'}
-                            </Button>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Edit Medication</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <div>
-                            <Label htmlFor="edit-name">Medication Name *</Label>
-                            <Input
-                                id="edit-name"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="edit-stock">Stock Quantity *</Label>
-                            <Input
-                                id="edit-stock"
-                                type="number"
-                                min="0"
-                                value={formData.stock}
-                                onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="edit-description">Description</Label>
-                            <Textarea
-                                id="edit-description"
-                                value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                rows={3}
-                            />
-                        </div>
-                        <div className="flex justify-end gap-3">
-                            <Button variant="secondary" onClick={() => setShowEditModal(false)}>
-                                Cancel
-                            </Button>
-                            <Button onClick={handleUpdateMedication} disabled={saving} className="bg-blue-600 hover:bg-blue-700">
-                                {saving ? 'Saving...' : 'Save Changes'}
-                            </Button>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="max-w-6xl mx-auto p-4 lg:p-8 space-y-8">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800">Inventory Management</h1>
-                    <p className="text-slate-500">Manage medication stock levels</p>
+                    <h1 className="text-3xl font-extrabold text-slate-900">Pharmacy Inventory</h1>
+                    <p className="text-slate-500">Stock management and supply chain tracking</p>
                 </div>
-                <Button 
-                    onClick={() => setShowAddModal(true)}
-                    className="bg-purple-600 hover:bg-purple-700"
-                >
-                    ➕ Add Medication
+                <Button onClick={() => setShowAddModal(true)} className="bg-purple-600 hover:bg-purple-700">
+                    <Plus className="w-4 h-4 mr-2" /> Add New Medication
                 </Button>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <button
-                    onClick={() => setStockFilter('all')}
-                    className={`rounded-xl p-4 text-left transition-all bg-gradient-to-br from-purple-50 to-violet-50 shadow-md hover:shadow-lg ${stockFilter === 'all' ? 'ring-2 ring-purple-500' : ''}`}
-                >
-                    <p className="text-sm text-purple-700">Total Items</p>
-                    <p className="text-3xl font-bold text-purple-600">{stats.total}</p>
-                </button>
+            <Tabs defaultValue="inventory" className="space-y-6">
+                <TabsList className="bg-slate-100 p-1">
+                    <TabsTrigger value="inventory"><Package className="w-4 h-4 mr-2" /> Inventory</TabsTrigger>
+                    <TabsTrigger value="orders"><History className="w-4 h-4 mr-2" /> Supply Orders</TabsTrigger>
+                </TabsList>
 
-                <button
-                    onClick={() => setStockFilter(stockFilter === 'out' ? 'all' : 'out')}
-                    className={`rounded-xl p-4 text-left transition-all bg-gradient-to-br from-red-50 to-rose-50 shadow-md hover:shadow-lg ${stockFilter === 'out' ? 'ring-2 ring-red-500' : ''}`}
-                >
-                    <p className="text-sm text-red-700">Out of Stock</p>
-                    <p className="text-3xl font-bold text-red-600">{stats.outOfStock}</p>
-                </button>
-
-                <button
-                    onClick={() => setStockFilter(stockFilter === 'low' ? 'all' : 'low')}
-                    className={`rounded-xl p-4 text-left transition-all bg-gradient-to-br from-yellow-50 to-orange-50 shadow-md hover:shadow-lg ${stockFilter === 'low' ? 'ring-2 ring-yellow-500' : ''}`}
-                >
-                    <p className="text-sm text-yellow-700">Low Stock</p>
-                    <p className="text-3xl font-bold text-yellow-600">{stats.lowStock}</p>
-                </button>
-
-                <button
-                    onClick={() => setStockFilter(stockFilter === 'good' ? 'all' : 'good')}
-                    className={`rounded-xl p-4 text-left transition-all bg-gradient-to-br from-green-50 to-emerald-50 shadow-md hover:shadow-lg ${stockFilter === 'good' ? 'ring-2 ring-green-500' : ''}`}
-                >
-                    <p className="text-sm text-green-700">In Stock</p>
-                    <p className="text-3xl font-bold text-green-600">{stats.inStock}</p>
-                </button>
-            </div>
-
-            <div>
-                <Input
-                    type="text"
-                    placeholder="Search medications by name..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="max-w-md"
-                />
-            </div>
-
-            <Card className="border-none shadow-lg">
-                <CardHeader>
-                    <CardTitle className="text-lg">
-                        {filteredMedications.length} Medication{filteredMedications.length !== 1 ? 's' : ''}
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {filteredMedications.length === 0 ? (
-                        <div className="py-12 text-center">
-                            <p className="text-4xl">📦</p>
-                            <p className="mt-4 text-lg font-medium text-slate-600">No medications found</p>
-                            <p className="text-slate-400">{searchTerm ? 'Try adjusting your search' : 'Add your first medication to get started'}</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-3">
-                            {filteredMedications.map((medication) => {
-                                const stockStatus = getStockStatus(medication.stock)
-                                return (
-                                    <div
-                                        key={medication.id}
-                                        className={`rounded-xl border p-4 transition-all ${
-                                            medication.stock === 0
-                                                ? 'border-red-200 bg-red-50/50'
-                                                : medication.stock < 20
-                                                    ? 'border-yellow-200 bg-yellow-50/50'
-                                                    : 'border-slate-200 bg-white'
-                                        }`}
+                <TabsContent value="inventory" className="space-y-4">
+                    <Input 
+                        placeholder="Search stock..." 
+                        value={searchTerm} 
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="max-w-md"
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {medications.filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase())).map((med) => (
+                            <Card key={med.id} className="border-slate-200">
+                                <CardContent className="p-5 space-y-4">
+                                    <div className="flex justify-between items-start">
+                                        <h3 className="font-bold text-lg">{med.name}</h3>
+                                        <Badge variant="secondary" className={med.stock < 20 ? "bg-red-100 text-red-700" : ""}>{med.stock} Units</Badge>
+                                    </div>
+                                    {/* FIX: Simplified button logic to fix hover visibility */}
+                                    <Button 
+                                        variant="secondary" 
+                                        className="w-full border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white"
+                                        onClick={() => handleCreateOrder(med)}
+                                        disabled={saving}
                                     >
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-4 flex-1">
-                                                <div className={`flex h-14 w-14 items-center justify-center rounded-xl text-2xl ${
-                                                    medication.stock === 0
-                                                        ? 'bg-red-100'
-                                                        : medication.stock < 20
-                                                            ? 'bg-yellow-100'
-                                                            : 'bg-green-100'
-                                                }`}>
-                                                    💊
-                                                </div>
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <h3 className="font-semibold text-slate-800">{medication.name}</h3>
-                                                        <Badge className={`${stockStatus.bg} ${stockStatus.color} border-0`}>
-                                                            {stockStatus.label}
-                                                        </Badge>
-                                                    </div>
-                                                    <p className="text-sm text-slate-500 mt-1">
-                                                        Stock: <span className="font-bold">{medication.stock}</span> units
-                                                    </p>
-                                                    {medication.description && (
-                                                        <p className="text-xs text-slate-400 mt-1">{medication.description}</p>
-                                                    )}
-                                                </div>
+                                        Request Restock
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="orders">
+                    <Card className="border-slate-200">
+                        <CardHeader className="bg-slate-50 border-b"><CardTitle className="text-lg">Order History</CardTitle></CardHeader>
+                        <CardContent className="p-0">
+                            <div className="divide-y divide-slate-100">
+                                {orders.length === 0 ? <div className="p-12 text-center text-slate-400">No recent orders.</div> : (
+                                    orders.map((order) => (
+                                        <div key={order.id} className="p-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+                                            <div className="text-center sm:text-left">
+                                                <p className="font-bold">{order.medication?.name}</p>
+                                                <p className="text-xs text-slate-500">Qty: {order.quantity} • {new Date(order.requested_at).toLocaleDateString()}</p>
                                             </div>
-                                            <div className="flex gap-2">
-                                                <Button
-                                                    size="sm"
-                                                    variant="secondary"
-                                                    onClick={() => openEditModal(medication)}
-                                                    className="bg-white"
-                                                >
-                                                    ✏️ Edit
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="secondary"
-                                                    onClick={() => handleDeleteMedication(medication.id, medication.name)}
-                                                    className="bg-white text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                >
-                                                    🗑️ Delete
-                                                </Button>
+                                            <div className="flex items-center gap-2">
+                                                <Badge className={order.status === 'delivered' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}>
+                                                    {order.status.toUpperCase()}
+                                                </Badge>
+                                                
+                                                {/* ACTIONS */}
+                                                {order.status === 'pending' && (
+                                                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => handleMarkAsDelivered(order)}>
+                                                        <CheckCircle2 className="w-4 h-4 mr-1" /> Mark Delivered
+                                                    </Button>
+                                                )}
+                                                
+                                                {order.status === 'delivered' && (
+                                                    <Button size="sm" variant="primary" onClick={() => generatePDF(order)}>
+                                                        <Download className="w-4 h-4 mr-1" /> PDF
+                                                    </Button>
+                                                )}
                                             </div>
                                         </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                                    ))
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+
+            <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+                <DialogContent>
+                    <DialogHeader><DialogTitle>Register New Stock Item</DialogTitle></DialogHeader>
+                    <div className="space-y-4 pt-4">
+                        <Label>Medication Name</Label>
+                        <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                        <Label>Initial Stock</Label>
+                        <Input type="number" value={formData.stock} onChange={e => setFormData({...formData, stock: parseInt(e.target.value)})} />
+                        <Button onClick={handleAddMedication} className="w-full bg-purple-600" disabled={saving}>Confirm Registration</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
