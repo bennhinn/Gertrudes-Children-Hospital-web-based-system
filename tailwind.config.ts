@@ -27,9 +27,25 @@ const config: Config = {
       fontFamily: {
         sans: ['var(--font-inter)', 'sans-serif'],
       },
+      // --- ADDED FOR ACCORDION ANIMATIONS ---
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s cubic-bezier(0.87, 0, 0.13, 1)",
+        "accordion-up": "accordion-up 0.2s cubic-bezier(0.87, 0, 0.13, 1)",
+      },
+      // --------------------------------------
     },
   },
-  plugins: [],
+  plugins: [require("tailwindcss-animate")], // Recommended for Radix/Shadcn components
 } satisfies Config
 
 export default config

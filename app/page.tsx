@@ -259,53 +259,44 @@ export default function Home() {
       </section>
 
       {/* Footer */}
+     {/* Footer - Optimized with Help Page Links */}
       <footer className="border-t border-slate-200 bg-slate-50 px-6 py-12">
-        <div className="mx-auto max-w-6xl">
-          <div className="grid gap-8 md:grid-cols-4">
-            <div>
-              <div className="mb-4 flex items-center gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600"><span className="text-lg text-white">🏥</span></div>
-                <span className="font-semibold text-blue-900">GCH</span>
-              </div>
-              <p className="text-sm text-slate-600">Providing exceptional pediatric care for East African families since 1947.</p>
-            </div>
-            <div>
-              <h4 className="mb-4 font-semibold text-blue-900">Quick Links</h4>
-              <ul className="space-y-2 text-sm text-slate-600">
-                <li><a href="#" className="transition-colors hover:text-blue-600">About Us</a></li>
-                <li><a href="#" className="transition-colors hover:text-blue-600">Our Services</a></li>
-                <li><a href="#" className="transition-colors hover:text-blue-600">Find a Doctor</a></li>
-                <li><a href="#" className="transition-colors hover:text-blue-600">Careers</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="mb-4 font-semibold text-blue-900">Patient Portal</h4>
-              <ul className="space-y-2 text-sm text-slate-600">
-                <li><Link href="/login" className="transition-colors hover:text-blue-600">Sign In</Link></li>
-                <li><Link href="/register" className="transition-colors hover:text-blue-600">Register</Link></li>
-                <li><a href="#" className="transition-colors hover:text-blue-600">Book Appointment</a></li>
-                <li><a href="#" className="transition-colors hover:text-blue-600">View Records</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="mb-4 font-semibold text-blue-900">Legal</h4>
-              <ul className="space-y-2 text-sm text-slate-600">
-                <li><a href="#" className="transition-colors hover:text-blue-600">Privacy Policy</a></li>
-                <li><a href="#" className="transition-colors hover:text-blue-600">Terms of Service</a></li>
-                <li><a href="#" className="transition-colors hover:text-blue-600">Cookie Policy</a></li>
-                <li><a href="#" className="transition-colors hover:text-blue-600">Accessibility</a></li>
-              </ul>
-            </div>
+        <div className="mx-auto max-w-6xl grid gap-8 md:grid-cols-4">
+          <div>
+            <div className="mb-4 flex items-center gap-2 font-bold text-blue-900">🏥 GCH</div>
+            <p className="text-sm text-slate-600">Leading pediatric care in East Africa since 1947.</p>
           </div>
-          <div className="mt-8 border-t border-slate-200 pt-8 text-center text-sm text-slate-500">
-            <p>{`© ${new Date().getFullYear()} Gertrude's Children Hospital. All rights reserved.`}</p>
+          <div>
+            <h4 className="mb-4 font-semibold text-blue-900">Support</h4>
+            <ul className="space-y-2 text-sm text-slate-600">
+              <li><Link href="/help" className="hover:text-blue-600">Help Center / FAQ</Link></li>
+              <li><Link href="/help" className="hover:text-blue-600">Booking Guide</Link></li>
+              <li><Link href="/#contact" className="hover:text-blue-600">Contact Us</Link></li>
+            </ul>
           </div>
+          <div>
+            <h4 className="mb-4 font-semibold text-blue-900">Portal</h4>
+            <ul className="space-y-2 text-sm text-slate-600">
+              <li><Link href="/login" className="hover:text-blue-600">Sign In</Link></li>
+              <li><Link href="/register" className="hover:text-blue-600">Register</Link></li>
+              <li><Link href="/help" className="hover:text-blue-600">Medical Records Help</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="mb-4 font-semibold text-blue-900">Legal</h4>
+            <ul className="space-y-2 text-sm text-slate-600">
+              <li><a href="#" className="hover:text-blue-600">Privacy Policy</a></li>
+              <li><a href="#" className="hover:text-blue-600">Terms of Service</a></li>
+            </ul>
+          </div>
+        </div>
+        <div className="mt-8 pt-8 border-t text-center text-sm text-slate-500">
+          © {new Date().getFullYear()} Gertrude's Children Hospital.
         </div>
       </footer>
     </main>
   )
 }
-
 function TrustCard({ icon, title, description }: { icon: string; title: string; description: string }) {
   return (
     <div className="rounded-xl border border-slate-100 bg-white p-8 shadow-sm transition-shadow hover:shadow-md min-h-37.5 flex flex-col">
