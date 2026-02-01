@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
+import { Search, X } from 'lucide-react'
 
 interface Prescription {
     id: string
@@ -48,6 +49,7 @@ export default function PharmacyPrescriptionsPage() {
     const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>('all')
     const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null)
     const [updating, setUpdating] = useState<string | null>(null)
+    const [searchQuery, setSearchQuery] = useState('')
 
     const loadPrescriptions = useCallback(async () => {
         try {
@@ -168,6 +170,28 @@ export default function PharmacyPrescriptionsPage() {
         return true
     })
 
+    // Search within filtered prescriptions
+    const searchedPrescriptions = useMemo(() => {
+        if (!searchQuery.trim()) return filteredPrescriptions
+
+        const query = searchQuery.toLowerCase()
+        return filteredPrescriptions.filter((prescription) => {
+            const patientName = prescription.child?.full_name?.toLowerCase() || ''
+            const doctorName = prescription.doctor?.profiles?.full_name?.toLowerCase() || ''
+            const notes = prescription.notes?.toLowerCase() || ''
+            const medications = prescription.prescription_items
+                ?.map(item => item.medication_name?.toLowerCase() || '')
+                .join(' ') || ''
+
+            return (
+                patientName.includes(query) ||
+                doctorName.includes(query) ||
+                notes.includes(query) ||
+                medications.includes(query)
+            )
+        })
+    }, [filteredPrescriptions, searchQuery])
+
     // Stats
     const stats = {
         pending: prescriptions.filter(p => p.status === 'pending').length,
@@ -245,23 +269,60 @@ export default function PharmacyPrescriptionsPage() {
                 ))}
             </div>
 
+            {/* Search Input */}
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                    type="text"
+                    placeholder="Search by patient, doctor, medication..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 text-sm focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                />
+                {searchQuery && (
+                    <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
+                )}
+            </div>
+
+            {/* Search Results Count */}
+            {searchQuery && (
+                <p className="text-sm text-slate-500">
+                    Found {searchedPrescriptions.length} prescription{searchedPrescriptions.length !== 1 ? 's' : ''} matching &quot;{searchQuery}&quot;
+                </p>
+            )}
+
             <div className="grid gap-6 lg:grid-cols-2">
                 {/* Prescriptions List */}
                 <Card className="border-none shadow-lg">
                     <CardHeader>
                         <CardTitle className="text-lg">
-                            {filteredPrescriptions.length} Prescription{filteredPrescriptions.length !== 1 ? 's' : ''}
+                            {searchedPrescriptions.length} Prescription{searchedPrescriptions.length !== 1 ? 's' : ''}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {filteredPrescriptions.length === 0 ? (
+                        {searchedPrescriptions.length === 0 ? (
                             <div className="py-12 text-center">
-                                <p className="text-4xl">🎉</p>
-                                <p className="mt-4 text-lg font-medium text-slate-600">All caught up!</p>
+                                <p className="text-4xl">{searchQuery ? '🔍' : '🎉'}</p>
+                                <p className="mt-4 text-lg font-medium text-slate-600">
+                                    {searchQuery ? 'No matching prescriptions' : 'All caught up!'}
+                                </p>
+                                {searchQuery && (
+                                    <Button
+                                        onClick={() => setSearchQuery('')}
+                                        className="mt-4 bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                    >
+                                        Clear Search
+                                    </Button>
+                                )}
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                {filteredPrescriptions.map((prescription) => (
+                                {searchedPrescriptions.map((prescription) => (
                                     <button
                                         key={prescription.id}
                                         onClick={() => setSelectedPrescription(prescription)}

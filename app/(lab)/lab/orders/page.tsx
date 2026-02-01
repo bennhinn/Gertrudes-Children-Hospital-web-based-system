@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { Search, X } from 'lucide-react'
 
 interface LabOrder {
     id: string
@@ -39,6 +40,7 @@ export default function LabOrdersPage() {
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
     const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>('all')
     const [updating, setUpdating] = useState<string | null>(null)
+    const [searchQuery, setSearchQuery] = useState('')
 
     const loadOrders = useCallback(async () => {
         try {
@@ -112,7 +114,7 @@ export default function LabOrdersPage() {
             const { data: { user } } = await supabase.auth.getUser()
 
             const updateData: any = { status: newStatus }
-            
+
             // Add timestamp and user based on status
             if (newStatus === 'collected') {
                 updateData.collected_at = new Date().toISOString()
@@ -209,6 +211,28 @@ export default function LabOrdersPage() {
         return true
     })
 
+    // Search within filtered orders
+    const searchedOrders = useMemo(() => {
+        if (!searchQuery.trim()) return filteredOrders
+
+        const query = searchQuery.toLowerCase()
+        return filteredOrders.filter((order) => {
+            const testType = order.test_type?.toLowerCase() || ''
+            const testCode = order.test_code?.toLowerCase() || ''
+            const patientName = order.child?.full_name?.toLowerCase() || ''
+            const doctorName = order.doctor?.profiles?.full_name?.toLowerCase() || ''
+            const instructions = order.special_instructions?.toLowerCase() || ''
+
+            return (
+                testType.includes(query) ||
+                testCode.includes(query) ||
+                patientName.includes(query) ||
+                doctorName.includes(query) ||
+                instructions.includes(query)
+            )
+        })
+    }, [filteredOrders, searchQuery])
+
     // Stats
     const stats = {
         pending: orders.filter(o => o.status === 'pending').length,
@@ -280,14 +304,14 @@ export default function LabOrdersPage() {
                         key={filter}
                         onClick={() => setUrgencyFilter(filter)}
                         className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${urgencyFilter === filter
-                                ? filter === 'stat'
-                                    ? 'bg-red-500 text-white'
-                                    : filter === 'urgent'
-                                        ? 'bg-yellow-500 text-white'
-                                        : filter === 'routine'
-                                            ? 'bg-blue-500 text-white'
-                                            : 'bg-slate-800 text-white'
-                                : 'bg-white text-slate-600 hover:bg-slate-100'
+                            ? filter === 'stat'
+                                ? 'bg-red-500 text-white'
+                                : filter === 'urgent'
+                                    ? 'bg-yellow-500 text-white'
+                                    : filter === 'routine'
+                                        ? 'bg-blue-500 text-white'
+                                        : 'bg-slate-800 text-white'
+                            : 'bg-white text-slate-600 hover:bg-slate-100'
                             }`}
                     >
                         {filter === 'all' ? 'All Urgency' : filter.charAt(0).toUpperCase() + filter.slice(1)}
@@ -295,39 +319,78 @@ export default function LabOrdersPage() {
                 ))}
             </div>
 
+            {/* Search Input */}
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                    type="text"
+                    placeholder="Search by test type, code, patient name, doctor..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+                {searchQuery && (
+                    <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
+                )}
+            </div>
+
+            {/* Search Results Count */}
+            {searchQuery && (
+                <p className="text-sm text-slate-500">
+                    Found {searchedOrders.length} order{searchedOrders.length !== 1 ? 's' : ''} matching &quot;{searchQuery}&quot;
+                </p>
+            )}
+
             {/* Orders List */}
             <Card className="border-none shadow-lg">
                 <CardHeader>
                     <CardTitle className="text-lg">
-                        {filteredOrders.length} Order{filteredOrders.length !== 1 ? 's' : ''}
+                        {searchedOrders.length} Order{searchedOrders.length !== 1 ? 's' : ''}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {filteredOrders.length === 0 ? (
+                    {searchedOrders.length === 0 ? (
                         <div className="py-12 text-center">
-                            <p className="text-4xl">✨</p>
-                            <p className="mt-4 text-lg font-medium text-slate-600">No orders found</p>
-                            <p className="text-slate-400">Adjust your filters to see more</p>
+                            <p className="text-4xl">{searchQuery ? '🔍' : '✨'}</p>
+                            <p className="mt-4 text-lg font-medium text-slate-600">
+                                {searchQuery ? 'No matching orders found' : 'No orders found'}
+                            </p>
+                            <p className="text-slate-400">
+                                {searchQuery ? 'Try adjusting your search term' : 'Adjust your filters to see more'}
+                            </p>
+                            {searchQuery && (
+                                <Button
+                                    onClick={() => setSearchQuery('')}
+                                    className="mt-4 bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                >
+                                    Clear Search
+                                </Button>
+                            )}
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {filteredOrders.map((order) => (
+                            {searchedOrders.map((order) => (
                                 <div
                                     key={order.id}
                                     className={`rounded-xl border p-4 transition-all ${order.urgency === 'stat'
-                                            ? 'border-red-200 bg-red-50/50'
-                                            : order.urgency === 'urgent'
-                                                ? 'border-yellow-200 bg-yellow-50/50'
-                                                : 'border-slate-200 bg-white'
+                                        ? 'border-red-200 bg-red-50/50'
+                                        : order.urgency === 'urgent'
+                                            ? 'border-yellow-200 bg-yellow-50/50'
+                                            : 'border-slate-200 bg-white'
                                         }`}
                                 >
                                     <div className="flex flex-wrap items-start justify-between gap-4">
                                         <div className="flex items-start gap-4">
                                             <div className={`flex h-14 w-14 items-center justify-center rounded-xl text-2xl text-white ${order.urgency === 'stat'
-                                                    ? 'bg-gradient-to-br from-red-400 to-red-600'
-                                                    : order.urgency === 'urgent'
-                                                        ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
-                                                        : 'bg-gradient-to-br from-blue-400 to-blue-600'
+                                                ? 'bg-gradient-to-br from-red-400 to-red-600'
+                                                : order.urgency === 'urgent'
+                                                    ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
+                                                    : 'bg-gradient-to-br from-blue-400 to-blue-600'
                                                 }`}>
                                                 🧪
                                             </div>
@@ -356,7 +419,7 @@ export default function LabOrdersPage() {
                                                 <Button
                                                     size="sm"
                                                     onClick={() => updateOrderStatus(
-                                                        order.id, 
+                                                        order.id,
                                                         'collected',
                                                         {
                                                             testType: order.test_type,

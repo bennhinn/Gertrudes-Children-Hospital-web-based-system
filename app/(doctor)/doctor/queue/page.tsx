@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
+import { Search, X } from 'lucide-react'
 
 interface QueuePatient {
     id: string
@@ -50,6 +51,7 @@ export default function DoctorQueuePage() {
     const [filter, setFilter] = useState<FilterStatus>('all')
     const [activePatient, setActivePatient] = useState<QueuePatient | null>(null)
     const [doctorId, setDoctorId] = useState<string | null>(null)
+    const [searchQuery, setSearchQuery] = useState('')
 
     const loadQueue = useCallback(async () => {
         try {
@@ -228,6 +230,28 @@ export default function DoctorQueuePage() {
         ? queue
         : queue.filter(p => p.status === filter)
 
+    // Search within the filtered queue
+    const searchedQueue = useMemo(() => {
+        if (!searchQuery.trim()) return filteredQueue
+
+        const query = searchQuery.toLowerCase()
+        return filteredQueue.filter((patient) => {
+            const childName = patient.child?.full_name?.toLowerCase() || ''
+            const caregiverName = patient.child?.caregiver?.profiles?.full_name?.toLowerCase() || ''
+            const reason = patient.reason?.toLowerCase() || ''
+            const queueNumber = String(patient.queue_number)
+            const gender = patient.child?.gender?.toLowerCase() || ''
+
+            return (
+                childName.includes(query) ||
+                caregiverName.includes(query) ||
+                reason.includes(query) ||
+                queueNumber.includes(query) ||
+                gender.includes(query)
+            )
+        })
+    }, [filteredQueue, searchQuery])
+
     const waitingCount = queue.filter(p => p.status === 'waiting').length
     const inConsultCount = queue.filter(p => p.status === 'in_consultation').length
 
@@ -355,8 +379,8 @@ export default function DoctorQueuePage() {
                 <button
                     onClick={() => setFilter('all')}
                     className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${filter === 'all'
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-white text-slate-600 hover:bg-slate-100'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-white text-slate-600 hover:bg-slate-100'
                         }`}
                 >
                     All ({queue.length})
@@ -364,8 +388,8 @@ export default function DoctorQueuePage() {
                 <button
                     onClick={() => setFilter('waiting')}
                     className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${filter === 'waiting'
-                            ? 'bg-yellow-500 text-white'
-                            : 'bg-white text-slate-600 hover:bg-slate-100'
+                        ? 'bg-yellow-500 text-white'
+                        : 'bg-white text-slate-600 hover:bg-slate-100'
                         }`}
                 >
                     Waiting ({waitingCount})
@@ -373,38 +397,77 @@ export default function DoctorQueuePage() {
                 <button
                     onClick={() => setFilter('in_consultation')}
                     className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${filter === 'in_consultation'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-white text-slate-600 hover:bg-slate-100'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-slate-600 hover:bg-slate-100'
                         }`}
                 >
                     In Consultation ({inConsultCount})
                 </button>
             </div>
 
+            {/* Search Input */}
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                    type="text"
+                    placeholder="Search by patient name, caregiver, reason, or queue #..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 text-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                {searchQuery && (
+                    <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
+                )}
+            </div>
+
+            {/* Search Results Count */}
+            {searchQuery && (
+                <p className="text-sm text-slate-500">
+                    Found {searchedQueue.length} patient{searchedQueue.length !== 1 ? 's' : ''} matching &quot;{searchQuery}&quot;
+                </p>
+            )}
+
             {/* Queue List */}
             <Card className="border-none shadow-lg">
                 <CardContent className="p-6">
-                    {filteredQueue.length === 0 ? (
+                    {searchedQueue.length === 0 ? (
                         <div className="py-12 text-center">
-                            <p className="text-4xl">✨</p>
-                            <p className="mt-4 text-lg font-medium text-slate-600">No patients in queue</p>
-                            <p className="text-slate-400">New patients will appear here after check-in</p>
+                            <p className="text-4xl">{searchQuery ? '🔍' : '✨'}</p>
+                            <p className="mt-4 text-lg font-medium text-slate-600">
+                                {searchQuery ? 'No matching patients found' : 'No patients in queue'}
+                            </p>
+                            <p className="text-slate-400">
+                                {searchQuery ? 'Try adjusting your search term' : 'New patients will appear here after check-in'}
+                            </p>
+                            {searchQuery && (
+                                <Button
+                                    onClick={() => setSearchQuery('')}
+                                    className="mt-4 bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                >
+                                    Clear Search
+                                </Button>
+                            )}
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {filteredQueue.map((patient) => (
+                            {searchedQueue.map((patient) => (
                                 <div
                                     key={patient.id}
                                     className={`rounded-xl border p-4 transition-all ${patient.status === 'in_consultation'
-                                            ? 'border-purple-300 bg-purple-50'
-                                            : 'border-slate-200 bg-white hover:shadow-md'
+                                        ? 'border-purple-300 bg-purple-50'
+                                        : 'border-slate-200 bg-white hover:shadow-md'
                                         }`}
                                 >
                                     <div className="flex flex-wrap items-center justify-between gap-4">
                                         <div className="flex items-center gap-4">
                                             <div className={`flex h-14 w-14 items-center justify-center rounded-xl text-xl font-bold text-white ${patient.status === 'in_consultation'
-                                                    ? 'bg-gradient-to-br from-purple-400 to-purple-600'
-                                                    : 'bg-gradient-to-br from-yellow-400 to-orange-500'
+                                                ? 'bg-gradient-to-br from-purple-400 to-purple-600'
+                                                : 'bg-gradient-to-br from-yellow-400 to-orange-500'
                                                 }`}>
                                                 #{patient.queue_number}
                                             </div>

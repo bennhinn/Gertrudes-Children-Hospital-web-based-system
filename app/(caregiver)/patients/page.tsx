@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { Search, X } from 'lucide-react'
 
 interface Child {
   id: string
@@ -25,6 +26,7 @@ export default function PatientsPage() {
   const [children, setChildren] = useState<Child[]>([])
   const [showAddForm, setShowAddForm] = useState(false)
   const [caregiverId, setCaregiverId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     loadChildren()
@@ -65,7 +67,7 @@ export default function PatientsPage() {
 
       // Convert allergies text to array if it's not empty
       // Split by commas and trim whitespace
-      const allergiesValue = allergiesInput?.trim() 
+      const allergiesValue = allergiesInput?.trim()
         ? allergiesInput.split(',').map(a => a.trim()).filter(a => a)
         : null
 
@@ -128,6 +130,28 @@ export default function PatientsPage() {
     if (Array.isArray(allergies)) return allergies.join(', ')
     return allergies
   }
+
+  // Filter children based on search query
+  const filteredChildren = useMemo(() => {
+    if (!searchQuery.trim()) return children
+
+    const query = searchQuery.toLowerCase()
+    return children.filter((child) => {
+      const name = child.full_name?.toLowerCase() || ''
+      const gender = child.gender?.toLowerCase() || ''
+      const bloodType = child.blood_type?.toLowerCase() || ''
+      const allergies = formatAllergies(child.allergies)?.toLowerCase() || ''
+      const notes = child.medical_notes?.toLowerCase() || ''
+
+      return (
+        name.includes(query) ||
+        gender.includes(query) ||
+        bloodType.includes(query) ||
+        allergies.includes(query) ||
+        notes.includes(query)
+      )
+    })
+  }, [children, searchQuery])
 
   return (
     <main className="space-y-5 sm:space-y-6">
@@ -284,6 +308,37 @@ export default function PatientsPage() {
         </Card>
       )}
 
+      {/* Search Section */}
+      {children.length > 0 && (
+        <Card className="border-none shadow-md">
+          <CardContent className="p-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search by name, gender, blood type, allergies..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            {searchQuery && (
+              <p className="mt-2 text-sm text-slate-500">
+                Found {filteredChildren.length} of {children.length} children matching &quot;{searchQuery}&quot;
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Children List */}
       {children.length === 0 ? (
         <Card className="border-none shadow-lg">
@@ -303,9 +358,25 @@ export default function PatientsPage() {
             )}
           </CardContent>
         </Card>
+      ) : filteredChildren.length === 0 ? (
+        <Card className="border-none shadow-lg">
+          <CardContent className="py-12 sm:py-16 text-center">
+            <div className="mx-auto mb-3 sm:mb-4 inline-flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-slate-100 text-3xl sm:text-4xl">
+              🔍
+            </div>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-800">No Matching Children</h2>
+            <p className="mt-1 sm:mt-2 text-sm sm:text-base text-slate-600">Try adjusting your search term</p>
+            <Button
+              onClick={() => setSearchQuery('')}
+              className="mt-3 sm:mt-4 bg-slate-200 text-slate-700 hover:bg-slate-300"
+            >
+              Clear Search
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {children.map((child) => (
+          {filteredChildren.map((child) => (
             <Card
               key={child.id}
               className="border-none shadow-md sm:shadow-lg hover:shadow-xl transition-all duration-200 bg-gradient-to-br from-white to-slate-50"

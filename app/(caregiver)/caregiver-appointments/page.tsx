@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { Search, X } from 'lucide-react'
 
 type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled'
 
@@ -29,7 +30,7 @@ export default function AppointmentsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const viewQRId = searchParams.get('viewQR')
-  
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [children, setChildren] = useState<any[]>([])
@@ -40,6 +41,8 @@ export default function AppointmentsPage() {
   const [cancellingId, setCancellingId] = useState<string | null>(null)
   const [qrModalData, setQrModalData] = useState<{ appointmentId: string; qrCode: string; childName: string } | null>(null)
   const [loadingQr, setLoadingQr] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | AppointmentStatus>('all')
 
   useEffect(() => {
     loadData()
@@ -245,25 +248,25 @@ export default function AppointmentsPage() {
 
   function formatAge(dateOfBirth: string) {
     if (!dateOfBirth) return 'N/A'
-    
+
     const today = new Date()
     const birthDate = new Date(dateOfBirth)
-    
+
     // Check if the date is valid
     if (isNaN(birthDate.getTime())) return 'N/A'
-    
+
     let years = today.getFullYear() - birthDate.getFullYear()
     let months = today.getMonth() - birthDate.getMonth()
-    
+
     // Adjust for cases where birthday hasn't occurred this year
     if (months < 0 || (months === 0 && today.getDate() < birthDate.getDate())) {
       years--
       months += 12
     }
-    
+
     // Ensure months is not negative
     if (months < 0) months = 0
-    
+
     // Format based on age
     if (years === 0) {
       return months === 1 ? '1 month' : `${months} months`
@@ -273,6 +276,34 @@ export default function AppointmentsPage() {
       return months === 0 ? `${years} years` : `${years} years ${months} months`
     }
   }
+
+  // Filter appointments based on search query and status filter
+  const filteredAppointments = useMemo(() => {
+    return appointments.filter((apt) => {
+      // Status filter
+      if (statusFilter !== 'all' && apt.status !== statusFilter) {
+        return false
+      }
+
+      // Search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase()
+        const childName = apt.child?.full_name?.toLowerCase() || ''
+        const doctorName = apt.doctor?.profiles?.full_name?.toLowerCase() || ''
+        const notes = apt.notes?.toLowerCase() || ''
+        const status = apt.status.toLowerCase()
+
+        return (
+          childName.includes(query) ||
+          doctorName.includes(query) ||
+          notes.includes(query) ||
+          status.includes(query)
+        )
+      }
+
+      return true
+    })
+  }, [appointments, searchQuery, statusFilter])
 
   if (children.length === 0) {
     return (
@@ -407,6 +438,57 @@ export default function AppointmentsPage() {
         </Card>
       )}
 
+      {/* Search and Filter Section */}
+      {appointments.length > 0 && (
+        <Card className="border-none shadow-md mb-4">
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Search Input */}
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search by child name, doctor, notes..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Status Filter */}
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as 'all' | AppointmentStatus)}
+                className="px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            {/* Results count */}
+            {(searchQuery || statusFilter !== 'all') && (
+              <p className="mt-3 text-sm text-slate-500">
+                Showing {filteredAppointments.length} of {appointments.length} appointments
+                {searchQuery && <span> for &quot;{searchQuery}&quot;</span>}
+                {statusFilter !== 'all' && <span> with status &quot;{statusFilter}&quot;</span>}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Appointments List */}
       {appointments.length === 0 ? (
         <Card className="border-none shadow-lg">
@@ -418,9 +500,28 @@ export default function AppointmentsPage() {
             <p className="mt-1 text-xs sm:text-sm text-slate-500">Book your first appointment to get started</p>
           </CardContent>
         </Card>
+      ) : filteredAppointments.length === 0 ? (
+        <Card className="border-none shadow-lg">
+          <CardContent className="py-10 sm:py-12 text-center">
+            <div className="mx-auto mb-3 sm:mb-4 inline-flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-slate-100 text-2xl sm:text-3xl">
+              🔍
+            </div>
+            <p className="text-base sm:text-lg font-medium text-slate-700">No matching appointments</p>
+            <p className="mt-1 text-xs sm:text-sm text-slate-500">Try adjusting your search or filter criteria</p>
+            <Button
+              onClick={() => {
+                setSearchQuery('')
+                setStatusFilter('all')
+              }}
+              className="mt-4 bg-slate-200 text-slate-700 hover:bg-slate-300"
+            >
+              Clear Filters
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid gap-3 sm:gap-4">
-          {appointments.map((appointment) => (
+          {filteredAppointments.map((appointment) => (
             <Card
               key={appointment.id}
               className="border-none shadow-md sm:shadow-lg hover:shadow-xl transition-shadow duration-200"

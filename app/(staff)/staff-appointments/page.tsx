@@ -264,7 +264,7 @@ Check-in ${new Date().toLocaleDateString()}:
   function getStatusBadge(status: string) {
     const variants = {
       pending: 'blue' as const,
-      confirmed: 'pink' as const,
+      confirmed: 'purple' as const,
       completed: 'green' as const,
       cancelled: 'gray' as const,
     }
