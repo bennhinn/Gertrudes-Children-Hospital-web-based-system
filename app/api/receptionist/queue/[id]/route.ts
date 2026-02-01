@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logActivityServer } from '@/lib/activity-logger'
 
 export async function PATCH(
     request: Request,
@@ -20,6 +21,20 @@ export async function PATCH(
         const validStatuses = ['waiting', 'in_consultation', 'completed', 'cancelled']
         if (!validStatuses.includes(status)) {
             return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+        }
+
+        // Get the current user for logging
+        const { data: { user } } = await supabase.auth.getUser()
+        let userEmail = user?.email || null
+        let userRole = 'staff'
+
+        if (user) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .single()
+            userRole = profile?.role || 'staff'
         }
 
         const updateData: Record<string, unknown> = { status }
@@ -59,6 +74,30 @@ export async function PATCH(
                 .update({ status: 'completed' })
                 .eq('id', checkIn.appointment_id)
         }
+
+        // Log the activity based on status
+        const statusDescriptions: Record<string, string> = {
+            'waiting': 'Patient returned to waiting',
+            'in_consultation': 'Patient consultation started',
+            'completed': 'Patient consultation completed',
+            'cancelled': 'Patient check-in cancelled'
+        }
+
+        await logActivityServer(supabase, {
+            user_id: user?.id,
+            action: `QUEUE_STATUS_${status.toUpperCase()}`,
+            target_table: 'check_in',
+            target_id: id,
+            description: statusDescriptions[status] || `Queue status changed to ${status}`,
+            metadata: {
+                queue_number: checkIn.queue_number,
+                previous_status: body.previous_status,
+                new_status: status,
+                appointment_id: checkIn.appointment_id
+            },
+            user_email: userEmail || undefined,
+            user_role: userRole
+        })
 
         return NextResponse.json({ success: true, checkIn })
     } catch (error) {

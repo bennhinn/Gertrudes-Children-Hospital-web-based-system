@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { logActivityServer } from '@/lib/activity-logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,5 +54,24 @@ export async function POST(request: Request) {
     .select();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  // Log the activity
+  if (data && data[0]) {
+    await logActivityServer(supabase, {
+      user_id: user.id,
+      action: 'MEDICATION_ADDED',
+      target_table: 'medication',
+      target_id: data[0].id,
+      description: `New medication added: ${body.name}`,
+      metadata: {
+        medication_name: body.name,
+        initial_stock: parseInt(body.stock),
+        category: body.category
+      },
+      user_email: user.email || undefined,
+      user_role: 'supplier'
+    });
+  }
+
   return NextResponse.json({ data });
 }

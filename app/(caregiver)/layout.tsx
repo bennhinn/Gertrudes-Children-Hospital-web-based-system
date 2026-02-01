@@ -75,14 +75,14 @@ export default async function CaregiverLayout({ children }: { children: React.Re
                 Quick Actions
               </div>
               <div className="space-y-2">
-                <Link 
+                <Link
                   href="/caregiver-appointments"
                   className="flex items-center gap-2 rounded-xl bg-white/80 px-3 py-2.5 text-sm font-medium text-slate-700 transition-all hover:bg-white hover:shadow-sm"
                 >
                   <span>➕</span>
                   <span>New Appointment</span>
                 </Link>
-                <Link 
+                <Link
                   href="/patients"
                   className="flex items-center gap-2 rounded-xl bg-white/80 px-3 py-2.5 text-sm font-medium text-slate-700 transition-all hover:bg-white hover:shadow-sm"
                 >
@@ -93,8 +93,8 @@ export default async function CaregiverLayout({ children }: { children: React.Re
             </div>
 
             {/* Logout */}
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               className="w-full rounded-2xl border-slate-200 py-6 shadow-sm transition-all hover:border-slate-300 hover:shadow-md"
             >
               <span className="mr-2">👋</span>

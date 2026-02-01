@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logActivityServer } from '@/lib/activity-logger';
 
 export async function PATCH(
     request: Request,
@@ -75,7 +76,7 @@ export async function PATCH(
 
         // Get the updated email from auth.users
         const { data: { user: authUser }, error: authFetchError } = await supabase.auth.admin.getUserById(params.id);
-        
+
         if (authFetchError) {
             console.error('Error fetching auth user:', authFetchError);
         }
@@ -85,6 +86,18 @@ export async function PATCH(
             ...finalProfile,
             email: authUser?.email || finalProfile.email
         };
+
+        // Log the activity
+        await logActivityServer(supabase, {
+            user_id: user.id,
+            user_email: user.email,
+            user_role: role,
+            action: 'user_updated',
+            target_table: 'user',
+            target_id: params.id,
+            description: `User updated: ${completeUser.email}`,
+            metadata: { updated_fields: Object.keys(body) },
+        });
 
         return NextResponse.json(completeUser);
     } catch (error) {
@@ -125,6 +138,17 @@ export async function DELETE(
             console.error('Error deleting user:', deleteError);
             return NextResponse.json({ error: deleteError.message }, { status: 500 });
         }
+
+        // Log the activity
+        await logActivityServer(supabase, {
+            user_id: user.id,
+            user_email: user.email,
+            user_role: role,
+            action: 'user_deleted',
+            target_table: 'user',
+            target_id: params.id,
+            description: `User deleted: ${params.id}`,
+        });
 
         return NextResponse.json({ message: 'User deleted successfully' });
     } catch (error) {

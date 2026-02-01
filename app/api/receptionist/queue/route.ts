@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logActivityServer } from '@/lib/activity-logger'
 
 export async function GET() {
     try {
@@ -61,6 +62,20 @@ export async function POST(request: Request) {
             )
         }
 
+        // Get the current user for logging
+        const { data: { user } } = await supabase.auth.getUser()
+        let userEmail = user?.email || null
+        let userRole = 'receptionist'
+
+        if (user) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .single()
+            userRole = profile?.role || 'receptionist'
+        }
+
         // Get the current highest queue number for today
         const today = new Date()
         today.setHours(0, 0, 0, 0)
@@ -102,6 +117,23 @@ export async function POST(request: Request) {
                 .update({ status: 'confirmed' })
                 .eq('id', appointment_id)
         }
+
+        // Log the activity
+        await logActivityServer(supabase, {
+            user_id: user?.id,
+            action: 'PATIENT_CHECK_IN',
+            target_table: 'check_in',
+            target_id: checkIn.id,
+            description: `Patient checked in - Queue #${nextQueueNumber}`,
+            metadata: {
+                queue_number: nextQueueNumber,
+                appointment_id,
+                child_id,
+                reason: reason || 'General checkup'
+            },
+            user_email: userEmail || undefined,
+            user_role: userRole
+        })
 
         return NextResponse.json({
             success: true,

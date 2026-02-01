@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { logActivityServer } from '@/lib/activity-logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +52,8 @@ export async function PATCH(request: Request) {
 
   if (orderError || !order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
+  const previousStatus = order.status;
+
   // 2. LOGIC: If moving to 'approved', deduct stock
   if (status === 'approved' && order.status === 'pending') {
     // Check current stock levels
@@ -74,13 +77,31 @@ export async function PATCH(request: Request) {
   // 3. Update the order status
   const { data, error } = await supabase
     .from('supply_orders')
-    .update({ 
+    .update({
       status,
-      delivered_at: status === 'delivered' ? new Date().toISOString() : null 
+      delivered_at: status === 'delivered' ? new Date().toISOString() : null
     })
     .eq('id', orderId)
     .select();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  // Log the activity
+  await logActivityServer(supabase, {
+    user_id: user.id,
+    action: `ORDER_STATUS_${status.toUpperCase()}`,
+    target_table: 'order',
+    target_id: orderId,
+    description: `Supply order status changed from ${previousStatus} to ${status}`,
+    metadata: {
+      previous_status: previousStatus,
+      new_status: status,
+      medication_id: order.medication_id,
+      quantity: order.quantity
+    },
+    user_email: user.email || undefined,
+    user_role: 'supplier'
+  });
+
   return NextResponse.json({ data });
 }

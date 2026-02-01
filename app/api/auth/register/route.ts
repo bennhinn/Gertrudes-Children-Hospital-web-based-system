@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
+import { logActivityServer } from '@/lib/activity-logger'
 
 export const dynamic = 'force-dynamic';
 
@@ -124,8 +125,20 @@ export async function POST(request: Request) {
 
     console.log('✅ User registered successfully:', userId)
 
+    // Log the registration activity
+    await logActivityServer(supabase, {
+      user_id: userId,
+      user_email: email,
+      user_role: role,
+      action: 'user_registered',
+      target_table: 'user',
+      target_id: userId,
+      description: `New user registered: ${email} as ${role}`,
+      metadata: { full_name, role },
+    })
+
     return NextResponse.json(
-      { 
+      {
         user: { id: data.user.id, email: data.user.email },
         message: 'Registration successful. You can now log in.'
       },
