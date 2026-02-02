@@ -11,6 +11,7 @@ const navItems = [
     { href: '/doctor/queue', label: 'Patient Queue', icon: '📋' },
     { href: '/doctor/consultations', label: 'Consultations', icon: '🩺' },
     { href: '/doctor/schedule', label: 'My Schedule', icon: '📅' },
+    { href: '/doctor/messages', label: 'Messages', icon: '💬' },
 ]
 
 export default function DoctorLayout({ children }: { children: React.ReactNode }) {

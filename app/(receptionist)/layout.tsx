@@ -42,6 +42,13 @@ export default function ReceptionistLayout({
                         <span>📅</span>
                         <span>Appointments</span>
                     </Link>
+                    <Link
+                        href="/receptionist/messages"
+                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-100"
+                    >
+                        <span>💬</span>
+                        <span>Messages</span>
+                    </Link>
                 </nav>
             </aside>
 
@@ -52,7 +59,7 @@ export default function ReceptionistLayout({
 
             {/* Mobile Bottom Navigation */}
             <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-white lg:hidden">
-                <div className="grid grid-cols-4">
+                <div className="grid grid-cols-5">
                     <Link
                         href="/receptionist"
                         className="flex flex-col items-center gap-1 py-3 text-xs text-slate-600"
@@ -79,7 +86,14 @@ export default function ReceptionistLayout({
                         className="flex flex-col items-center gap-1 py-3 text-xs text-slate-600"
                     >
                         <span className="text-xl">📅</span>
-                        <span>Appointments</span>
+                        <span>Appts</span>
+                    </Link>
+                    <Link
+                        href="/receptionist/messages"
+                        className="flex flex-col items-center gap-1 py-3 text-xs text-slate-600"
+                    >
+                        <span className="text-xl">💬</span>
+                        <span>Messages</span>
                     </Link>
                 </div>
             </nav>

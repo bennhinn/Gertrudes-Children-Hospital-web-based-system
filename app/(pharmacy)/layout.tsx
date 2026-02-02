@@ -10,6 +10,7 @@ const navItems = [
     { href: '/pharmacy/prescriptions', icon: '💊', label: 'Prescriptions' },
     { href: '/pharmacy/dispensed', icon: '✅', label: 'Dispensed' },
     { href: '/pharmacy/inventory', icon: '📦', label: 'Inventory' },
+    { href: '/pharmacy/messages', icon: '💬', label: 'Messages' },
 ]
 
 export default function PharmacyLayout({

@@ -11,6 +11,7 @@ const navItems = [
     { href: '/lab/orders', label: 'Test Orders', icon: '📋' },
     { href: '/lab/results', label: 'Enter Results', icon: '📊' },
     { href: '/lab/completed', label: 'Completed', icon: '✅' },
+    { href: '/lab/messages', label: 'Messages', icon: '💬' },
 ]
 
 export default function LabLayout({ children }: { children: React.ReactNode }) {
