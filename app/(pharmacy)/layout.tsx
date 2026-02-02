@@ -136,8 +136,8 @@ export default function PharmacyLayout({
                                     key={item.href}
                                     href={item.href}
                                     className={`group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${isActive
-                                            ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg shadow-teal-200'
-                                            : 'text-slate-600 hover:bg-teal-50 hover:text-teal-700'
+                                        ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg shadow-teal-200'
+                                        : 'text-slate-600 hover:bg-teal-50 hover:text-teal-700'
                                         }`}
                                 >
                                     <Icon className={`h-5 w-5 transition-transform duration-200 ${!isActive && 'group-hover:scale-110'}`} />
@@ -257,8 +257,8 @@ export default function PharmacyLayout({
                                             key={item.href}
                                             href={item.href}
                                             className={`flex items-center gap-3 rounded-xl px-4 py-3.5 text-sm font-medium transition-all ${isActive
-                                                    ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg'
-                                                    : 'text-slate-600 hover:bg-teal-50'
+                                                ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg'
+                                                : 'text-slate-600 hover:bg-teal-50'
                                                 }`}
                                         >
                                             <Icon className="h-5 w-5" />
@@ -311,10 +311,10 @@ export default function PharmacyLayout({
                         const isActive = pathname === item.href
                         const Icon = item.icon
                         // Shorter labels for mobile
-                        const shortLabel = item.label === 'Prescriptions' ? 'Rx' 
+                        const shortLabel = item.label === 'Prescriptions' ? 'Rx'
                             : item.label === 'Dashboard' ? 'Home'
-                            : item.label === 'Messages' ? 'Chat'
-                            : item.label
+                                : item.label === 'Messages' ? 'Chat'
+                                    : item.label
                         return (
                             <Link
                                 key={item.href}

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { createClient } from '@/lib/supabase/client'
+import { logActivity } from '@/lib/activity-logger'
 import { CheckCircle2, Package, History, Plus, Loader2, Download, ShoppingCart, AlertTriangle, Truck, Pill, TrendingDown } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -32,9 +33,9 @@ interface Medication {
 
 interface Supplier {
     id: string
+    company_name: string | null
     profiles: {
         full_name: string
-        email: string | null
     } | null
 }
 
@@ -75,16 +76,36 @@ export default function PharmacyInventoryPage() {
             const { data: orderData } = await supabase.from('supply_orders')
                 .select(`id, requested_at, delivered_at, quantity, status, medication_id, supplier_id, medication:medications(name, stock)`)
                 .order('requested_at', { ascending: false })
-            
-            // Load all suppliers - query suppliers table and join with profiles
+
+            // Load all suppliers - fetch suppliers then get profiles separately
             const { data: supplierData, error: supplierError } = await supabase
                 .from('suppliers')
-                .select('id, profile:profiles(full_name)')
-            
+                .select('id, company_name')
+
             if (supplierError) {
                 console.error('Error loading suppliers:', supplierError)
+            } else {
+                console.log('✅ Loaded suppliers:', supplierData?.length || 0, supplierData)
             }
-            
+
+            // Get profile names for suppliers
+            let supplierProfiles: Record<string, string> = {}
+            if (supplierData && supplierData.length > 0) {
+                const supplierIds = supplierData.map(s => s.id)
+                const { data: profileData } = await supabase
+                    .from('profiles')
+                    .select('id, full_name')
+                    .in('id', supplierIds)
+
+                if (profileData) {
+                    supplierProfiles = profileData.reduce((acc, p) => {
+                        acc[p.id] = p.full_name || ''
+                        return acc
+                    }, {} as Record<string, string>)
+                }
+                console.log('✅ Supplier profiles:', supplierProfiles)
+            }
+
             // Load dispensing logs - prescriptions link to children directly via child_id
             const { data: dispensedPrescriptions, error: prescError } = await supabase
                 .from('prescriptions')
@@ -103,25 +124,25 @@ export default function PharmacyInventoryPage() {
                 .eq('status', 'dispensed')
                 .order('dispensed_at', { ascending: false })
                 .limit(100)
-            
+
             if (prescError) {
                 console.error('Error fetching dispensing logs:', prescError)
             }
 
             setMedications(medData || [])
-            // Map suppliers - normalize the profile join
+            // Map suppliers with their profile names
             setSuppliers((supplierData || []).map((s: any) => {
-                const profile = Array.isArray(s.profile) ? s.profile[0] : s.profile
                 return {
                     id: s.id,
-                    profiles: profile ? { full_name: profile.full_name, email: null } : null
+                    company_name: s.company_name || null,
+                    profiles: supplierProfiles[s.id] ? { full_name: supplierProfiles[s.id] } : null
                 }
             }))
             setOrders((orderData || []).map((order: any) => ({
                 ...order,
                 medication: Array.isArray(order.medication) ? order.medication[0] : (order.medication || { name: 'Unknown', stock: 0 })
             })))
-            
+
             // Transform dispensing data to logs with current stock
             // Flatten prescription items from each dispensed prescription
             const logs: DispensingLog[] = []
@@ -129,13 +150,13 @@ export default function PharmacyInventoryPage() {
                 // Now child is directly on prescription, not nested under patient
                 const child = Array.isArray(prescription.child) ? prescription.child[0] : prescription.child
                 const items = Array.isArray(prescription.items) ? prescription.items : []
-                
+
                 for (const item of items) {
                     // Find current stock for this medication
-                    const currentMed = (medData || []).find((m: Medication) => 
+                    const currentMed = (medData || []).find((m: Medication) =>
                         m.name.toLowerCase() === item.medication_name?.toLowerCase()
                     )
-                    
+
                     logs.push({
                         id: item.id,
                         medication_name: item.medication_name || 'Unknown',
@@ -146,7 +167,7 @@ export default function PharmacyInventoryPage() {
                     })
                 }
             }
-            
+
             // Sort by dispensed date descending (most recent first)
             logs.sort((a, b) => new Date(b.dispensed_at).getTime() - new Date(a.dispensed_at).getTime())
             setDispensingLogs(logs)
@@ -166,7 +187,7 @@ export default function PharmacyInventoryPage() {
     // --- PDF GENERATOR LOGIC ---
     const generatePDF = (order: SupplyOrder) => {
         const doc = new jsPDF()
-        
+
         // Header
         doc.setFontSize(20)
         doc.text("PHARMACY SUPPLY RECEIPT", 14, 22)
@@ -216,12 +237,27 @@ export default function PharmacyInventoryPage() {
                 quantity: orderQuantity,
                 status: 'pending'
             }])
-            
+
             // Update the medication's default supplier
             await supabase.from('medications')
                 .update({ supplier_id: selectedSupplierId })
                 .eq('id', selectedMedication.id)
-            
+
+            // Log the restock order activity
+            const supplierName = suppliers.find(s => s.id === selectedSupplierId)?.company_name ||
+                suppliers.find(s => s.id === selectedSupplierId)?.profiles?.full_name || 'Unknown'
+            await logActivity({
+                action: 'create_supply_order',
+                target_table: 'order',
+                description: `Placed restock order for ${orderQuantity} units of ${selectedMedication.name} from ${supplierName}`,
+                metadata: {
+                    medication_name: selectedMedication.name,
+                    quantity: orderQuantity,
+                    supplier_id: selectedSupplierId,
+                    supplier_name: supplierName
+                }
+            })
+
             setShowOrderModal(false)
             setSelectedMedication(null)
             loadData()
@@ -234,13 +270,27 @@ export default function PharmacyInventoryPage() {
         setSaving(true)
         try {
             const supabase = createClient()
-            await supabase.from('supply_orders').update({ 
-                status: 'delivered', 
-                delivered_at: new Date().toISOString() 
+            await supabase.from('supply_orders').update({
+                status: 'delivered',
+                delivered_at: new Date().toISOString()
             }).eq('id', order.id)
 
             const newStock = (order.medication.stock || 0) + order.quantity
             await supabase.from('medications').update({ stock: newStock }).eq('id', order.medication_id)
+
+            // Log the delivery activity
+            await logActivity({
+                action: 'receive_delivery',
+                target_table: 'order',
+                target_id: order.id,
+                description: `Received delivery of ${order.quantity} units of ${order.medication.name}. New stock: ${newStock}`,
+                metadata: {
+                    medication_name: order.medication.name,
+                    quantity_received: order.quantity,
+                    new_stock: newStock
+                }
+            })
+
             loadData()
         } catch (error: any) { alert(error.message) } finally { setSaving(false) }
     }
@@ -250,7 +300,20 @@ export default function PharmacyInventoryPage() {
         setSaving(true)
         try {
             const supabase = createClient()
-            await supabase.from('medications').insert([formData])
+            const { data: newMed } = await supabase.from('medications').insert([formData]).select().single()
+
+            // Log the new medication activity
+            await logActivity({
+                action: 'create_medication',
+                target_table: 'medication',
+                target_id: newMed?.id,
+                description: `Added new medication: ${formData.name} with initial stock of ${formData.stock}`,
+                metadata: {
+                    medication_name: formData.name,
+                    initial_stock: formData.stock
+                }
+            })
+
             setShowAddModal(false)
             setFormData({ name: '', stock: 0 })
             loadData()
@@ -281,9 +344,9 @@ export default function PharmacyInventoryPage() {
                 </div>
 
                 <TabsContent value="inventory" className="space-y-4">
-                    <Input 
-                        placeholder="Search stock..." 
-                        value={searchTerm} 
+                    <Input
+                        placeholder="Search stock..."
+                        value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="max-w-md"
                     />
@@ -296,8 +359,8 @@ export default function PharmacyInventoryPage() {
                                         <Badge variant="secondary" className={med.stock < 20 ? "bg-red-100 text-red-700" : ""}>{med.stock} Units</Badge>
                                     </div>
                                     {/* FIX: Simplified button logic to fix hover visibility */}
-                                    <Button 
-                                        variant="secondary" 
+                                    <Button
+                                        variant="secondary"
                                         className="w-full border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white"
                                         onClick={() => handleCreateOrder(med)}
                                         disabled={saving}
@@ -312,9 +375,9 @@ export default function PharmacyInventoryPage() {
 
                 <TabsContent value="dispensed" className="space-y-4">
                     <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
-                        <Input 
-                            placeholder="Search by medication or patient..." 
-                            value={dispensingSearchTerm} 
+                        <Input
+                            placeholder="Search by medication or patient..."
+                            value={dispensingSearchTerm}
                             onChange={(e) => setDispensingSearchTerm(e.target.value)}
                             className="max-w-md"
                         />
@@ -323,15 +386,15 @@ export default function PharmacyInventoryPage() {
                             <span>Total Dispensed: {dispensingLogs.reduce((acc, log) => acc + log.quantity, 0)} units</span>
                         </div>
                     </div>
-                    
+
                     {/* Summary Cards */}
                     <div className="grid grid-cols-2 gap-3">
                         {(() => {
                             // Group by medication and calculate totals
                             const summary = dispensingLogs.reduce((acc, log) => {
                                 if (!acc[log.medication_name]) {
-                                    acc[log.medication_name] = { 
-                                        total_dispensed: 0, 
+                                    acc[log.medication_name] = {
+                                        total_dispensed: 0,
                                         remaining: log.remaining_stock,
                                         count: 0
                                     }
@@ -340,7 +403,7 @@ export default function PharmacyInventoryPage() {
                                 acc[log.medication_name].count++
                                 return acc
                             }, {} as Record<string, { total_dispensed: number; remaining: number; count: number }>)
-                            
+
                             return Object.entries(summary)
                                 .sort((a, b) => b[1].total_dispensed - a[1].total_dispensed)
                                 .slice(0, 4)
@@ -380,23 +443,23 @@ export default function PharmacyInventoryPage() {
                                 ) : (
                                     (() => {
                                         // Group logs by date for history view
-                                        const filteredLogs = dispensingLogs.filter(log => 
+                                        const filteredLogs = dispensingLogs.filter(log =>
                                             log.medication_name.toLowerCase().includes(dispensingSearchTerm.toLowerCase()) ||
                                             log.patient_name.toLowerCase().includes(dispensingSearchTerm.toLowerCase())
                                         )
-                                        
+
                                         const groupedByDate = filteredLogs.reduce((acc, log) => {
-                                            const dateKey = new Date(log.dispensed_at).toLocaleDateString('en-US', { 
-                                                weekday: 'long', 
-                                                year: 'numeric', 
-                                                month: 'long', 
-                                                day: 'numeric' 
+                                            const dateKey = new Date(log.dispensed_at).toLocaleDateString('en-US', {
+                                                weekday: 'long',
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: 'numeric'
                                             })
                                             if (!acc[dateKey]) acc[dateKey] = []
                                             acc[dateKey].push(log)
                                             return acc
                                         }, {} as Record<string, DispensingLog[]>)
-                                        
+
                                         return Object.entries(groupedByDate).map(([date, logs]) => (
                                             <div key={date}>
                                                 {/* Date Header */}
@@ -422,7 +485,7 @@ export default function PharmacyInventoryPage() {
                                                                             -{log.quantity} units
                                                                         </Badge>
                                                                         <span className="text-xs text-slate-400">
-                                                                            {new Date(log.dispensed_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                                            {new Date(log.dispensed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                                         </span>
                                                                     </div>
                                                                     <div className="text-center px-2 py-1 rounded bg-slate-100">
@@ -472,14 +535,14 @@ export default function PharmacyInventoryPage() {
                                                     <Badge className={order.status === 'delivered' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}>
                                                         {order.status.toUpperCase()}
                                                     </Badge>
-                                                    
+
                                                     {/* ACTIONS */}
                                                     {order.status === 'pending' && (
                                                         <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => handleMarkAsDelivered(order)}>
                                                             <CheckCircle2 className="w-4 h-4 mr-1" /> Mark Delivered
                                                         </Button>
                                                     )}
-                                                    
+
                                                     {order.status === 'delivered' && (
                                                         <Button size="sm" variant="secondary" onClick={() => generatePDF(order)}>
                                                             <Download className="w-4 h-4 mr-1" /> PDF
@@ -501,9 +564,9 @@ export default function PharmacyInventoryPage() {
                     <DialogHeader><DialogTitle>Register New Stock Item</DialogTitle></DialogHeader>
                     <div className="space-y-4 pt-4">
                         <Label>Medication Name</Label>
-                        <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                        <Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
                         <Label>Initial Stock</Label>
-                        <Input type="number" value={formData.stock} onChange={e => setFormData({...formData, stock: parseInt(e.target.value)})} />
+                        <Input type="number" value={formData.stock} onChange={e => setFormData({ ...formData, stock: parseInt(e.target.value) })} />
                         <Button onClick={handleAddMedication} className="w-full bg-purple-600" disabled={saving}>Confirm Registration</Button>
                     </div>
                 </DialogContent>
@@ -526,13 +589,13 @@ export default function PharmacyInventoryPage() {
                                 <p className="text-xs text-purple-600">Current Stock: {selectedMedication.stock} units</p>
                             </div>
                         )}
-                        
+
                         <div className="space-y-2">
                             <Label htmlFor="quantity">Quantity to Order</Label>
-                            <Input 
+                            <Input
                                 id="quantity"
-                                type="number" 
-                                value={orderQuantity} 
+                                type="number"
+                                value={orderQuantity}
                                 onChange={e => setOrderQuantity(parseInt(e.target.value) || 0)}
                                 min={1}
                             />
@@ -549,7 +612,7 @@ export default function PharmacyInventoryPage() {
                                 <option value="">-- Choose a supplier --</option>
                                 {suppliers.map(supplier => (
                                     <option key={supplier.id} value={supplier.id}>
-                                        {supplier.profiles?.full_name || 'Unknown Supplier'}
+                                        {supplier.company_name || supplier.profiles?.full_name || 'Unknown Supplier'}
                                     </option>
                                 ))}
                             </select>
@@ -562,16 +625,16 @@ export default function PharmacyInventoryPage() {
                         </div>
 
                         <div className="flex gap-3 pt-2">
-                            <Button 
-                                variant="secondary" 
+                            <Button
+                                variant="secondary"
                                 className="flex-1"
                                 onClick={() => setShowOrderModal(false)}
                             >
                                 Cancel
                             </Button>
-                            <Button 
-                                onClick={submitOrder} 
-                                className="flex-1 bg-purple-600 hover:bg-purple-700" 
+                            <Button
+                                onClick={submitOrder}
+                                className="flex-1 bg-purple-600 hover:bg-purple-700"
                                 disabled={saving || !selectedSupplierId}
                             >
                                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Truck className="h-4 w-4 mr-2" />}

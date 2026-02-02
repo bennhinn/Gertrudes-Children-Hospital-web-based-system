@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
+import { logActivity } from '@/lib/activity-logger'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Search, X } from 'lucide-react'
 
@@ -148,6 +149,22 @@ export default function AppointmentsPage() {
 
       // Automatically show QR code after booking
       if (newAppointment) {
+        // Log the appointment booking
+        const doctorName = doctors.find(d => d.id === doctorId)?.profiles?.full_name || 'Any available'
+        await logActivity({
+          action: 'book_appointment',
+          target_table: 'appointment',
+          target_id: newAppointment.id,
+          description: `Booked appointment for ${selectedChild?.full_name || 'child'} with ${doctorName}`,
+          metadata: {
+            child_id: childId,
+            child_name: selectedChild?.full_name,
+            doctor_id: doctorId || null,
+            doctor_name: doctorName,
+            scheduled_for: scheduledFor
+          }
+        })
+
         const response = await fetch(`/api/qr/${newAppointment.id}`)
         const data = await response.json()
         if (!data.error) {
@@ -178,6 +195,19 @@ export default function AppointmentsPage() {
         .eq('id', appointmentId)
 
       if (updateError) throw updateError
+
+      // Log the cancellation
+      const appointment = appointments.find(a => a.id === appointmentId)
+      await logActivity({
+        action: 'cancel_appointment',
+        target_table: 'appointment',
+        target_id: appointmentId,
+        description: `Cancelled appointment for ${appointment?.child?.full_name || 'child'}`,
+        metadata: {
+          child_name: appointment?.child?.full_name,
+          scheduled_for: appointment?.scheduled_for
+        }
+      })
 
       await loadData()
     } catch (err: any) {

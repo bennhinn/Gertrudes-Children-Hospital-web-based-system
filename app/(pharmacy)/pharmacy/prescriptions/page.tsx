@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
+import { logActivity } from '@/lib/activity-logger'
 import { Search, X } from 'lucide-react'
 
 interface Prescription {
@@ -125,10 +126,10 @@ export default function PharmacyPrescriptionsPage() {
                 // Get prescription items to deduct from inventory
                 const prescription = prescriptions.find(p => p.id === id)
                 console.log('🔍 Found prescription:', prescription?.id, 'Items:', prescription?.prescription_items?.length, 'Direct med:', prescription?.medication_name)
-                
+
                 // Build list of medications to deduct - handle both direct and items-based prescriptions
                 const medicationsToDeduct: { name: string; quantity: number }[] = []
-                
+
                 // Check for prescription_items (newer multi-item prescriptions)
                 if (prescription?.prescription_items && prescription.prescription_items.length > 0) {
                     for (const item of prescription.prescription_items) {
@@ -138,7 +139,7 @@ export default function PharmacyPrescriptionsPage() {
                         })
                     }
                 }
-                
+
                 // Also check for direct medication on the prescription (legacy single-item prescriptions)
                 if (prescription?.medication_name) {
                     medicationsToDeduct.push({
@@ -146,19 +147,19 @@ export default function PharmacyPrescriptionsPage() {
                         quantity: prescription.quantity || 1
                     })
                 }
-                
+
                 console.log('📋 Medications to deduct:', medicationsToDeduct)
-                
+
                 for (const med of medicationsToDeduct) {
                     console.log(`🔍 Looking for medication: "${med.name}" (qty: ${med.quantity})`)
-                    
+
                     // Try exact match first
                     let { data: medication, error: medError } = await supabase
                         .from('medications')
                         .select('id, name, stock')
                         .ilike('name', med.name.trim())
                         .single()
-                    
+
                     // If no exact match, try partial match
                     if (!medication) {
                         const { data: partialMatch } = await supabase
@@ -173,12 +174,12 @@ export default function PharmacyPrescriptionsPage() {
                     if (medication) {
                         const quantityToDeduct = med.quantity
                         const newStock = Math.max(0, (medication.stock || 0) - quantityToDeduct)
-                        
+
                         const { error: updateError } = await supabase
                             .from('medications')
                             .update({ stock: newStock })
                             .eq('id', medication.id)
-                        
+
                         if (updateError) {
                             console.error(`❌ Failed to update stock for ${medication.name}:`, updateError)
                         } else {
@@ -188,7 +189,7 @@ export default function PharmacyPrescriptionsPage() {
                         console.warn(`⚠️ Medication "${med.name}" not found in inventory. Error:`, medError)
                     }
                 }
-                
+
                 if (medicationsToDeduct.length === 0) {
                     console.warn('⚠️ No medications found to deduct for this prescription')
                 }
@@ -200,6 +201,25 @@ export default function PharmacyPrescriptionsPage() {
                 .eq('id', id)
 
             if (error) throw error
+
+            // Log the activity for audit trail
+            const prescription = prescriptions.find(p => p.id === id)
+            const patientName = prescription?.child?.full_name || 'Unknown Patient'
+            const medications = prescription?.prescription_items?.map(i => i.medication_name).join(', ') || prescription?.medication_name || 'Unknown'
+
+            await logActivity({
+                action: newStatus === 'dispensed' ? 'dispense_prescription' : `update_prescription_${newStatus}`,
+                target_table: 'prescription',
+                target_id: id,
+                description: newStatus === 'dispensed'
+                    ? `Dispensed prescription for ${patientName}: ${medications}`
+                    : `Updated prescription status to ${newStatus} for ${patientName}`,
+                metadata: {
+                    patient_name: patientName,
+                    medications: medications,
+                    new_status: newStatus
+                }
+            })
 
             if (selectedPrescription?.id === id && newStatus === 'dispensed') {
                 setSelectedPrescription(null)

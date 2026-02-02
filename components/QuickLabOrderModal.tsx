@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { logActivity } from '@/lib/activity-logger'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -45,7 +46,7 @@ export default function QuickLabOrderModal({
   const [children, setChildren] = useState<Child[]>([])
   const [labTests, setLabTests] = useState<LabTest[]>([])
   const [selectedTests, setSelectedTests] = useState<string[]>([])
-  
+
   const [formData, setFormData] = useState({
     child_id: preSelectedChildId || '',
     priority: 'routine',
@@ -72,7 +73,7 @@ export default function QuickLabOrderModal({
       .from('children')
       .select('id, full_name, date_of_birth')
       .order('full_name')
-    
+
     if (data) setChildren(data)
   }
 
@@ -82,7 +83,7 @@ export default function QuickLabOrderModal({
       .from('lab_tests')
       .select('id, name, description, cost')
       .order('name')
-    
+
     if (data) setLabTests(data)
   }
 
@@ -96,7 +97,7 @@ export default function QuickLabOrderModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    
+
     if (selectedTests.length === 0) {
       alert('Please select at least one test')
       return
@@ -125,6 +126,22 @@ export default function QuickLabOrderModal({
       const { error } = await supabase.from('lab_orders').insert(orders)
 
       if (error) throw error
+
+      // Log the lab order creation activity
+      const patientName = children.find(c => c.id === formData.child_id)?.full_name || 'Unknown'
+      const testNames = selectedTests.map(testId => labTests.find(t => t.id === testId)?.name).filter(Boolean).join(', ')
+      await logActivity({
+        action: 'create_lab_order',
+        target_table: 'lab_order',
+        description: `Ordered lab tests for ${patientName}: ${testNames}`,
+        metadata: {
+          patient_id: formData.child_id,
+          patient_name: patientName,
+          priority: formData.priority,
+          tests: selectedTests.map(testId => labTests.find(t => t.id === testId)?.name),
+          test_count: orders.length
+        }
+      })
 
       // Reset form
       setFormData({

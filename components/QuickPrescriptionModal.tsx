@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { logActivity } from '@/lib/activity-logger'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -55,7 +56,7 @@ export default function QuickPrescriptionModal({
   const [children, setChildren] = useState<Child[]>([])
   const [medications, setMedications] = useState<Medication[]>([])
   const [prescriptionItems, setPrescriptionItems] = useState<PrescriptionItem[]>([])
-  
+
   const [formData, setFormData] = useState({
     child_id: preSelectedChildId || '',
     urgency: 'routine',
@@ -91,7 +92,7 @@ export default function QuickPrescriptionModal({
       .from('children')
       .select('id, full_name, date_of_birth')
       .order('full_name')
-    
+
     if (data) setChildren(data)
   }
 
@@ -102,7 +103,7 @@ export default function QuickPrescriptionModal({
       .select('id, name, description, stock')
       .gt('stock', 0) // Only show medications with stock
       .order('name')
-    
+
     if (data) setMedications(data)
   }
 
@@ -124,7 +125,7 @@ export default function QuickPrescriptionModal({
     }
 
     setPrescriptionItems([...prescriptionItems, { ...currentItem }])
-    
+
     // Reset current item
     setCurrentItem({
       medication_id: '',
@@ -189,6 +190,27 @@ export default function QuickPrescriptionModal({
         .insert(items)
 
       if (itemsError) throw itemsError
+
+      // Log the prescription creation activity
+      const patientName = children.find(c => c.id === formData.child_id)?.full_name || 'Unknown'
+      const medicationNames = prescriptionItems.map(item => item.medication_name).join(', ')
+      await logActivity({
+        action: 'create_prescription',
+        target_table: 'prescription',
+        target_id: prescription.id,
+        description: `Created prescription for ${patientName}: ${medicationNames}`,
+        metadata: {
+          patient_id: formData.child_id,
+          patient_name: patientName,
+          urgency: formData.urgency,
+          medications: prescriptionItems.map(item => ({
+            name: item.medication_name,
+            dosage: item.dosage,
+            quantity: item.quantity
+          })),
+          item_count: items.length
+        }
+      })
 
       // Reset form
       setFormData({
@@ -335,8 +357,8 @@ export default function QuickPrescriptionModal({
                 />
               </div>
 
-              <Button 
-                onClick={addPrescriptionItem} 
+              <Button
+                onClick={addPrescriptionItem}
                 className="w-full bg-blue-600 hover:bg-blue-700"
                 type="button"
               >

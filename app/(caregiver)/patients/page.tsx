@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
+import { logActivity } from '@/lib/activity-logger'
 import { useRouter } from 'next/navigation'
 import { Search, X, Baby, Plus, LayoutDashboard, Calendar, AlertTriangle, FileText } from 'lucide-react'
 
@@ -85,11 +86,26 @@ export default function PatientsPage() {
         insertData.allergies = allergiesValue
       }
 
-      const { error: insertError } = await supabase
+      const { data: newChild, error: insertError } = await supabase
         .from('children')
         .insert(insertData)
+        .select()
+        .single()
 
       if (insertError) throw insertError
+
+      // Log the child registration
+      await logActivity({
+        action: 'register_child',
+        target_table: 'child',
+        target_id: newChild?.id,
+        description: `Registered new child: ${fullName}`,
+        metadata: {
+          child_name: fullName,
+          date_of_birth: dateOfBirth,
+          gender: gender
+        }
+      })
 
       setShowAddForm(false)
       await loadChildren()

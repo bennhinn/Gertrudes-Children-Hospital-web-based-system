@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
+import { logActivity } from '@/lib/activity-logger'
 import { useRouter } from 'next/navigation'
 import { Search, X } from 'lucide-react'
 
@@ -144,6 +145,24 @@ export default function LabOrdersPage() {
             if (newStatus === 'collected') {
                 alert(`✅ Sample collected successfully!\n\nThe sample is ready for processing.`)
             }
+
+            // Log the lab order status update
+            const actionName = newStatus === 'collected' ? 'collect_sample' :
+                newStatus === 'in_progress' ? 'start_processing' :
+                    `update_lab_order_${newStatus}`
+            await logActivity({
+                action: actionName,
+                target_table: 'lab_order',
+                target_id: orderId,
+                description: `${newStatus === 'collected' ? 'Collected sample' :
+                    newStatus === 'in_progress' ? 'Started processing' :
+                        `Updated status to ${newStatus}`} for ${orderInfo?.testType || 'lab test'} - Patient: ${orderInfo?.patientName || 'Unknown'}`,
+                metadata: {
+                    test_type: orderInfo?.testType,
+                    patient_name: orderInfo?.patientName,
+                    new_status: newStatus
+                }
+            })
 
             await loadOrders()
         } catch (error: any) {
