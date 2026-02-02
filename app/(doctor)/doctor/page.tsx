@@ -8,6 +8,22 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import QuickPrescriptionModal from '@/components/QuickPrescriptionModal'
 import QuickLabOrderModal from '@/components/QuickLabOrderModal'
+import {
+    Stethoscope,
+    Users,
+    Clock,
+    CheckCircle,
+    FlaskConical,
+    ClipboardList,
+    FileText,
+    TestTube,
+    Calendar,
+    ChevronRight,
+    Play,
+    Thermometer,
+    Scale,
+    AlertCircle
+} from 'lucide-react'
 
 interface QueueStats {
     waitingForMe: number
@@ -72,7 +88,7 @@ export default function DoctorDashboard() {
     const [doctorId, setDoctorId] = useState<string | null>(null)
     const [debugInfo, setDebugInfo] = useState<string>('')
     const [error, setError] = useState<string | null>(null)
-    
+
     // Modal states
     const [showPrescriptionModal, setShowPrescriptionModal] = useState(false)
     const [showLabOrderModal, setShowLabOrderModal] = useState(false)
@@ -81,7 +97,7 @@ export default function DoctorDashboard() {
         setLoading(true)
         setError(null)
         setDebugInfo('')
-        
+
         try {
             const supabase = createClient()
             const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -147,7 +163,7 @@ export default function DoctorDashboard() {
             const myQueue = (waitingPatients || []).filter(p =>
                 !p.appointment?.doctor_id || p.appointment?.doctor_id === doctorData?.id
             )
-            
+
             setDebugInfo(prev => prev + ` | My queue: ${myQueue.length}`)
             setQueue(myQueue)
 
@@ -182,7 +198,7 @@ export default function DoctorDashboard() {
             if (labError) {
                 console.error('Pending labs error:', labError)
             }
-            
+
             console.log('🔬 Pending lab results for doctor:', doctorData?.id)
             console.log('🔬 Query returned:', pendingLabs?.length || 0, 'pending lab results')
             console.log('🔬 Pending labs details:', pendingLabs)
@@ -286,7 +302,7 @@ export default function DoctorDashboard() {
     }
 
     return (
-        <div className="space-y-6 pb-20 lg:pb-6">
+        <div className="space-y-4 pb-20 lg:space-y-6 lg:pb-6">
             {/* Modals */}
             {doctorId && (
                 <>
@@ -303,227 +319,219 @@ export default function DoctorDashboard() {
                 </>
             )}
 
-           
+
             {error && (
                 <Card className="border-red-200 bg-red-50">
-                    <CardContent className="p-4">
-                        <p className="text-sm font-medium text-red-800">
-                            ⚠️ Error: {error}
-                        </p>
+                    <CardContent className="flex items-center gap-2 p-3">
+                        <AlertCircle className="h-4 w-4 text-red-600" />
+                        <p className="text-sm font-medium text-red-800">{error}</p>
                     </CardContent>
                 </Card>
             )}
 
-            {/* Welcome Header */}
-            <div className="rounded-2xl bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-600 p-6 text-white shadow-xl">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold">Doctor Dashboard</h1>
-                        <p className="mt-1 text-purple-100">
+            {/* Welcome Header - Compact on Mobile */}
+            <div className="rounded-xl bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-600 p-4 text-white shadow-lg lg:rounded-2xl lg:p-6">
+                <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                        <h1 className="text-lg font-bold lg:text-2xl">Doctor Dashboard</h1>
+                        <p className="mt-0.5 text-sm text-purple-100 lg:mt-1">
                             {new Date().toLocaleDateString('en-US', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
+                                weekday: 'short',
+                                month: 'short',
                                 day: 'numeric'
                             })}
                         </p>
                     </div>
-                    <div className="flex gap-3">
-                        <Link href="/doctor/queue">
-                            <Button className="bg-white text-purple-600 hover:bg-purple-50">
-                                📋 View Full Queue
-                            </Button>
-                        </Link>
-                    </div>
+                    <Link href="/doctor/queue">
+                        <Button size="sm" className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm">
+                            <Users className="mr-1.5 h-4 w-4" />
+                            <span className="hidden sm:inline">View </span>Queue
+                        </Button>
+                    </Link>
                 </div>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <Card className="border-none shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-yellow-100 to-orange-200 text-2xl">
-                                <span className="relative">
-                                    ⏳
-                                    {stats.waitingForMe > 0 && (
-                                        <span className="absolute -right-1 -top-1 flex h-3 w-3">
-                                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75"></span>
-                                            <span className="relative inline-flex h-3 w-3 rounded-full bg-yellow-500"></span>
-                                        </span>
-                                    )}
-                                </span>
+            {/* Stats Grid - Compact on Mobile */}
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+                <Card className="border-none shadow-md">
+                    <CardContent className="p-3 lg:p-5">
+                        <div className="flex items-center gap-3">
+                            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 lg:h-12 lg:w-12">
+                                <Clock className="h-5 w-5 text-amber-600 lg:h-6 lg:w-6" />
+                                {stats.waitingForMe > 0 && (
+                                    <span className="absolute -right-1 -top-1 flex h-3 w-3">
+                                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
+                                        <span className="relative inline-flex h-3 w-3 rounded-full bg-amber-500"></span>
+                                    </span>
+                                )}
                             </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-500">Waiting for Me</p>
-                                <p className="text-3xl font-bold text-yellow-600">{stats.waitingForMe}</p>
+                            <div className="min-w-0">
+                                <p className="text-xs font-medium text-slate-500 lg:text-sm">Waiting</p>
+                                <p className="text-2xl font-bold text-amber-600 lg:text-3xl">{stats.waitingForMe}</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-green-100 to-emerald-200 text-2xl">
-                                ✅
+                <Card className="border-none shadow-md">
+                    <CardContent className="p-3 lg:p-5">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-100 to-green-100 lg:h-12 lg:w-12">
+                                <CheckCircle className="h-5 w-5 text-emerald-600 lg:h-6 lg:w-6" />
                             </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-500">Completed Today</p>
-                                <p className="text-3xl font-bold text-green-600">{stats.completedToday}</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="border-none shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-100 to-blue-200 text-2xl">
-                                ⏱️
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-500">Avg Consult Time</p>
-                                <p className="text-3xl font-bold text-blue-600">{stats.avgConsultTime}m</p>
+                            <div className="min-w-0">
+                                <p className="text-xs font-medium text-slate-500 lg:text-sm">Today</p>
+                                <p className="text-2xl font-bold text-emerald-600 lg:text-3xl">{stats.completedToday}</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-100 to-purple-200 text-2xl">
-                                <span className="relative">
-                                    🔬
-                                    {stats.pendingLabResults > 0 && (
-                                        <span className="absolute -right-1 -top-1 flex h-3 w-3">
-                                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-purple-400 opacity-75"></span>
-                                            <span className="relative inline-flex h-3 w-3 rounded-full bg-purple-500"></span>
-                                        </span>
-                                    )}
-                                </span>
+                <Card className="border-none shadow-md">
+                    <CardContent className="p-3 lg:p-5">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 lg:h-12 lg:w-12">
+                                <Stethoscope className="h-5 w-5 text-blue-600 lg:h-6 lg:w-6" />
                             </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-500">Pending Lab Results</p>
-                                <p className="text-3xl font-bold text-purple-600">{stats.pendingLabResults}</p>
+                            <div className="min-w-0">
+                                <p className="text-xs font-medium text-slate-500 lg:text-sm">Avg Time</p>
+                                <p className="text-2xl font-bold text-blue-600 lg:text-3xl">{stats.avgConsultTime}m</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-none shadow-md">
+                    <CardContent className="p-3 lg:p-5">
+                        <div className="flex items-center gap-3">
+                            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 lg:h-12 lg:w-12">
+                                <FlaskConical className="h-5 w-5 text-purple-600 lg:h-6 lg:w-6" />
+                                {stats.pendingLabResults > 0 && (
+                                    <span className="absolute -right-1 -top-1 flex h-3 w-3">
+                                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-purple-400 opacity-75"></span>
+                                        <span className="relative inline-flex h-3 w-3 rounded-full bg-purple-500"></span>
+                                    </span>
+                                )}
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-xs font-medium text-slate-500 lg:text-sm">Lab</p>
+                                <p className="text-2xl font-bold text-purple-600 lg:text-3xl">{stats.pendingLabResults}</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Quick Actions */}
-            <Card className="border-none shadow-lg">
-                <CardHeader>
-                    <CardTitle className="text-lg">Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <Link href="/doctor/queue">
-                            <Button variant="secondary" className="h-auto w-full flex-col gap-2 py-4">
-                                <span className="text-2xl">📋</span>
-                                <span>Patient Queue</span>
-                            </Button>
-                        </Link>
-                        <Button 
-                            variant="secondary" 
-                            className="h-auto flex-col gap-2 py-4"
-                            onClick={() => setShowPrescriptionModal(true)}
-                        >
-                            <span className="text-2xl">📝</span>
-                            <span>Quick Prescription</span>
-                        </Button>
-                        <Button 
-                            variant="secondary" 
-                            className="h-auto flex-col gap-2 py-4"
-                            onClick={() => setShowLabOrderModal(true)}
-                        >
-                            <span className="text-2xl">🧪</span>
-                            <span>Order Lab Test</span>
-                        </Button>
-                        <Link href="/doctor/schedule">
-                            <Button variant="secondary" className="h-auto w-full flex-col gap-2 py-4">
-                                <span className="text-2xl">📅</span>
-                                <span>My Schedule</span>
-                            </Button>
-                        </Link>
-                    </div>
-                </CardContent>
-            </Card>
+            {/* Quick Actions - Horizontal scroll on mobile */}
+            <div className="flex gap-3 overflow-x-auto pb-1 lg:grid lg:grid-cols-4 lg:overflow-visible">
+                <Link href="/doctor/queue" className="flex-shrink-0">
+                    <Button variant="secondary" className="h-auto flex-col gap-1.5 px-5 py-3 lg:w-full lg:gap-2 lg:py-4">
+                        <ClipboardList className="h-5 w-5 text-purple-600" />
+                        <span className="text-xs font-medium lg:text-sm">Queue</span>
+                    </Button>
+                </Link>
+                <Button
+                    variant="secondary"
+                    className="h-auto flex-shrink-0 flex-col gap-1.5 px-5 py-3 lg:gap-2 lg:py-4"
+                    onClick={() => setShowPrescriptionModal(true)}
+                >
+                    <FileText className="h-5 w-5 text-teal-600" />
+                    <span className="text-xs font-medium lg:text-sm">Prescription</span>
+                </Button>
+                <Button
+                    variant="secondary"
+                    className="h-auto flex-shrink-0 flex-col gap-1.5 px-5 py-3 lg:gap-2 lg:py-4"
+                    onClick={() => setShowLabOrderModal(true)}
+                >
+                    <TestTube className="h-5 w-5 text-amber-600" />
+                    <span className="text-xs font-medium lg:text-sm">Lab Test</span>
+                </Button>
+                <Link href="/doctor/schedule" className="flex-shrink-0">
+                    <Button variant="secondary" className="h-auto flex-col gap-1.5 px-5 py-3 lg:w-full lg:gap-2 lg:py-4">
+                        <Calendar className="h-5 w-5 text-blue-600" />
+                        <span className="text-xs font-medium lg:text-sm">Schedule</span>
+                    </Button>
+                </Link>
+            </div>
 
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
                 {/* Patient Queue */}
                 <Card className="border-none shadow-lg">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="text-lg">Next Patients</CardTitle>
+                    <CardHeader className="flex flex-row items-center justify-between px-4 py-3 lg:px-6 lg:py-4">
+                        <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
+                            <Users className="h-5 w-5 text-purple-600" />
+                            Next Patients
+                        </CardTitle>
                         <Link href="/doctor/queue">
-                            <Button variant="ghost" size="sm">
-                                View All →
-                            </Button>
+                            <Badge className="cursor-pointer bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100">
+                                All <ChevronRight className="ml-0.5 h-3 w-3" />
+                            </Badge>
                         </Link>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="px-4 pb-4 pt-0 lg:px-6 lg:pb-6">
                         {queue.length === 0 ? (
                             <div className="py-8 text-center">
-                                <p className="text-3xl">✨</p>
-                                <p className="mt-2 text-slate-500">No patients waiting</p>
+                                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+                                    <Users className="h-6 w-6 text-slate-400" />
+                                </div>
+                                <p className="text-sm text-slate-500">No patients waiting</p>
                             </div>
                         ) : (
-                            <div className="space-y-3">
+                            <div className="space-y-2.5">
                                 {queue.slice(0, 5).map((patient) => (
                                     <div
                                         key={patient.id}
-                                        className={`rounded-xl border p-4 transition-all ${patient.status === 'in_consultation'
-                                                ? 'border-purple-200 bg-purple-50/50'
-                                                : 'border-slate-200 bg-slate-50/50'
+                                        className={`rounded-xl border p-3 transition-all lg:p-4 ${patient.status === 'in_consultation'
+                                            ? 'border-purple-200 bg-purple-50/50'
+                                            : 'border-slate-200 bg-slate-50/50'
                                             }`}
                                     >
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`flex h-12 w-12 items-center justify-center rounded-xl text-lg font-bold text-white ${patient.status === 'in_consultation'
-                                                        ? 'bg-gradient-to-br from-purple-400 to-purple-600'
-                                                        : 'bg-gradient-to-br from-yellow-400 to-orange-500'
-                                                    }`}>
-                                                    #{patient.queue_number}
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-slate-800">
-                                                        {patient.child?.full_name || 'Unknown'}
-                                                    </p>
-                                                    <p className="text-xs text-slate-500">
-                                                        {patient.child?.date_of_birth ? getAge(patient.child.date_of_birth) : ''} •{' '}
-                                                        {patient.reason}
-                                                    </p>
-                                                    <p className="text-xs text-slate-400">
-                                                        Wait: {getWaitTime(patient.checked_in_at)}
-                                                    </p>
-                                                </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white lg:h-12 lg:w-12 lg:text-base ${patient.status === 'in_consultation'
+                                                ? 'bg-gradient-to-br from-purple-400 to-purple-600'
+                                                : 'bg-gradient-to-br from-amber-400 to-orange-500'
+                                                }`}>
+                                                #{patient.queue_number}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-sm font-semibold text-slate-800 lg:text-base">
+                                                    {patient.child?.full_name || 'Unknown'}
+                                                </p>
+                                                <p className="text-xs text-slate-500">
+                                                    {patient.child?.date_of_birth ? getAge(patient.child.date_of_birth) : ''} • {patient.reason}
+                                                </p>
+                                                <p className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-400">
+                                                    <Clock className="h-3 w-3" />
+                                                    {getWaitTime(patient.checked_in_at)}
+                                                </p>
                                             </div>
 
                                             {patient.status === 'waiting' ? (
                                                 <Button
                                                     size="sm"
                                                     onClick={() => startConsultation(patient)}
-                                                    className="bg-purple-600 hover:bg-purple-700"
+                                                    className="h-8 bg-purple-600 px-3 hover:bg-purple-700"
                                                 >
+                                                    <Play className="mr-1 h-3.5 w-3.5" />
                                                     Start
                                                 </Button>
                                             ) : (
-                                                <Badge variant="purple">In Session</Badge>
+                                                <Badge className="bg-purple-100 text-purple-700">Active</Badge>
                                             )}
                                         </div>
 
                                         {patient.vitals && Object.values(patient.vitals).some(v => v) && (
-                                            <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-200 pt-3">
+                                            <div className="mt-2.5 flex flex-wrap gap-2 border-t border-slate-200 pt-2.5">
                                                 {patient.vitals.temperature && (
-                                                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700">
-                                                        🌡️ {patient.vitals.temperature}°C
+                                                    <span className="flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[11px] text-red-700">
+                                                        <Thermometer className="h-3 w-3" />
+                                                        {patient.vitals.temperature}°C
                                                     </span>
                                                 )}
                                                 {patient.vitals.weight && (
-                                                    <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
-                                                        ⚖️ {patient.vitals.weight} kg
+                                                    <span className="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[11px] text-blue-700">
+                                                        <Scale className="h-3 w-3" />
+                                                        {patient.vitals.weight} kg
                                                     </span>
                                                 )}
                                             </div>
@@ -537,41 +545,44 @@ export default function DoctorDashboard() {
 
                 {/* Recent Consultations */}
                 <Card className="border-none shadow-lg">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="text-lg">Recent Consultations</CardTitle>
+                    <CardHeader className="flex flex-row items-center justify-between px-4 py-3 lg:px-6 lg:py-4">
+                        <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
+                            <CheckCircle className="h-5 w-5 text-emerald-600" />
+                            Recent
+                        </CardTitle>
                         <Link href="/doctor/consultations">
-                            <Button variant="ghost" size="sm">
-                                View All →
-                            </Button>
+                            <Badge className="cursor-pointer bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100">
+                                All <ChevronRight className="ml-0.5 h-3 w-3" />
+                            </Badge>
                         </Link>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="px-4 pb-4 pt-0 lg:px-6 lg:pb-6">
                         {recentConsultations.length === 0 ? (
                             <div className="py-8 text-center">
-                                <p className="text-3xl">📋</p>
-                                <p className="mt-2 text-slate-500">No consultations yet today</p>
+                                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+                                    <ClipboardList className="h-6 w-6 text-slate-400" />
+                                </div>
+                                <p className="text-sm text-slate-500">No consultations today</p>
                             </div>
                         ) : (
-                            <div className="space-y-3">
+                            <div className="space-y-2.5">
                                 {recentConsultations.map((consult) => (
                                     <div
                                         key={consult.id}
-                                        className="flex items-center justify-between rounded-xl bg-slate-50 p-4"
+                                        className="flex items-center gap-3 rounded-xl bg-slate-50 p-3 lg:p-4"
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-lg">
-                                                ✅
-                                            </div>
-                                            <div>
-                                                <p className="font-medium text-slate-800">
-                                                    {consult.child?.full_name || 'Unknown'}
-                                                </p>
-                                                <p className="text-xs text-slate-500">
-                                                    {consult.diagnosis || 'Consultation completed'}
-                                                </p>
-                                            </div>
+                                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100">
+                                            <CheckCircle className="h-5 w-5 text-emerald-600" />
                                         </div>
-                                        <p className="text-xs text-slate-400">
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-medium text-slate-800">
+                                                {consult.child?.full_name || 'Unknown'}
+                                            </p>
+                                            <p className="truncate text-xs text-slate-500">
+                                                {consult.diagnosis || 'Consultation completed'}
+                                            </p>
+                                        </div>
+                                        <p className="flex-shrink-0 text-xs text-slate-400">
                                             {new Date(consult.completed_at).toLocaleTimeString('en-US', {
                                                 hour: '2-digit',
                                                 minute: '2-digit',

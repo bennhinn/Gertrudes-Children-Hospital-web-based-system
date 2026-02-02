@@ -6,6 +6,21 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import {
+    UserCheck,
+    Clock,
+    Users,
+    Timer,
+    QrCode,
+    ListOrdered,
+    Search,
+    UserPlus,
+    ChevronRight,
+    CheckCircle,
+    Stethoscope,
+    Calendar,
+    Baby
+} from 'lucide-react'
 
 interface QueueStats {
     checkedInToday: number
@@ -179,13 +194,13 @@ export default function ReceptionistDashboard() {
     function getStatusBadge(status: string) {
         switch (status) {
             case 'waiting':
-                return <Badge variant="yellow">Waiting</Badge>
+                return <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] px-1.5 py-0">Waiting</Badge>
             case 'in_consultation':
-                return <Badge variant="blue">With Doctor</Badge>
+                return <Badge className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] px-1.5 py-0">With Doctor</Badge>
             case 'completed':
-                return <Badge variant="green">Completed</Badge>
+                return <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] px-1.5 py-0">Done</Badge>
             default:
-                return <Badge variant="gray">{status}</Badge>
+                return <Badge className="bg-slate-50 text-slate-700 border-slate-200 text-[10px] px-1.5 py-0">{status}</Badge>
         }
     }
 
@@ -207,92 +222,88 @@ export default function ReceptionistDashboard() {
     }
 
     return (
-        <div className="space-y-6 pb-20 lg:pb-6">
-            {/* Welcome Header */}
-            <div className="rounded-2xl bg-linear-to-br from-blue-500 via-blue-600 to-cyan-500 p-6 text-white shadow-xl">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold">Reception Dashboard</h1>
-                        <p className="mt-1 text-blue-100">
+        <div className="space-y-4 pb-20 lg:space-y-6 lg:pb-6">
+            {/* Welcome Header - Compact on Mobile */}
+            <div className="rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 p-4 text-white shadow-lg lg:rounded-2xl lg:p-6">
+                <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                        <h1 className="text-lg font-bold lg:text-2xl">Reception Dashboard</h1>
+                        <p className="mt-0.5 text-sm text-blue-100 lg:mt-1">
                             {new Date().toLocaleDateString('en-US', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
+                                weekday: 'short',
+                                month: 'short',
                                 day: 'numeric'
                             })}
                         </p>
                     </div>
-                    <div className="flex gap-3">
-                        <Link href="/receptionist/check-in">
-                            <Button className="bg-white text-blue-600 hover:bg-blue-50">
-                                📱 Quick Check-In
-                            </Button>
-                        </Link>
-                    </div>
+                    <Link href="/receptionist/check-in">
+                        <Button size="sm" className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm">
+                            <QrCode className="mr-1.5 h-4 w-4" />
+                            Check-In
+                        </Button>
+                    </Link>
                 </div>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <Card className="border-none shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-blue-100 to-blue-200 text-2xl">
-                                ✅
+            {/* Stats Grid - Compact on Mobile */}
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+                <Card className="border-none shadow-md">
+                    <CardContent className="p-3 lg:p-5">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 lg:h-12 lg:w-12">
+                                <UserCheck className="h-5 w-5 text-blue-600 lg:h-6 lg:w-6" />
                             </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-500">Checked In Today</p>
-                                <p className="text-3xl font-bold text-slate-800">{stats.checkedInToday}</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="border-none shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-yellow-100 to-orange-200 text-2xl">
-                                <span className="relative">
-                                    ⏳
-                                    {stats.currentlyWaiting > 0 && (
-                                        <span className="absolute -right-1 -top-1 flex h-3 w-3">
-                                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75"></span>
-                                            <span className="relative inline-flex h-3 w-3 rounded-full bg-yellow-500"></span>
-                                        </span>
-                                    )}
-                                </span>
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-500">Currently Waiting</p>
-                                <p className="text-3xl font-bold text-yellow-600">{stats.currentlyWaiting}</p>
+                            <div className="min-w-0">
+                                <p className="text-xs font-medium text-slate-500 lg:text-sm">Checked In</p>
+                                <p className="text-2xl font-bold text-slate-800 lg:text-3xl">{stats.checkedInToday}</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-purple-100 to-purple-200 text-2xl">
-                                👨‍⚕️
+                <Card className="border-none shadow-md">
+                    <CardContent className="p-3 lg:p-5">
+                        <div className="flex items-center gap-3">
+                            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 lg:h-12 lg:w-12">
+                                <Clock className="h-5 w-5 text-amber-600 lg:h-6 lg:w-6" />
+                                {stats.currentlyWaiting > 0 && (
+                                    <span className="absolute -right-1 -top-1 flex h-3 w-3">
+                                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
+                                        <span className="relative inline-flex h-3 w-3 rounded-full bg-amber-500"></span>
+                                    </span>
+                                )}
                             </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-500">With Doctor</p>
-                                <p className="text-3xl font-bold text-purple-600">{stats.withDoctor}</p>
+                            <div className="min-w-0">
+                                <p className="text-xs font-medium text-slate-500 lg:text-sm">Waiting</p>
+                                <p className="text-2xl font-bold text-amber-600 lg:text-3xl">{stats.currentlyWaiting}</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-green-100 to-emerald-200 text-2xl">
-                                ⏱️
+                <Card className="border-none shadow-md">
+                    <CardContent className="p-3 lg:p-5">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 lg:h-12 lg:w-12">
+                                <Stethoscope className="h-5 w-5 text-purple-600 lg:h-6 lg:w-6" />
                             </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-500">Avg Wait Time</p>
-                                <p className="text-3xl font-bold text-green-600">
+                            <div className="min-w-0">
+                                <p className="text-xs font-medium text-slate-500 lg:text-sm">With Doctor</p>
+                                <p className="text-2xl font-bold text-purple-600 lg:text-3xl">{stats.withDoctor}</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-none shadow-md">
+                    <CardContent className="p-3 lg:p-5">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-100 to-green-100 lg:h-12 lg:w-12">
+                                <Timer className="h-5 w-5 text-emerald-600 lg:h-6 lg:w-6" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-xs font-medium text-slate-500 lg:text-sm">Avg Wait</p>
+                                <p className="text-2xl font-bold text-emerald-600 lg:text-3xl">
                                     {stats.avgWaitTime > 0 ? `${stats.avgWaitTime}m` : '--'}
                                 </p>
                             </div>
@@ -301,75 +312,72 @@ export default function ReceptionistDashboard() {
                 </Card>
             </div>
 
-            {/* Quick Actions */}
-            <Card className="border-none shadow-lg">
-                <CardHeader>
-                    <CardTitle className="text-lg">Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <Link href="/receptionist/check-in">
-                            <Button variant="secondary" className="h-auto w-full flex-col gap-2 py-4">
-                                <span className="text-2xl">📱</span>
-                                <span>Scan QR Code</span>
-                            </Button>
-                        </Link>
-                        <Link href="/receptionist/queue">
-                            <Button variant="secondary" className="h-auto w-full flex-col gap-2 py-4">
-                                <span className="text-2xl">📋</span>
-                                <span>View Queue</span>
-                            </Button>
-                        </Link>
-                        <Link href="/receptionist/appointments">
-                            <Button variant="secondary" className="h-auto w-full flex-col gap-2 py-4">
-                                <span className="text-2xl">🔍</span>
-                                <span>Search Patient</span>
-                            </Button>
-                        </Link>
-                        <Button variant="secondary" className="h-auto flex-col gap-2 py-4" disabled>
-                            <span className="text-2xl">➕</span>
-                            <span>Add Walk-In</span>
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+            {/* Quick Actions - Horizontal scroll on mobile */}
+            <div className="flex gap-3 overflow-x-auto pb-1 lg:grid lg:grid-cols-4 lg:overflow-visible">
+                <Link href="/receptionist/check-in" className="flex-shrink-0">
+                    <Button variant="secondary" className="h-auto flex-col gap-1.5 px-5 py-3 lg:w-full lg:gap-2 lg:py-4">
+                        <QrCode className="h-5 w-5 text-blue-600" />
+                        <span className="text-xs font-medium lg:text-sm">Scan QR</span>
+                    </Button>
+                </Link>
+                <Link href="/receptionist/queue" className="flex-shrink-0">
+                    <Button variant="secondary" className="h-auto flex-col gap-1.5 px-5 py-3 lg:w-full lg:gap-2 lg:py-4">
+                        <ListOrdered className="h-5 w-5 text-amber-600" />
+                        <span className="text-xs font-medium lg:text-sm">Queue</span>
+                    </Button>
+                </Link>
+                <Link href="/receptionist/appointments" className="flex-shrink-0">
+                    <Button variant="secondary" className="h-auto flex-col gap-1.5 px-5 py-3 lg:w-full lg:gap-2 lg:py-4">
+                        <Search className="h-5 w-5 text-purple-600" />
+                        <span className="text-xs font-medium lg:text-sm">Search</span>
+                    </Button>
+                </Link>
+                <Button variant="secondary" className="h-auto flex-shrink-0 flex-col gap-1.5 px-5 py-3 lg:gap-2 lg:py-4" disabled>
+                    <UserPlus className="h-5 w-5 text-slate-400" />
+                    <span className="text-xs font-medium lg:text-sm">Walk-In</span>
+                </Button>
+            </div>
 
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
                 {/* Current Queue */}
                 <Card className="border-none shadow-lg">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="text-lg">Current Queue</CardTitle>
+                    <CardHeader className="flex flex-row items-center justify-between px-4 py-3 lg:px-6 lg:py-4">
+                        <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
+                            <Users className="h-5 w-5 text-blue-600" />
+                            Current Queue
+                        </CardTitle>
                         <Link href="/receptionist/queue">
-                            <Button variant="ghost" size="sm">
-                                View All →
-                            </Button>
+                            <Badge className="cursor-pointer bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+                                All <ChevronRight className="ml-0.5 h-3 w-3" />
+                            </Badge>
                         </Link>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="px-4 pb-4 pt-0 lg:px-6 lg:pb-6">
                         {recentCheckIns.length === 0 ? (
                             <div className="py-8 text-center">
-                                <p className="text-3xl">📋</p>
-                                <p className="mt-2 text-slate-500">No patients checked in yet</p>
+                                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+                                    <Users className="h-6 w-6 text-slate-400" />
+                                </div>
+                                <p className="text-sm text-slate-500">No patients checked in yet</p>
                             </div>
                         ) : (
-                            <div className="space-y-3">
+                            <div className="space-y-2.5">
                                 {recentCheckIns.map((checkIn) => (
                                     <div
                                         key={checkIn.id}
-                                        className="flex items-center justify-between rounded-xl bg-slate-50 p-4"
+                                        className="flex items-center gap-3 rounded-xl bg-slate-50 p-3 lg:p-4"
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-600">
-                                                {checkIn.queue_number || '#'}
-                                            </div>
-                                            <div>
-                                                <p className="font-medium text-slate-800">
-                                                    {checkIn.appointment?.child?.full_name || 'Unknown'}
-                                                </p>
-                                                <p className="text-xs text-slate-500">
-                                                    {checkIn.reason || 'General checkup'} • {getWaitTime(checkIn.checked_in_at)}
-                                                </p>
-                                            </div>
+                                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-600 lg:h-11 lg:w-11 lg:text-base">
+                                            {checkIn.queue_number || '#'}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-medium text-slate-800">
+                                                {checkIn.appointment?.child?.full_name || 'Unknown'}
+                                            </p>
+                                            <p className="flex items-center gap-1 text-xs text-slate-500">
+                                                <Clock className="h-3 w-3" />
+                                                {checkIn.reason || 'General'} • {getWaitTime(checkIn.checked_in_at)}
+                                            </p>
                                         </div>
                                         {getStatusBadge(checkIn.status)}
                                     </div>
@@ -381,41 +389,44 @@ export default function ReceptionistDashboard() {
 
                 {/* Upcoming Appointments */}
                 <Card className="border-none shadow-lg">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="text-lg">Upcoming Appointments</CardTitle>
+                    <CardHeader className="flex flex-row items-center justify-between px-4 py-3 lg:px-6 lg:py-4">
+                        <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
+                            <Calendar className="h-5 w-5 text-purple-600" />
+                            Upcoming
+                        </CardTitle>
                         <Link href="/receptionist/appointments">
-                            <Button variant="ghost" size="sm">
-                                View All →
-                            </Button>
+                            <Badge className="cursor-pointer bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100">
+                                All <ChevronRight className="ml-0.5 h-3 w-3" />
+                            </Badge>
                         </Link>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="px-4 pb-4 pt-0 lg:px-6 lg:pb-6">
                         {upcomingAppointments.length === 0 ? (
                             <div className="py-8 text-center">
-                                <p className="text-3xl">📅</p>
-                                <p className="mt-2 text-slate-500">No upcoming appointments</p>
+                                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+                                    <Calendar className="h-6 w-6 text-slate-400" />
+                                </div>
+                                <p className="text-sm text-slate-500">No upcoming appointments</p>
                             </div>
                         ) : (
-                            <div className="space-y-3">
+                            <div className="space-y-2.5">
                                 {upcomingAppointments.slice(0, 5).map((apt) => (
                                     <div
                                         key={apt.id}
-                                        className="flex items-center justify-between rounded-xl bg-slate-50 p-4"
+                                        className="flex items-center gap-3 rounded-xl bg-slate-50 p-3 lg:p-4"
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 text-lg">
-                                                👶
-                                            </div>
-                                            <div>
-                                                <p className="font-medium text-slate-800">
-                                                    {apt.child?.full_name || 'Unknown'}
-                                                </p>
-                                                <p className="text-xs text-slate-500">
-                                                    {formatTime(apt.scheduled_for)} • {apt.caregiver?.profiles?.full_name || 'Unknown'}
-                                                </p>
-                                            </div>
+                                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-purple-100 lg:h-11 lg:w-11">
+                                            <Baby className="h-5 w-5 text-purple-600" />
                                         </div>
-                                        <Button size="sm" variant="secondary">
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-medium text-slate-800">
+                                                {apt.child?.full_name || 'Unknown'}
+                                            </p>
+                                            <p className="text-xs text-slate-500">
+                                                {formatTime(apt.scheduled_for)} • {apt.caregiver?.profiles?.full_name || 'Unknown'}
+                                            </p>
+                                        </div>
+                                        <Button size="sm" variant="secondary" className="h-8 text-xs">
                                             Check In
                                         </Button>
                                     </div>

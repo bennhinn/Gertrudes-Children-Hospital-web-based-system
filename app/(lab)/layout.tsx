@@ -4,14 +4,29 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
+import {
+    LayoutDashboard,
+    ClipboardList,
+    FileBarChart,
+    CheckCircle2,
+    MessageSquare,
+    LogOut,
+    Menu,
+    X,
+    Bell,
+    ChevronRight,
+    Activity,
+    User,
+    FlaskConical,
+    TestTube
+} from 'lucide-react'
 
 const navItems = [
-    { href: '/lab', label: 'Dashboard', icon: '🏠' },
-    { href: '/lab/orders', label: 'Test Orders', icon: '📋' },
-    { href: '/lab/results', label: 'Enter Results', icon: '📊' },
-    { href: '/lab/completed', label: 'Completed', icon: '✅' },
-    { href: '/lab/messages', label: 'Messages', icon: '💬' },
+    { href: '/lab', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/lab/orders', label: 'Test Orders', icon: ClipboardList },
+    { href: '/lab/results', label: 'Enter Results', icon: FileBarChart },
+    { href: '/lab/completed', label: 'Completed', icon: CheckCircle2 },
+    { href: '/lab/messages', label: 'Messages', icon: MessageSquare },
 ]
 
 export default function LabLayout({ children }: { children: React.ReactNode }) {
@@ -19,6 +34,8 @@ export default function LabLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter()
     const [user, setUser] = useState<{ fullName: string; email: string } | null>(null)
     const [loading, setLoading] = useState(true)
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+    const [notifications] = useState(7)
 
     useEffect(() => {
         async function checkAuth() {
@@ -30,7 +47,6 @@ export default function LabLayout({ children }: { children: React.ReactNode }) {
                 return
             }
 
-            // Check role
             const role = user.app_metadata?.role || user.user_metadata?.role
             if (role !== 'lab_tech' && role !== 'admin') {
                 router.push('/login')
@@ -47,6 +63,10 @@ export default function LabLayout({ children }: { children: React.ReactNode }) {
         checkAuth()
     }, [router])
 
+    useEffect(() => {
+        setMobileMenuOpen(false)
+    }, [pathname])
+
     async function handleLogout() {
         const supabase = createClient()
         await supabase.auth.signOut()
@@ -55,96 +75,258 @@ export default function LabLayout({ children }: { children: React.ReactNode }) {
 
     if (loading) {
         return (
-            <div className="flex min-h-[100dvh] items-center justify-center bg-slate-50">
+            <div className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-amber-50 via-yellow-50 to-lime-50">
                 <div className="text-center">
-                    <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-yellow-500 border-t-transparent"></div>
-                    <p className="text-slate-600">Loading...</p>
+                    <div className="relative mx-auto mb-4 h-14 w-14">
+                        <div className="absolute inset-0 animate-spin rounded-full border-4 border-amber-200 border-t-amber-600"></div>
+                        <div className="absolute inset-2 rounded-full bg-white"></div>
+                        <FlaskConical className="absolute inset-0 m-auto h-6 w-6 text-amber-600" />
+                    </div>
+                    <p className="text-sm font-medium text-slate-600">Loading Laboratory...</p>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="min-h-[100dvh] bg-slate-50">
-            {/* Top Header */}
-            <header className="sticky top-0 z-50 border-b border-slate-200 bg-white shadow-sm">
-                <div className="mx-auto flex h-14 sm:h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
-                    <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-gradient-to-br from-yellow-400 to-green-500 text-lg sm:text-xl shadow-md">
-                            🔬
+        <div className="min-h-dvh bg-gradient-to-br from-slate-50 via-amber-50/30 to-slate-50">
+            {/* Desktop Sidebar */}
+            <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-amber-100 bg-white/80 backdrop-blur-xl lg:block">
+                <div className="flex h-full flex-col">
+                    {/* Logo Section */}
+                    <div className="flex h-16 items-center gap-3 border-b border-amber-100 px-6">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-200">
+                            <FlaskConical className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-base sm:text-lg font-bold text-slate-800">Laboratory</h1>
-                            <p className="hidden sm:block text-xs text-slate-500">Gertrude's Children Hospital</p>
+                            <p className="font-bold text-slate-800">Laboratory</p>
+                            <p className="text-xs text-slate-500">Gertrude&apos;s Children Hospital</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 sm:gap-4">
-                        {/* Live indicator */}
-                        <div className="hidden items-center gap-2 rounded-full bg-green-50 px-2.5 py-1 sm:px-3 sm:py-1.5 sm:flex">
-                            <span className="relative flex h-2 w-2">
-                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
-                                <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
-                            </span>
-                            <span className="text-xs font-medium text-green-700">Online</span>
-                        </div>
+                    {/* Navigation */}
+                    <nav className="flex-1 space-y-1.5 p-4">
+                        <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Menu</p>
+                        {navItems.map((item) => {
+                            const isActive = pathname === item.href
+                            const Icon = item.icon
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className={`group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${isActive
+                                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-200'
+                                            : 'text-slate-600 hover:bg-amber-50 hover:text-amber-700'
+                                        }`}
+                                >
+                                    <Icon className={`h-5 w-5 transition-transform duration-200 ${!isActive && 'group-hover:scale-110'}`} />
+                                    <span className="flex-1">{item.label}</span>
+                                    {item.label === 'Test Orders' && notifications > 0 && (
+                                        <span className={`flex h-5 min-w-5 items-center justify-center rounded-full text-xs font-bold ${isActive ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-600'
+                                            }`}>
+                                            {notifications}
+                                        </span>
+                                    )}
+                                    {isActive && <ChevronRight className="h-4 w-4 opacity-70" />}
+                                </Link>
+                            )
+                        })}
+                    </nav>
 
-                        {/* User info */}
-                        <div className="hidden text-right md:block">
-                            <p className="text-sm font-medium text-slate-700">{user?.fullName}</p>
-                            <p className="text-xs text-slate-500">Lab Technician</p>
+                    {/* Status Card */}
+                    <div className="p-4">
+                        <div className="rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 p-4">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+                                    <TestTube className="h-5 w-5 text-green-600" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-green-800">Lab Status</p>
+                                    <p className="text-xs text-green-600">All equipment operational</p>
+                                </div>
+                            </div>
                         </div>
+                    </div>
 
-                        <Button variant="secondary" size="sm" onClick={handleLogout} className="text-xs sm:text-sm">
-                            Logout
-                        </Button>
+                    {/* User Section */}
+                    <div className="border-t border-amber-100 p-4">
+                        <div className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 p-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-md">
+                                <User className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-semibold text-slate-800">{user?.fullName}</p>
+                                <p className="truncate text-xs text-slate-500">Lab Technician</p>
+                            </div>
+                            <button
+                                onClick={handleLogout}
+                                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-white hover:text-red-500"
+                                title="Logout"
+                            >
+                                <LogOut className="h-4 w-4" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            {/* Mobile Header */}
+            <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200 bg-white shadow-sm lg:hidden">
+                <div className="flex h-14 items-center justify-between px-4">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-md">
+                            <FlaskConical className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                            <p className="text-base font-bold text-slate-800">Laboratory</p>
+                            <p className="text-[11px] text-slate-500">GCH System</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <button className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors active:bg-slate-200">
+                            <Bell className="h-5 w-5" />
+                            {notifications > 0 && (
+                                <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
+                                    {notifications}
+                                </span>
+                            )}
+                        </button>
+                        <button
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors active:bg-slate-200"
+                        >
+                            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                        </button>
                     </div>
                 </div>
             </header>
 
-            <div className="mx-auto max-w-7xl px-4 py-4 sm:py-6 lg:px-8">
-                <div className="flex gap-6">
-                    {/* Sidebar Navigation */}
-                    <aside className="hidden w-64 shrink-0 lg:block">
-                        <nav className="sticky top-24 space-y-2">
-                            {navItems.map((item) => {
-                                const isActive = pathname === item.href
-                                return (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${isActive
-                                            ? 'bg-gradient-to-r from-yellow-400 to-green-500 text-white shadow-md'
-                                            : 'bg-white text-slate-700 shadow-sm hover:bg-yellow-50 hover:shadow-md'
-                                            }`}
-                                    >
-                                        <span className="text-lg">{item.icon}</span>
-                                        {item.label}
-                                    </Link>
-                                )
-                            })}
-                        </nav>
-                    </aside>
+            {/* Mobile Navigation Drawer */}
+            {mobileMenuOpen && (
+                <div className="fixed inset-0 z-40 lg:hidden">
+                    <div
+                        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                        onClick={() => setMobileMenuOpen(false)}
+                    />
+                    <div className="absolute inset-y-0 left-0 w-80 max-w-[85vw] overflow-y-auto bg-white shadow-2xl">
+                        {/* Drawer Header */}
+                        <div className="sticky top-0 flex h-16 items-center justify-between border-b border-amber-100 bg-white px-4">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500">
+                                    <FlaskConical className="h-4 w-4 text-white" />
+                                </div>
+                                <span className="font-bold text-slate-800">Menu</span>
+                            </div>
+                            <button
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="rounded-lg p-2 text-slate-400 hover:bg-slate-100"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
 
-                    {/* Main Content */}
-                    <main className="min-w-0 flex-1 pb-20 lg:pb-0">{children}</main>
+                        {/* User Info */}
+                        <div className="border-b border-amber-100 p-4">
+                            <div className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 p-4">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-500 text-white">
+                                    <User className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-slate-800">{user?.fullName}</p>
+                                    <p className="text-sm text-slate-500">Lab Technician</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Navigation */}
+                        <nav className="p-4">
+                            <p className="mb-3 px-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Navigation</p>
+                            <div className="space-y-1.5">
+                                {navItems.map((item) => {
+                                    const isActive = pathname === item.href
+                                    const Icon = item.icon
+                                    return (
+                                        <Link
+                                            key={item.href}
+                                            href={item.href}
+                                            className={`flex items-center gap-3 rounded-xl px-4 py-3.5 text-sm font-medium transition-all ${isActive
+                                                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg'
+                                                    : 'text-slate-600 hover:bg-amber-50'
+                                                }`}
+                                        >
+                                            <Icon className="h-5 w-5" />
+                                            <span className="flex-1">{item.label}</span>
+                                            {item.label === 'Test Orders' && notifications > 0 && (
+                                                <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${isActive ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-600'
+                                                    }`}>
+                                                    {notifications}
+                                                </span>
+                                            )}
+                                        </Link>
+                                    )
+                                })}
+                            </div>
+                        </nav>
+
+                        {/* Lab Status */}
+                        <div className="border-t border-amber-100 p-4">
+                            <div className="rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+                                        <TestTube className="h-5 w-5 text-green-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-green-800">Lab Status</p>
+                                        <p className="text-xs text-green-600">All equipment operational</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Logout */}
+                        <div className="absolute inset-x-0 bottom-0 border-t border-amber-100 bg-white p-4 pb-safe">
+                            <button
+                                onClick={handleLogout}
+                                className="flex w-full items-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-100"
+                            >
+                                <LogOut className="h-5 w-5" />
+                                Sign Out
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            )}
+
+            {/* Main Content */}
+            <main className="min-h-dvh pt-14 pb-20 lg:pb-8 lg:pl-72 lg:pt-0">
+                <div className="p-4 lg:p-6">{children}</div>
+            </main>
 
             {/* Mobile Bottom Navigation */}
-            <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden">
-                <div className="flex justify-around py-1.5 sm:py-2">
+            <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white pb-safe lg:hidden">
+                <div className="flex items-center justify-around py-2">
                     {navItems.map((item) => {
                         const isActive = pathname === item.href
+                        const Icon = item.icon
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`flex flex-col items-center gap-0.5 px-3 py-2 min-w-[60px] ${isActive ? 'text-yellow-600' : 'text-slate-500'
+                                className={`flex flex-col items-center gap-1 px-3 py-1.5 ${isActive ? 'text-amber-600' : 'text-slate-400'
                                     }`}
                             >
-                                <span className="text-xl">{item.icon}</span>
-                                <span className="text-[10px] sm:text-xs font-medium">{item.label.split(' ')[0]}</span>
+                                <div className="relative">
+                                    <Icon className={`h-6 w-6 ${isActive ? 'stroke-[2.5px]' : ''}`} />
+                                    {item.label === 'Test Orders' && notifications > 0 && (
+                                        <span className="absolute -right-2 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+                                            {notifications > 9 ? '9+' : notifications}
+                                        </span>
+                                    )}
+                                </div>
+                                <span className={`text-[11px] ${isActive ? 'font-semibold' : 'font-medium'}`}>
+                                    {item.label.split(' ')[0]}
+                                </span>
                             </Link>
                         )
                     })}

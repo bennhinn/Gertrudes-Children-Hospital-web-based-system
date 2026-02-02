@@ -15,6 +15,12 @@ interface Prescription {
     notes: string | null
     child_id: string
     doctor_id: string
+    // Direct fields on prescription (legacy/simple prescriptions)
+    medication_name?: string
+    dosage?: string
+    frequency?: string
+    quantity?: number
+    // Related items (newer multi-item prescriptions)
     prescription_items: PrescriptionItem[]
     child: {
         id: string
@@ -115,6 +121,77 @@ export default function PharmacyPrescriptionsPage() {
                 if (user) {
                     updateData.pharmacist_id = user.id
                 }
+
+                // Get prescription items to deduct from inventory
+                const prescription = prescriptions.find(p => p.id === id)
+                console.log('🔍 Found prescription:', prescription?.id, 'Items:', prescription?.prescription_items?.length, 'Direct med:', prescription?.medication_name)
+                
+                // Build list of medications to deduct - handle both direct and items-based prescriptions
+                const medicationsToDeduct: { name: string; quantity: number }[] = []
+                
+                // Check for prescription_items (newer multi-item prescriptions)
+                if (prescription?.prescription_items && prescription.prescription_items.length > 0) {
+                    for (const item of prescription.prescription_items) {
+                        medicationsToDeduct.push({
+                            name: item.medication_name,
+                            quantity: item.quantity || 1
+                        })
+                    }
+                }
+                
+                // Also check for direct medication on the prescription (legacy single-item prescriptions)
+                if (prescription?.medication_name) {
+                    medicationsToDeduct.push({
+                        name: prescription.medication_name,
+                        quantity: prescription.quantity || 1
+                    })
+                }
+                
+                console.log('📋 Medications to deduct:', medicationsToDeduct)
+                
+                for (const med of medicationsToDeduct) {
+                    console.log(`🔍 Looking for medication: "${med.name}" (qty: ${med.quantity})`)
+                    
+                    // Try exact match first
+                    let { data: medication, error: medError } = await supabase
+                        .from('medications')
+                        .select('id, name, stock')
+                        .ilike('name', med.name.trim())
+                        .single()
+                    
+                    // If no exact match, try partial match
+                    if (!medication) {
+                        const { data: partialMatch } = await supabase
+                            .from('medications')
+                            .select('id, name, stock')
+                            .ilike('name', `%${med.name.trim()}%`)
+                            .limit(1)
+                            .single()
+                        medication = partialMatch
+                    }
+
+                    if (medication) {
+                        const quantityToDeduct = med.quantity
+                        const newStock = Math.max(0, (medication.stock || 0) - quantityToDeduct)
+                        
+                        const { error: updateError } = await supabase
+                            .from('medications')
+                            .update({ stock: newStock })
+                            .eq('id', medication.id)
+                        
+                        if (updateError) {
+                            console.error(`❌ Failed to update stock for ${medication.name}:`, updateError)
+                        } else {
+                            console.log(`✅ Deducted ${quantityToDeduct} of "${medication.name}". Old: ${medication.stock}, New: ${newStock}`)
+                        }
+                    } else {
+                        console.warn(`⚠️ Medication "${med.name}" not found in inventory. Error:`, medError)
+                    }
+                }
+                
+                if (medicationsToDeduct.length === 0) {
+                    console.warn('⚠️ No medications found to deduct for this prescription')
+                }
             }
 
             const { error } = await supabase
@@ -126,7 +203,7 @@ export default function PharmacyPrescriptionsPage() {
 
             if (selectedPrescription?.id === id && newStatus === 'dispensed') {
                 setSelectedPrescription(null)
-                alert('✅ Prescription dispensed successfully!')
+                alert('✅ Prescription dispensed successfully! Inventory has been updated.')
             }
             loadPrescriptions()
         } catch (error) {
