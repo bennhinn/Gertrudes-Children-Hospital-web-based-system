@@ -5,6 +5,35 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import {
+  Building2,
+  Calendar,
+  Clock,
+  Users,
+  Bell,
+  Lock,
+  ClipboardList,
+  Monitor,
+  Link2,
+  Database,
+  Wrench,
+  LucideIcon,
+  RefreshCw,
+  Download,
+  Search,
+  BarChart3,
+  Smartphone,
+  Key,
+  CheckCircle2,
+  Trash2,
+  Mail,
+  CreditCard,
+  Lightbulb,
+  HardDrive,
+  AlertTriangle,
+  Eraser,
+  User
+} from 'lucide-react';
 
 interface AuditLog {
   id: string;
@@ -88,18 +117,18 @@ export default function AdminSettingsPage() {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const tabs = [
-    { id: 'general', label: 'General', icon: '🏥' },
-    { id: 'appointments', label: 'Appointments', icon: '📅' },
-    { id: 'working-hours', label: 'Working Hours', icon: '🕐' },
-    { id: 'roles', label: 'Roles & Permissions', icon: '👥' },
-    { id: 'notifications', label: 'Notifications', icon: '🔔' },
-    { id: 'security', label: 'Security', icon: '🔒' },
-    { id: 'audit', label: 'Audit Logs', icon: '📋' },
-    { id: 'system', label: 'System Health', icon: '💻' },
-    { id: 'integrations', label: 'Integrations', icon: '🔗' },
-    { id: 'backup', label: 'Backup & Data', icon: '💾' },
-    { id: 'maintenance', label: 'Maintenance', icon: '🔧' },
+  const tabs: { id: string; label: string; icon: LucideIcon }[] = [
+    { id: 'general', label: 'General', icon: Building2 },
+    { id: 'appointments', label: 'Appointments', icon: Calendar },
+    { id: 'working-hours', label: 'Hours', icon: Clock },
+    { id: 'roles', label: 'Roles', icon: Users },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'security', label: 'Security', icon: Lock },
+    { id: 'audit', label: 'Audit', icon: ClipboardList },
+    { id: 'system', label: 'System', icon: Monitor },
+    { id: 'integrations', label: 'Integrations', icon: Link2 },
+    { id: 'backup', label: 'Backup', icon: Database },
+    { id: 'maintenance', label: 'Maintenance', icon: Wrench },
   ];
 
   useEffect(() => {
@@ -178,107 +207,132 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800">System Settings</h1>
-          <p className="mt-1 text-slate-600">Configure system preferences, security, and options</p>
+          <h1 className="text-xl sm:text-3xl font-bold text-slate-800">System Settings</h1>
+          <p className="text-sm text-slate-600">Configure system preferences and options</p>
         </div>
         {saveMessage && (
-          <div className={`px-4 py-2 rounded-lg text-sm font-medium ${saveMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          <div className={`px-3 py-2 rounded-lg text-xs sm:text-sm font-medium ${saveMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
             }`}>
             {saveMessage.text}
           </div>
         )}
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Sidebar Tabs */}
+      <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
+        {/* Sidebar Tabs - Horizontal scroll on mobile */}
         <div className="lg:w-64 shrink-0">
-          <Card className="border-none shadow-lg sticky top-4">
-            <CardContent className="p-2">
-              <nav className="space-y-1 max-h-[calc(100vh-200px)] overflow-y-auto">
-                {tabs.map((tab) => (
+          {/* Mobile: Horizontal scrollable tabs */}
+          <div className="lg:hidden overflow-x-auto -mx-4 px-4 pb-2">
+            <div className="flex gap-2 w-max">
+              {tabs.map((tab) => {
+                const Icon = tab.icon
+                return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${activeTab === tab.id
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-slate-600 hover:bg-slate-50'
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-colors ${activeTab === tab.id
+                      ? 'bg-blue-50 text-blue-700 font-medium'
+                      : 'text-slate-600 bg-slate-100 hover:bg-slate-200'
                       }`}
                   >
-                    <span className="text-xl">{tab.icon}</span>
-                    <span className="font-medium">{tab.label}</span>
+                    <Icon className="h-4 w-4" />
+                    <span>{tab.label}</span>
                   </button>
-                ))}
+                )
+              })}
+            </div>
+          </div>
+          {/* Desktop: Vertical sidebar */}
+          <Card className="border-none shadow-lg sticky top-4 hidden lg:block">
+            <CardContent className="p-2">
+              <nav className="space-y-1 max-h-[calc(100vh-200px)] overflow-y-auto">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${activeTab === tab.id
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-slate-600 hover:bg-slate-50'
+                        }`}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span className="font-medium">{tab.label}</span>
+                    </button>
+                  )
+                })}
               </nav>
             </CardContent>
           </Card>
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 space-y-6">
+        <div className="flex-1 space-y-4 sm:space-y-6">
           {/* General Settings */}
           {activeTab === 'general' && (
             <Card className="border-none shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-2xl">🏥</span>
+              <CardHeader className="p-3 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                   Clinic Information
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <CardContent className="space-y-4 sm:space-y-6 p-3 sm:p-6 pt-0 sm:pt-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                       Clinic Name
                     </label>
-                    <Input defaultValue="Good Childhood Hospital" />
+                    <Input defaultValue="Good Childhood Hospital" className="text-sm" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                       Short Name / Code
                     </label>
-                    <Input defaultValue="GCH" />
+                    <Input defaultValue="GCH" className="text-sm" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                       Contact Email
                     </label>
-                    <Input type="email" defaultValue="contact@gch.com" />
+                    <Input type="email" defaultValue="contact@gch.com" className="text-sm" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                       Support Email
                     </label>
-                    <Input type="email" defaultValue="support@gch.com" />
+                    <Input type="email" defaultValue="support@gch.com" className="text-sm" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                       Primary Phone
                     </label>
-                    <Input type="tel" defaultValue="+1 (555) 123-4567" />
+                    <Input type="tel" defaultValue="+1 (555) 123-4567" className="text-sm" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                       Emergency Line
                     </label>
-                    <Input type="tel" defaultValue="+1 (555) 911-0000" />
+                    <Input type="tel" defaultValue="+1 (555) 911-0000" className="text-sm" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                     Address
                   </label>
-                  <Input defaultValue="123 Healthcare Ave, Medical City, MC 12345" />
+                  <Input defaultValue="123 Healthcare Ave, Medical City, MC 12345" className="text-sm" />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                       Timezone
                     </label>
-                    <select className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select className="w-full px-3 sm:px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                       <option>Africa/Lagos (WAT)</option>
                       <option>Africa/Accra (GMT)</option>
                       <option>America/New_York (EST)</option>
@@ -286,10 +340,10 @@ export default function AdminSettingsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                       Date Format
                     </label>
-                    <select className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select className="w-full px-3 sm:px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                       <option>DD/MM/YYYY</option>
                       <option>MM/DD/YYYY</option>
                       <option>YYYY-MM-DD</option>
@@ -297,7 +351,7 @@ export default function AdminSettingsPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                     Welcome Message (shown on login)
                   </label>
                   <textarea
@@ -319,7 +373,7 @@ export default function AdminSettingsPage() {
             <Card className="border-none shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <span className="text-2xl">📅</span>
+                  <Calendar className="h-6 w-6 text-slate-600" />
                   Appointment Configuration
                 </CardTitle>
               </CardHeader>
@@ -431,7 +485,7 @@ export default function AdminSettingsPage() {
             <Card className="border-none shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <span className="text-2xl">🕐</span>
+                  <Clock className="h-6 w-6 text-slate-600" />
                   Clinic Working Hours
                 </CardTitle>
               </CardHeader>
@@ -489,7 +543,7 @@ export default function AdminSettingsPage() {
                 </div>
 
                 <div className="p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-medium text-blue-800 mb-2">💡 Quick Actions</h4>
+                  <h4 className="font-medium text-blue-800 mb-2 flex items-center gap-1"><Lightbulb className="h-4 w-4" /> Quick Actions</h4>
                   <div className="flex flex-wrap gap-2">
                     <Button
                       variant="secondary"
@@ -529,7 +583,7 @@ export default function AdminSettingsPage() {
             <Card className="border-none shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <span className="text-2xl">👥</span>
+                  <Users className="h-6 w-6 text-slate-600" />
                   Roles & Permissions
                 </CardTitle>
               </CardHeader>
@@ -556,7 +610,7 @@ export default function AdminSettingsPage() {
                               key={permission}
                               className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-sm"
                             >
-                              ✓ {permission}
+                              <CheckCircle2 className="h-3 w-3 mr-1 inline" /> {permission}
                             </span>
                           ))}
                         </div>
@@ -567,7 +621,7 @@ export default function AdminSettingsPage() {
 
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
                   <div className="flex items-start gap-3">
-                    <span className="text-xl">⚠️</span>
+                    <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
                     <div>
                       <p className="font-medium text-amber-800">Permission Changes</p>
                       <p className="text-sm text-amber-600">
@@ -586,7 +640,7 @@ export default function AdminSettingsPage() {
             <Card className="border-none shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <span className="text-2xl">🔔</span>
+                  <Bell className="h-6 w-6 text-slate-600" />
                   Notification Settings
                 </CardTitle>
               </CardHeader>
@@ -703,7 +757,7 @@ export default function AdminSettingsPage() {
             <Card className="border-none shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <span className="text-2xl">🔒</span>
+                  <Lock className="h-6 w-6 text-slate-600" />
                   Security Settings
                 </CardTitle>
               </CardHeader>
@@ -811,11 +865,11 @@ export default function AdminSettingsPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
-                    <span className="text-2xl">📋</span>
+                    <ClipboardList className="h-6 w-6 text-slate-600" />
                     Audit Logs
                   </CardTitle>
                   <Button variant="secondary" onClick={fetchAuditLogs} disabled={loading}>
-                    {loading ? 'Loading...' : '🔄 Refresh'}
+                    {loading ? 'Loading...' : <><RefreshCw className="h-4 w-4 mr-1" /> Refresh</>}
                   </Button>
                 </div>
               </CardHeader>
@@ -830,7 +884,9 @@ export default function AdminSettingsPage() {
                   </div>
                 ) : auditLogs.length === 0 ? (
                   <div className="text-center py-12 text-slate-500">
-                    <span className="text-4xl mb-4 block">📋</span>
+                    <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                      <ClipboardList className="h-8 w-8 text-slate-400" />
+                    </div>
                     <p>No audit logs found. Activities will appear here once users interact with the system.</p>
                   </div>
                 ) : (
@@ -852,11 +908,11 @@ export default function AdminSettingsPage() {
                             {log.description || `${log.action} performed on ${log.target_table || 'system'}`}
                           </p>
                           <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
-                            <span>👤 {log.user_email || 'Unknown user'}</span>
+                            <span className="flex items-center gap-1"><User className="h-3 w-3" /> {log.user_email || 'Unknown user'}</span>
                             {log.user_role && (
                               <span className="px-2 py-0.5 bg-slate-200 rounded">{log.user_role}</span>
                             )}
-                            <span>🕐 {formatDate(log.created_at)}</span>
+                            <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {formatDate(log.created_at)}</span>
                           </div>
                         </div>
                       </div>
@@ -866,10 +922,10 @@ export default function AdminSettingsPage() {
 
                 <div className="mt-4 pt-4 border-t flex gap-3">
                   <Button variant="secondary">
-                    📥 Export Logs (CSV)
+                    <Download className="h-4 w-4 mr-1" /> Export Logs (CSV)
                   </Button>
                   <Button variant="secondary">
-                    🔍 Advanced Search
+                    <Search className="h-4 w-4 mr-1" /> Advanced Search
                   </Button>
                 </div>
               </CardContent>
@@ -882,11 +938,11 @@ export default function AdminSettingsPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
-                    <span className="text-2xl">💻</span>
+                    <Monitor className="h-6 w-6 text-slate-600" />
                     System Health
                   </CardTitle>
                   <Button variant="secondary" onClick={fetchSystemStats} disabled={loading}>
-                    {loading ? 'Loading...' : '🔄 Refresh'}
+                    {loading ? 'Loading...' : <><RefreshCw className="h-4 w-4 mr-1" /> Refresh</>}
                   </Button>
                 </div>
               </CardHeader>
@@ -956,10 +1012,10 @@ export default function AdminSettingsPage() {
 
                 <div className="pt-4 border-t flex gap-3">
                   <Button variant="secondary">
-                    📊 View Full Metrics
+                    <BarChart3 className="h-4 w-4 mr-1" /> View Full Metrics
                   </Button>
                   <Button variant="secondary">
-                    🔄 Clear Cache
+                    <RefreshCw className="h-4 w-4 mr-1" /> Clear Cache
                   </Button>
                 </div>
               </CardContent>
@@ -971,7 +1027,7 @@ export default function AdminSettingsPage() {
             <Card className="border-none shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <span className="text-2xl">🔗</span>
+                  <Link2 className="h-6 w-6 text-slate-600" />
                   Integrations
                 </CardTitle>
               </CardHeader>
@@ -979,32 +1035,32 @@ export default function AdminSettingsPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 border border-slate-200 rounded-lg">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-2xl">
-                        🗄️
+                      <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <Database className="h-6 w-6 text-green-600" />
                       </div>
                       <div>
                         <p className="font-medium text-slate-800">Supabase</p>
-                        <p className="text-sm text-green-600">✓ Connected</p>
+                        <p className="text-sm text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Connected</p>
                       </div>
                     </div>
                     <Button variant="secondary">Configure</Button>
                   </div>
                   <div className="flex items-center justify-between p-4 border border-slate-200 rounded-lg">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-2xl">
-                        📧
+                      <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <Mail className="h-6 w-6 text-green-600" />
                       </div>
                       <div>
                         <p className="font-medium text-slate-800">Resend (Email)</p>
-                        <p className="text-sm text-green-600">✓ Connected</p>
+                        <p className="text-sm text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Connected</p>
                       </div>
                     </div>
                     <Button variant="secondary">Configure</Button>
                   </div>
                   <div className="flex items-center justify-between p-4 border border-slate-200 rounded-lg">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center text-2xl">
-                        📱
+                      <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
+                        <Smartphone className="h-6 w-6 text-slate-600" />
                       </div>
                       <div>
                         <p className="font-medium text-slate-800">Twilio (SMS)</p>
@@ -1015,8 +1071,8 @@ export default function AdminSettingsPage() {
                   </div>
                   <div className="flex items-center justify-between p-4 border border-slate-200 rounded-lg">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center text-2xl">
-                        💳
+                      <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
+                        <CreditCard className="h-6 w-6 text-slate-600" />
                       </div>
                       <div>
                         <p className="font-medium text-slate-800">Paystack (Payments)</p>
@@ -1027,8 +1083,8 @@ export default function AdminSettingsPage() {
                   </div>
                   <div className="flex items-center justify-between p-4 border border-slate-200 rounded-lg">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center text-2xl">
-                        📊
+                      <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
+                        <BarChart3 className="h-6 w-6 text-slate-600" />
                       </div>
                       <div>
                         <p className="font-medium text-slate-800">Google Analytics</p>
@@ -1040,12 +1096,12 @@ export default function AdminSettingsPage() {
                 </div>
 
                 <div className="p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-medium text-blue-800 mb-2">💡 API Keys</h4>
+                  <h4 className="font-medium text-blue-800 mb-2 flex items-center gap-1"><Lightbulb className="h-4 w-4" /> API Keys</h4>
                   <p className="text-sm text-blue-600 mb-3">
                     Manage your integration API keys securely. Never share these keys publicly.
                   </p>
                   <Button variant="secondary" size="sm">
-                    🔑 Manage API Keys
+                    <Key className="h-4 w-4 mr-1" /> Manage API Keys
                   </Button>
                 </div>
               </CardContent>
@@ -1057,14 +1113,14 @@ export default function AdminSettingsPage() {
             <Card className="border-none shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <span className="text-2xl">💾</span>
+                  <HardDrive className="h-6 w-6 text-slate-600" />
                   Backup & Data
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">✅</span>
+                    <CheckCircle2 className="h-6 w-6 text-green-600" />
                     <div>
                       <p className="font-medium text-green-800">Last Backup: Feb 1, 2026 at 02:00 AM</p>
                       <p className="text-sm text-green-600">Automatic daily backups enabled via Supabase</p>
@@ -1098,26 +1154,26 @@ export default function AdminSettingsPage() {
                   <h3 className="font-medium text-slate-800">Data Export</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <Button variant="secondary" className="justify-start">
-                      📥 Export All Patients (CSV)
+                      <Download className="h-4 w-4 mr-1" /> Export All Patients (CSV)
                     </Button>
                     <Button variant="secondary" className="justify-start">
-                      📥 Export Appointments (CSV)
+                      <Download className="h-4 w-4 mr-1" /> Export Appointments (CSV)
                     </Button>
                     <Button variant="secondary" className="justify-start">
-                      📥 Export Prescriptions (CSV)
+                      <Download className="h-4 w-4 mr-1" /> Export Prescriptions (CSV)
                     </Button>
                     <Button variant="secondary" className="justify-start">
-                      📥 Export Lab Results (CSV)
+                      <Download className="h-4 w-4 mr-1" /> Export Lab Results (CSV)
                     </Button>
                   </div>
                 </div>
 
                 <div className="pt-4 border-t space-y-4">
                   <Button className="w-full bg-blue-600 text-white hover:bg-blue-700">
-                    💾 Create Manual Backup
+                    <HardDrive className="h-4 w-4 mr-1" /> Create Manual Backup
                   </Button>
                   <Button variant="secondary" className="w-full text-red-600 border-red-200 hover:bg-red-50">
-                    🔄 Restore from Backup
+                    <RefreshCw className="h-4 w-4 mr-1" /> Restore from Backup
                   </Button>
                 </div>
               </CardContent>
@@ -1129,7 +1185,7 @@ export default function AdminSettingsPage() {
             <Card className="border-none shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <span className="text-2xl">🔧</span>
+                  <Wrench className="h-6 w-6 text-slate-600" />
                   Maintenance Mode
                 </CardTitle>
               </CardHeader>
@@ -1137,7 +1193,7 @@ export default function AdminSettingsPage() {
                 <div className={`p-4 rounded-lg border ${maintenanceMode ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <span className="text-2xl">{maintenanceMode ? '🔴' : '🟢'}</span>
+                      <div className={`w-4 h-4 rounded-full ${maintenanceMode ? 'bg-red-500' : 'bg-green-500'} animate-pulse`}></div>
                       <div>
                         <p className={`font-medium ${maintenanceMode ? 'text-red-800' : 'text-green-800'}`}>
                           System is {maintenanceMode ? 'in Maintenance Mode' : 'Operating Normally'}
@@ -1183,23 +1239,23 @@ export default function AdminSettingsPage() {
                   <h3 className="font-medium text-slate-800">Maintenance Tasks</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <Button variant="secondary" className="justify-start">
-                      🧹 Clear Application Cache
+                      <Eraser className="h-4 w-4 mr-1" /> Clear Application Cache
                     </Button>
                     <Button variant="secondary" className="justify-start">
-                      🔄 Rebuild Search Index
+                      <RefreshCw className="h-4 w-4 mr-1" /> Rebuild Search Index
                     </Button>
                     <Button variant="secondary" className="justify-start">
-                      📊 Optimize Database
+                      <Database className="h-4 w-4 mr-1" /> Optimize Database
                     </Button>
                     <Button variant="secondary" className="justify-start">
-                      🗑️ Clear Old Logs (90+ days)
+                      <Trash2 className="h-4 w-4 mr-1" /> Clear Old Logs (90+ days)
                     </Button>
                   </div>
                 </div>
 
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
                   <div className="flex items-start gap-3">
-                    <span className="text-xl">⚠️</span>
+                    <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
                     <div>
                       <p className="font-medium text-amber-800">Danger Zone</p>
                       <p className="text-sm text-amber-600 mb-3">

@@ -96,7 +96,7 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex min-h-[100dvh] bg-gradient-to-br from-slate-50 via-white to-slate-100">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-slate-50 via-white to-slate-100">
       {/* Desktop Sidebar */}
       <aside className="fixed left-0 top-0 z-40 hidden h-screen w-72 border-r border-slate-200/80 bg-white/80 backdrop-blur-xl shadow-xl lg:block">
         {/* Logo */}
@@ -125,8 +125,8 @@ export default function AdminLayout({
                   <Link
                     href={item.href}
                     className={`group flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 ${isActive
-                        ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
-                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                       }`}
                   >
                     <Icon className={`h-5 w-5 transition-transform duration-200 ${!isActive && 'group-hover:scale-110'}`} />
@@ -186,31 +186,31 @@ export default function AdminLayout({
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 pt-16 pb-24 px-4 lg:ml-72 lg:pt-8 lg:pb-8 lg:px-8">
+      <main className="pt-16 pb-28 px-4 lg:ml-72 lg:pt-8 lg:pb-8 lg:px-8">
         {children}
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200/80 bg-white/95 backdrop-blur-xl pb-[env(safe-area-inset-bottom)] lg:hidden">
-        <div className="flex justify-around py-1">
-          {ADMIN_NAV_ITEMS.slice(0, 5).map((item) => {
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200/80 bg-white/95 backdrop-blur-xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] pb-[env(safe-area-inset-bottom)] lg:hidden">
+        <div className="grid grid-cols-6 py-1.5 px-1">
+          {ADMIN_NAV_ITEMS.map((item) => {
             const isActive = pathname === item.href
             const Icon = item.icon
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`relative flex flex-col items-center gap-1 px-4 py-2.5 min-w-[64px] rounded-xl transition-all duration-200 ${isActive
-                    ? 'text-indigo-600'
-                    : 'text-slate-400 hover:text-slate-600'
+                className={`relative flex flex-col items-center gap-0.5 py-1.5 rounded-lg transition-all duration-200 ${isActive
+                  ? 'text-indigo-600'
+                  : 'text-slate-400 hover:text-slate-600'
                   }`}
               >
                 {isActive && (
                   <span className="absolute inset-x-2 top-0 h-0.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600"></span>
                 )}
                 <Icon className={`h-5 w-5 transition-transform ${isActive && 'scale-110'}`} />
-                <span className={`text-[10px] font-semibold ${isActive ? 'text-indigo-600' : 'text-slate-500'}`}>
-                  {item.label.split(' ')[0]}
+                <span className={`text-[9px] font-medium ${isActive ? 'text-indigo-600' : 'text-slate-500'}`}>
+                  {item.label.length > 8 ? item.label.slice(0, 7) : item.label}
                 </span>
               </Link>
             )

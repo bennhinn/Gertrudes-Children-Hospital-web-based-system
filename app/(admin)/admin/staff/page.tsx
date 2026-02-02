@@ -7,6 +7,15 @@ import { Modal, ModalHeader, ModalTitle, ModalContent, ModalFooter } from '@/com
 import { Label } from '@/components/ui/label';
 import useSWR from 'swr';
 import { useState } from 'react';
+import {
+    Stethoscope,
+    Briefcase,
+    FlaskConical,
+    Pill,
+    Package,
+    User,
+    LucideIcon
+} from 'lucide-react';
 
 const fetcher = (url: string) => fetch(url).then((res) => {
     if (!res.ok) throw new Error('Failed to fetch');
@@ -34,7 +43,7 @@ export default function StaffPage() {
     const [editStaff, setEditStaff] = useState<StaffMember | null>(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    
+
     const [editForm, setEditForm] = useState({
         full_name: '',
         phone: '',
@@ -74,15 +83,15 @@ export default function StaffPage() {
         return colors[role] || 'bg-slate-100 text-slate-800';
     };
 
-    const getRoleIcon = (role: string) => {
-        const icons: Record<string, string> = {
-            doctor: '👨‍⚕️',
-            receptionist: '💼',
-            lab_tech: '🔬',
-            pharmacist: '💊',
-            supplier: '📦',
+    const getRoleIcon = (role: string): LucideIcon => {
+        const icons: Record<string, LucideIcon> = {
+            doctor: Stethoscope,
+            receptionist: Briefcase,
+            lab_tech: FlaskConical,
+            pharmacist: Pill,
+            supplier: Package,
         };
-        return icons[role] || '👤';
+        return icons[role] || User;
     };
 
     const handleView = (member: StaffMember) => {
@@ -102,7 +111,7 @@ export default function StaffPage() {
 
     const handleSaveEdit = async () => {
         if (!editStaff) return;
-        
+
         setIsSaving(true);
         try {
             const response = await fetch(`/api/admin/staff/${editStaff.user_id}`, {
@@ -168,15 +177,15 @@ export default function StaffPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800">Staff Management</h1>
-                    <p className="mt-1 text-slate-600">Manage doctors, nurses, and other staff members</p>
+                    <h1 className="text-xl sm:text-3xl font-bold text-slate-800">Staff Management</h1>
+                    <p className="text-sm text-slate-600">Manage doctors, nurses, and other staff members</p>
                 </div>
-                <Button 
-                    className="bg-linear-to-r from-blue-500 to-purple-600 text-white"
+                <Button
+                    className="bg-linear-to-r from-blue-500 to-purple-600 text-white w-full sm:w-auto"
                     onClick={() => setShowAddModal(true)}
                 >
                     + Add Staff Member
@@ -184,17 +193,20 @@ export default function StaffPage() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
                 {['doctor', 'receptionist', 'lab_tech', 'pharmacist'].map((role) => {
                     const count = staff?.filter(s => s.role === role).length || 0;
+                    const RoleIcon = getRoleIcon(role);
                     return (
                         <Card key={role} className="border-none shadow-md">
-                            <CardContent className="p-4">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-2xl">{getRoleIcon(role)}</span>
+                            <CardContent className="p-3 sm:p-4">
+                                <div className="flex items-center gap-2 sm:gap-3">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                                        <RoleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600" />
+                                    </div>
                                     <div>
-                                        <p className="text-2xl font-bold text-slate-800">{count}</p>
-                                        <p className="text-sm text-slate-500 capitalize">{role.replace('_', ' ')}s</p>
+                                        <p className="text-lg sm:text-2xl font-bold text-slate-800">{count}</p>
+                                        <p className="text-xs sm:text-sm text-slate-500 capitalize">{role.replace('_', ' ')}s</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -205,34 +217,36 @@ export default function StaffPage() {
 
             {/* Filters */}
             <Card className="border-none shadow-lg">
-                <CardContent className="p-4">
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex-1">
-                            <Input
-                                placeholder="Search by name, email, or specialization..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full"
-                            />
+                <CardContent className="p-3 sm:p-4">
+                    <div className="flex flex-col gap-3">
+                        <Input
+                            placeholder="Search by name, email, or specialization..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full"
+                        />
+                        <div className="overflow-x-auto -mx-3 px-3 pb-1">
+                            <div className="flex gap-2 w-max">
+                                {['all', 'doctor', 'receptionist', 'lab_tech', 'pharmacist', 'supplier'].map((role) => (
+                                    <button
+                                        key={role}
+                                        onClick={() => setDepartmentFilter(role)}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${departmentFilter === role
+                                                ? 'bg-indigo-600 text-white'
+                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            }`}
+                                    >
+                                        {role === 'all' ? 'All' : role.replace('_', ' ').charAt(0).toUpperCase() + role.replace('_', ' ').slice(1)}s
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                        <select
-                            value={departmentFilter}
-                            onChange={(e) => setDepartmentFilter(e.target.value)}
-                            className="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="all">All Departments</option>
-                            <option value="doctor">Doctors</option>
-                            <option value="receptionist">Receptionists</option>
-                            <option value="lab_tech">Lab Technicians</option>
-                            <option value="pharmacist">Pharmacists</option>
-                            <option value="supplier">Suppliers</option>
-                        </select>
                     </div>
                 </CardContent>
             </Card>
 
             {/* Staff Grid */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {isLoading ? (
                     [...Array(6)].map((_, i) => (
                         <Card key={i} className="border-none shadow-lg">
@@ -258,37 +272,40 @@ export default function StaffPage() {
                         </Card>
                     </div>
                 ) : (
-                    filteredStaff.map((member) => (
-                        <Card key={member.id} className="border-none shadow-lg hover:shadow-xl transition-shadow">
-                            <CardContent className="p-6">
-                                <div className="flex items-start gap-4">
-                                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-purple-600 text-white text-2xl font-bold">
-                                        {member.profile?.full_name?.[0]?.toUpperCase() || '?'}
+                    filteredStaff.map((member) => {
+                        const RoleIcon = getRoleIcon(member.role);
+                        return (
+                            <Card key={member.id} className="border-none shadow-lg hover:shadow-xl transition-shadow">
+                                <CardContent className="p-4 sm:p-6">
+                                    <div className="flex items-start gap-3 sm:gap-4">
+                                        <div className="flex h-12 w-12 sm:h-16 sm:w-16 flex-shrink-0 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-purple-600 text-white text-lg sm:text-2xl font-bold">
+                                            {member.profile?.full_name?.[0]?.toUpperCase() || '?'}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-semibold text-slate-800 truncate">{member.profile?.full_name || 'Unknown'}</h3>
+                                            <p className="text-xs sm:text-sm text-slate-500 truncate">{member.profile?.email}</p>
+                                            <span className={`inline-flex items-center gap-1 mt-1.5 sm:mt-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium ${getRoleBadgeColor(member.role)}`}>
+                                                <RoleIcon className="h-3 w-3" /> {member.role?.replace('_', ' ')}
+                                            </span>
+                                            {member.specialization && (
+                                                <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-slate-600 truncate">
+                                                    <span className="font-medium">Spec:</span> {member.specialization}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="flex-1">
-                                        <h3 className="font-semibold text-slate-800">{member.profile?.full_name || 'Unknown'}</h3>
-                                        <p className="text-sm text-slate-500">{member.profile?.email}</p>
-                                        <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(member.role)}`}>
-                                            {getRoleIcon(member.role)} {member.role?.replace('_', ' ')}
-                                        </span>
-                                        {member.specialization && (
-                                            <p className="mt-2 text-sm text-slate-600">
-                                                <span className="font-medium">Specialization:</span> {member.specialization}
-                                            </p>
-                                        )}
+                                    <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-100 flex gap-2">
+                                        <Button variant="secondary" size="sm" className="flex-1 text-xs sm:text-sm" onClick={() => handleView(member)}>
+                                            View
+                                        </Button>
+                                        <Button variant="secondary" size="sm" className="flex-1 text-xs sm:text-sm" onClick={() => handleEdit(member)}>
+                                            Edit
+                                        </Button>
                                     </div>
-                                </div>
-                                <div className="mt-4 pt-4 border-t border-slate-100 flex gap-2">
-                                    <Button variant="secondary" size="sm" className="flex-1" onClick={() => handleView(member)}>
-                                        View Profile
-                                    </Button>
-                                    <Button variant="secondary" size="sm" className="flex-1" onClick={() => handleEdit(member)}>
-                                        Edit
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))
+                                </CardContent>
+                            </Card>
+                        );
+                    })
                 )}
             </div>
 
@@ -321,9 +338,14 @@ export default function StaffPage() {
                                 <div>
                                     <p className="text-xs text-slate-500 font-medium">Role</p>
                                     <div className="mt-1">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(viewStaff.role)}`}>
-                                            {getRoleIcon(viewStaff.role)} {viewStaff.role?.replace('_', ' ')}
-                                        </span>
+                                        {(() => {
+                                            const ViewRoleIcon = getRoleIcon(viewStaff.role);
+                                            return (
+                                                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(viewStaff.role)}`}>
+                                                    <ViewRoleIcon className="h-3 w-3" /> {viewStaff.role?.replace('_', ' ')}
+                                                </span>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                                 {viewStaff.specialization && (

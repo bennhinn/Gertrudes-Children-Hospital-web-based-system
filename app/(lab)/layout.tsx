@@ -115,8 +115,8 @@ export default function LabLayout({ children }: { children: React.ReactNode }) {
                                     key={item.href}
                                     href={item.href}
                                     className={`group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${isActive
-                                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-200'
-                                            : 'text-slate-600 hover:bg-amber-50 hover:text-amber-700'
+                                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-200'
+                                        : 'text-slate-600 hover:bg-amber-50 hover:text-amber-700'
                                         }`}
                                 >
                                     <Icon className={`h-5 w-5 transition-transform duration-200 ${!isActive && 'group-hover:scale-110'}`} />
@@ -251,8 +251,8 @@ export default function LabLayout({ children }: { children: React.ReactNode }) {
                                             key={item.href}
                                             href={item.href}
                                             className={`flex items-center gap-3 rounded-xl px-4 py-3.5 text-sm font-medium transition-all ${isActive
-                                                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg'
-                                                    : 'text-slate-600 hover:bg-amber-50'
+                                                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg'
+                                                : 'text-slate-600 hover:bg-amber-50'
                                                 }`}
                                         >
                                             <Icon className="h-5 w-5" />
@@ -299,7 +299,7 @@ export default function LabLayout({ children }: { children: React.ReactNode }) {
             )}
 
             {/* Main Content */}
-            <main className="min-h-dvh pt-14 pb-20 lg:pb-8 lg:pl-72 lg:pt-0">
+            <main className="pt-14 pb-24 lg:pb-8 lg:pl-72 lg:pt-0">
                 <div className="p-4 lg:p-6">{children}</div>
             </main>
 

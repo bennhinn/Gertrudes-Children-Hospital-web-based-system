@@ -300,7 +300,7 @@ export default function PharmacyLayout({
             )}
 
             {/* Main Content */}
-            <main className="min-h-dvh pt-14 pb-24 lg:pb-8 lg:pl-72 lg:pt-0">
+            <main className="pt-14 pb-24 lg:pb-8 lg:pl-72 lg:pt-0">
                 <div className="p-4 lg:p-6">{children}</div>
             </main>
 

@@ -65,7 +65,7 @@ export default function UsersPage() {
 
     const handleSaveEdit = async () => {
         if (!editUser) return;
-        
+
         setIsSaving(true);
         try {
             const response = await fetch(`/api/admin/users/${editUser.id}`, {
@@ -98,107 +98,153 @@ export default function UsersPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800">User Management</h1>
-                    <p className="mt-1 text-slate-600">View and manage all system users</p>
+                    <h1 className="text-xl sm:text-3xl font-bold text-slate-800">User Management</h1>
+                    <p className="text-sm text-slate-600">View and manage all system users</p>
                 </div>
             </div>
 
             {/* Filters */}
             <Card className="border-none shadow-lg">
-                <CardContent className="p-4">
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex-1">
-                            <Input
-                                placeholder="Search by name or email..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full"
-                            />
+                <CardContent className="p-3 sm:p-4">
+                    <div className="flex flex-col gap-3">
+                        <Input
+                            placeholder="Search by name or email..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full"
+                        />
+                        <div className="overflow-x-auto sm:overflow-visible -mx-3 px-3 pb-1">
+                            <div className="flex gap-2 w-max sm:w-auto sm:flex-wrap">
+                                {['all', 'admin', 'doctor', 'caregiver', 'receptionist', 'lab_tech', 'pharmacist', 'supplier'].map((role) => (
+                                    <button
+                                        key={role}
+                                        onClick={() => setRoleFilter(role)}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${roleFilter === role
+                                                ? 'bg-indigo-600 text-white'
+                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            }`}
+                                    >
+                                        {role === 'all' ? 'All' : role.replace('_', ' ').charAt(0).toUpperCase() + role.replace('_', ' ').slice(1)}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                        <select
-                            value={roleFilter}
-                            onChange={(e) => setRoleFilter(e.target.value)}
-                            className="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="all">All Roles</option>
-                            <option value="admin">Admin</option>
-                            <option value="doctor">Doctor</option>
-                            <option value="caregiver">Caregiver</option>
-                            <option value="receptionist">Receptionist</option>
-                            <option value="lab_tech">Lab Technician</option>
-                            <option value="pharmacist">Pharmacist</option>
-                            <option value="supplier">Supplier</option>
-                        </select>
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Users Table */}
+            {/* Users List */}
             <Card className="border-none shadow-lg">
-                <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
+                <CardHeader className="p-3 sm:p-6">
+                    <CardTitle className="flex items-center justify-between text-base sm:text-lg">
                         <span>Users ({filteredUsers.length})</span>
                         <Button onClick={() => mutate()} variant="secondary" size="sm">
                             Refresh
                         </Button>
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0 sm:p-6 sm:pt-0">
                     {isLoading ? (
-                        <div className="space-y-4">
+                        <div className="space-y-3 p-3 sm:p-0">
                             {[...Array(5)].map((_, i) => (
-                                <div key={i} className="h-16 bg-slate-100 rounded-lg animate-pulse" />
+                                <div key={i} className="h-20 bg-slate-100 rounded-lg animate-pulse" />
                             ))}
                         </div>
                     ) : filteredUsers.length === 0 ? (
                         <p className="text-slate-500 text-center py-8">No users found</p>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b border-slate-200">
-                                        <th className="text-left py-3 px-4 font-medium text-slate-600">Name</th>
-                                        <th className="text-left py-3 px-4 font-medium text-slate-600">Email</th>
-                                        <th className="text-left py-3 px-4 font-medium text-slate-600">Role</th>
-                                        <th className="text-left py-3 px-4 font-medium text-slate-600">Joined</th>
-                                        <th className="text-left py-3 px-4 font-medium text-slate-600">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredUsers.map((user) => (
-                                        <tr key={user.id} className="border-b border-slate-100 hover:bg-slate-50">
-                                            <td className="py-4 px-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-purple-600 text-white font-medium">
-                                                        {user.full_name?.[0]?.toUpperCase() || '?'}
-                                                    </div>
-                                                    <span className="font-medium text-slate-800">{user.full_name || 'Unknown'}</span>
-                                                </div>
-                                            </td>
-                                            <td className="py-4 px-4 text-slate-600">{user.email}</td>
-                                            <td className="py-4 px-4">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
-                                                    {user.role?.replace('_', ' ') || 'Unknown'}
-                                                </span>
-                                            </td>
-                                            <td className="py-4 px-4 text-slate-600">
-                                                {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
-                                            </td>
-                                            <td className="py-4 px-4">
-                                                <div className="flex items-center gap-2">
-                                                    <Button variant="secondary" size="sm" onClick={() => handleView(user)}>View</Button>
-                                                    <Button variant="secondary" size="sm" onClick={() => handleEdit(user)}>Edit</Button>
-                                                </div>
-                                            </td>
+                        <>
+                            {/* Desktop Table - Hidden on mobile */}
+                            <div className="hidden lg:block overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b border-slate-200">
+                                            <th className="text-left py-3 px-4 font-medium text-slate-600">Name</th>
+                                            <th className="text-left py-3 px-4 font-medium text-slate-600">Email</th>
+                                            <th className="text-left py-3 px-4 font-medium text-slate-600">Role</th>
+                                            <th className="text-left py-3 px-4 font-medium text-slate-600">Joined</th>
+                                            <th className="text-left py-3 px-4 font-medium text-slate-600">Actions</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody>
+                                        {filteredUsers.map((user) => (
+                                            <tr key={user.id} className="border-b border-slate-100 hover:bg-slate-50">
+                                                <td className="py-4 px-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-purple-600 text-white font-medium">
+                                                            {user.full_name?.[0]?.toUpperCase() || '?'}
+                                                        </div>
+                                                        <span className="font-medium text-slate-800">{user.full_name || 'Unknown'}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="py-4 px-4 text-slate-600"><div className="max-w-xs truncate">{user.email}</div></td>
+                                                <td className="py-4 px-4">
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
+                                                        {user.role?.replace('_', ' ') || 'Unknown'}
+                                                    </span>
+                                                </td>
+                                                <td className="py-4 px-4 text-slate-600">
+                                                    {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+                                                </td>
+                                                <td className="py-4 px-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <Button variant="secondary" size="sm" onClick={() => handleView(user)}>View</Button>
+                                                        <Button variant="secondary" size="sm" onClick={() => handleEdit(user)}>Edit</Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Mobile Card List */}
+                            <div className="lg:hidden divide-y divide-slate-100">
+                                {filteredUsers.map((user) => (
+                                    <div key={user.id} className="p-3 hover:bg-slate-50">
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white font-medium">
+                                                {user.full_name?.[0]?.toUpperCase() || '?'}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="font-medium text-slate-800 truncate">{user.full_name || 'Unknown'}</p>
+                                                        <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                                                    </div>
+                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${getRoleBadgeColor(user.role)}`}>
+                                                        {user.role?.replace('_', ' ') || 'Unknown'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center justify-between mt-2">
+                                                    <span className="text-xs text-slate-400">
+                                                        Joined {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+                                                    </span>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => handleView(user)}
+                                                            className="text-xs text-indigo-600 font-medium"
+                                                        >
+                                                            View
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleEdit(user)}
+                                                            className="text-xs text-indigo-600 font-medium"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
                     )}
                 </CardContent>
             </Card>
@@ -249,7 +295,7 @@ export default function UsersPage() {
                                 </div>
                                 <div>
                                     <p className="text-xs text-slate-500 font-medium">User ID</p>
-                                    <p className="text-sm font-mono text-slate-600 mt-1">{viewUser.id}</p>
+                                    <p className="text-sm font-mono text-slate-600 mt-1 break-all">{viewUser.id}</p>
                                 </div>
                             </div>
                         </div>

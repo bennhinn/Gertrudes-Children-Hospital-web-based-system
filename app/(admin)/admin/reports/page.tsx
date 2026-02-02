@@ -6,6 +6,31 @@ import useSWR from 'swr';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+    Users,
+    Calendar,
+    Stethoscope,
+    DollarSign,
+    PieChart as PieChartIcon,
+    Monitor,
+    Download,
+    Eye,
+    RefreshCw,
+    FileText,
+    Activity,
+    BarChart3,
+    Baby,
+    TrendingUp,
+    Star,
+    LucideIcon,
+    Plus,
+    Pencil,
+    Trash2,
+    Key,
+    LogOut,
+    AlertTriangle,
+    CheckCircle2
+} from 'lucide-react';
 
 const fetcher = (url: string) => fetch(url).then((res) => {
     if (!res.ok) throw new Error('Failed to fetch');
@@ -53,7 +78,7 @@ function ReportViewModal({ isOpen, onClose, reportType, reportTitle, period }: R
                     <DialogTitle className="flex items-center justify-between">
                         <span>{reportTitle}</span>
                         <Button onClick={handleDownload} size="sm" className="bg-green-600 hover:bg-green-700 text-white">
-                            📥 Download CSV
+                            <Download className="h-4 w-4 mr-1" /> Download CSV
                         </Button>
                     </DialogTitle>
                 </DialogHeader>
@@ -232,8 +257,8 @@ function ReportViewModal({ isOpen, onClose, reportType, reportTitle, period }: R
                                     </div>
                                 </div>
                                 <div className="bg-yellow-50 p-4 rounded-lg">
-                                    <p className="text-sm text-yellow-800">
-                                        ⚠️ {data.note}
+                                    <p className="text-sm text-yellow-800 flex items-center gap-1">
+                                        <AlertTriangle className="h-4 w-4" /> {data.note}
                                     </p>
                                 </div>
                             </div>
@@ -275,7 +300,7 @@ function ReportViewModal({ isOpen, onClose, reportType, reportTitle, period }: R
                         {reportType === 'system_health' && (
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2 p-4 bg-green-50 rounded-lg">
-                                    <span className="text-2xl">✅</span>
+                                    <CheckCircle2 className="h-6 w-6 text-green-600" />
                                     <span className="text-lg font-medium text-green-800">System Status: Healthy</span>
                                 </div>
                                 <div className="grid gap-4 md:grid-cols-4">
@@ -335,22 +360,23 @@ function ActivityLogsSection() {
             <div className="text-center py-8 text-slate-400">
                 <p>Unable to load activity logs</p>
                 <Button variant="secondary" size="sm" onClick={() => mutate()} className="mt-2">
-                    🔄 Retry
+                    <RefreshCw className="h-3.5 w-3.5 mr-1" /> Retry
                 </Button>
             </div>
         );
     }
 
-    const getActionIcon = (actionType: string) => {
+    const getActionIcon = (actionType: string): React.ReactNode => {
+        const iconClass = "h-3.5 w-3.5";
         switch (actionType) {
-            case 'create': return '➕';
-            case 'update': return '✏️';
-            case 'delete': return '🗑️';
-            case 'login': return '🔑';
-            case 'logout': return '🚪';
-            case 'view': return '👁️';
-            case 'download': return '📥';
-            default: return '📋';
+            case 'create': return <Plus className={iconClass} />;
+            case 'update': return <Pencil className={iconClass} />;
+            case 'delete': return <Trash2 className={iconClass} />;
+            case 'login': return <Key className={iconClass} />;
+            case 'logout': return <LogOut className={iconClass} />;
+            case 'view': return <Eye className={iconClass} />;
+            case 'download': return <Download className={iconClass} />;
+            default: return <FileText className={iconClass} />;
         }
     };
 
@@ -412,46 +438,46 @@ export default function ReportsPage() {
     const { data: demographicsData, error: demographicsError } = useSWR('/api/admin/analytics/demographics', fetcher);
     const { data: generatedReports } = useSWR('/api/admin/reports?limit=10', fetcher);
 
-    const reportTypes = [
+    const reportTypes: { title: string; description: string; icon: LucideIcon; color: string; type: string }[] = [
         {
             title: 'User Activity Report',
             description: 'Overview of user registrations and activity',
-            icon: '👥',
+            icon: Users,
             color: 'from-blue-500 to-blue-600',
             type: 'user_activity',
         },
         {
             title: 'Appointment Analytics',
             description: 'Appointment statistics and trends',
-            icon: '📅',
+            icon: Calendar,
             color: 'from-green-500 to-green-600',
             type: 'appointments',
         },
         {
             title: 'Staff Performance',
             description: 'Doctor and staff productivity metrics',
-            icon: '👨‍⚕️',
+            icon: Stethoscope,
             color: 'from-purple-500 to-purple-600',
             type: 'staff_performance',
         },
         {
             title: 'Financial Summary',
             description: 'Revenue and billing overview',
-            icon: '💰',
+            icon: DollarSign,
             color: 'from-yellow-500 to-yellow-600',
             type: 'financial',
         },
         {
             title: 'Patient Demographics',
             description: 'Age, gender, and location breakdown',
-            icon: '📊',
+            icon: PieChartIcon,
             color: 'from-cyan-500 to-cyan-600',
             type: 'demographics',
         },
         {
             title: 'System Health',
             description: 'System usage and performance metrics',
-            icon: '🖥️',
+            icon: Monitor,
             color: 'from-orange-500 to-orange-600',
             type: 'system_health',
         },
@@ -504,18 +530,18 @@ export default function ReportsPage() {
     const COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800">Reports & Analytics</h1>
-                    <p className="mt-1 text-slate-600">View system reports and generate analytics</p>
+                    <h1 className="text-xl sm:text-3xl font-bold text-slate-800">Reports & Analytics</h1>
+                    <p className="text-sm text-slate-600">View system reports and generate analytics</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                     <select
                         value={selectedPeriod}
                         onChange={(e) => setSelectedPeriod(e.target.value)}
-                        className="px-4 py-2 border border-slate-300 rounded-lg bg-white text-sm"
+                        className="px-3 py-2 border border-slate-300 rounded-lg bg-white text-sm flex-1 sm:flex-none"
                     >
                         <option value="week">This Week</option>
                         <option value="month">This Month</option>
@@ -523,74 +549,77 @@ export default function ReportsPage() {
                     </select>
                     <Button
                         onClick={handleExportAll}
-                        className="bg-gradient-to-r from-blue-500 to-purple-600 text-white"
+                        className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm"
                     >
-                        📥 Export All Reports
+                        <Download className="h-4 w-4 mr-1" /> Export All
                     </Button>
                 </div>
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-2 border-b border-slate-200">
+            <div className="flex gap-1 sm:gap-2 border-b border-slate-200 overflow-x-auto">
                 <button
                     onClick={() => setActiveTab('reports')}
-                    className={`px-4 py-2 font-medium transition-colors ${activeTab === 'reports'
+                    className={`px-3 sm:px-4 py-2 font-medium text-sm whitespace-nowrap transition-colors flex items-center gap-1.5 ${activeTab === 'reports'
                         ? 'text-purple-600 border-b-2 border-purple-600'
                         : 'text-slate-500 hover:text-slate-700'
                         }`}
                 >
-                    📊 Reports & Analytics
+                    <BarChart3 className="h-4 w-4" /> Reports
                 </button>
                 <button
                     onClick={() => setActiveTab('activity')}
-                    className={`px-4 py-2 font-medium transition-colors ${activeTab === 'activity'
+                    className={`px-3 sm:px-4 py-2 font-medium text-sm whitespace-nowrap transition-colors flex items-center gap-1.5 ${activeTab === 'activity'
                         ? 'text-purple-600 border-b-2 border-purple-600'
                         : 'text-slate-500 hover:text-slate-700'
                         }`}
                 >
-                    📋 Activity Logs
+                    <Activity className="h-4 w-4" /> Activity Logs
                 </button>
             </div>
 
             {activeTab === 'reports' && (
                 <>
                     {/* Quick Stats */}
-                    <div className="grid gap-4 md:grid-cols-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
                         {[
-                            { label: 'Total Users', value: stats?.totalUsers || 0, icon: '👥', color: 'from-blue-500 to-blue-600' },
-                            { label: 'Total Appointments', value: stats?.totalAppointments || 0, icon: '📅', color: 'from-green-500 to-green-600' },
-                            { label: 'Registered Children', value: stats?.totalChildren || 0, icon: '👶', color: 'from-purple-500 to-purple-600' },
-                            { label: 'Active Doctors', value: stats?.totalDoctors || 0, icon: '👨‍⚕️', color: 'from-orange-500 to-orange-600' },
-                        ].map((stat, index) => (
-                            <Card key={index} className="border-none shadow-lg hover:shadow-xl transition-all">
-                                <CardContent className="p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm text-slate-500">{stat.label}</p>
-                                            <p className="text-3xl font-bold text-slate-800 mt-1">
-                                                {statsLoading ? '...' : stat.value}
-                                            </p>
+                            { label: 'Total Users', value: stats?.totalUsers || 0, icon: Users, color: 'from-blue-500 to-blue-600' },
+                            { label: 'Appointments', value: stats?.totalAppointments || 0, icon: Calendar, color: 'from-green-500 to-green-600' },
+                            { label: 'Children', value: stats?.totalChildren || 0, icon: Baby, color: 'from-purple-500 to-purple-600' },
+                            { label: 'Doctors', value: stats?.totalDoctors || 0, icon: Stethoscope, color: 'from-orange-500 to-orange-600' },
+                        ].map((stat, index) => {
+                            const StatIcon = stat.icon;
+                            return (
+                                <Card key={index} className="border-none shadow-lg hover:shadow-xl transition-all">
+                                    <CardContent className="p-3 sm:p-6">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-xs sm:text-sm text-slate-500">{stat.label}</p>
+                                                <p className="text-xl sm:text-3xl font-bold text-slate-800 mt-1">
+                                                    {statsLoading ? '...' : stat.value}
+                                                </p>
+                                            </div>
+                                            <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center text-white`}>
+                                                <StatIcon className="h-5 w-5 sm:h-7 sm:w-7" />
+                                            </div>
                                         </div>
-                                        <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center text-2xl`}>
-                                            {stat.icon}
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
+                                    </CardContent>
+                                </Card>
+                            );
+                        })}
                     </div>
 
                     {/* Analytics Charts Section */}
-                    <div className="grid gap-6 md:grid-cols-2">
+                    <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
                         {/* Appointments Overview Chart */}
                         <Card className="border-none shadow-lg">
-                            <CardHeader>
-                                <CardTitle className="flex items-center justify-between">
+                            <CardHeader className="p-3 sm:p-6">
+                                <CardTitle className="flex items-center justify-between text-sm sm:text-base">
                                     <span>Weekly Appointments</span>
-                                    <span className="text-sm font-normal text-slate-500">Last 7 days</span>
+                                    <span className="text-xs font-normal text-slate-500">Last 7 days</span>
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
                                 {appointmentError ? (
                                     <div className="h-[300px] flex items-center justify-center text-slate-400">
                                         Unable to load chart data
@@ -623,13 +652,13 @@ export default function ReportsPage() {
 
                         {/* Revenue Trend Chart */}
                         <Card className="border-none shadow-lg">
-                            <CardHeader>
-                                <CardTitle className="flex items-center justify-between">
+                            <CardHeader className="p-3 sm:p-6">
+                                <CardTitle className="flex items-center justify-between text-sm sm:text-base">
                                     <span>Revenue Trend</span>
-                                    <span className="text-sm font-normal text-slate-500">Last 6 months</span>
+                                    <span className="text-xs font-normal text-slate-500">Last 6 months</span>
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
                                 {revenueError ? (
                                     <div className="h-[300px] flex items-center justify-center text-slate-400">
                                         Unable to load chart data
@@ -667,10 +696,10 @@ export default function ReportsPage() {
 
                         {/* Patient Demographics Chart */}
                         <Card className="border-none shadow-lg">
-                            <CardHeader>
-                                <CardTitle>Patient Demographics by Age</CardTitle>
+                            <CardHeader className="p-3 sm:p-6">
+                                <CardTitle className="text-sm sm:text-base">Demographics by Age</CardTitle>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
                                 {demographicsError ? (
                                     <div className="h-[300px] flex items-center justify-center text-slate-400">
                                         Unable to load chart data
@@ -705,37 +734,37 @@ export default function ReportsPage() {
 
                         {/* Quick Insights */}
                         <Card className="border-none shadow-lg">
-                            <CardHeader>
-                                <CardTitle>Quick Insights</CardTitle>
+                            <CardHeader className="p-3 sm:p-6">
+                                <CardTitle className="text-sm sm:text-base">Quick Insights</CardTitle>
                             </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white text-xl">
-                                                📈
+                            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+                                <div className="space-y-3 sm:space-y-4">
+                                    <div className="p-3 sm:p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
+                                        <div className="flex items-center gap-2 sm:gap-3">
+                                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                                                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
                                             </div>
                                             <div>
-                                                <p className="text-sm text-blue-600 font-medium">Appointment Rate</p>
-                                                <p className="text-2xl font-bold text-blue-900">
+                                                <p className="text-xs sm:text-sm text-blue-600 font-medium">Appointment Rate</p>
+                                                <p className="text-xl sm:text-2xl font-bold text-blue-900">
                                                     {stats?.appointmentGrowth || '+0%'}
                                                 </p>
-                                                <p className="text-xs text-blue-600">vs last week</p>
+                                                <p className="text-[10px] sm:text-xs text-blue-600">vs last week</p>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center text-white text-xl">
-                                                ⭐
+                                    <div className="p-3 sm:p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
+                                        <div className="flex items-center gap-2 sm:gap-3">
+                                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-500 flex items-center justify-center text-white">
+                                                <Star className="h-5 w-5 sm:h-6 sm:w-6" />
                                             </div>
                                             <div>
-                                                <p className="text-sm text-green-600 font-medium">Completion Rate</p>
-                                                <p className="text-2xl font-bold text-green-900">
+                                                <p className="text-xs sm:text-sm text-green-600 font-medium">Completion Rate</p>
+                                                <p className="text-xl sm:text-2xl font-bold text-green-900">
                                                     {stats?.completionRate || '0%'}
                                                 </p>
-                                                <p className="text-xs text-green-600">Successful appointments</p>
+                                                <p className="text-[10px] sm:text-xs text-green-600">Successful appointments</p>
                                             </div>
                                         </div>
                                     </div>
@@ -745,73 +774,87 @@ export default function ReportsPage() {
                     </div>
 
                     {/* Report Types */}
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {reportTypes.map((report, index) => (
-                            <Card key={index} className="border-none shadow-lg hover:shadow-xl transition-shadow">
-                                <CardContent className="p-6">
-                                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${report.color} flex items-center justify-center text-2xl text-white mb-4`}>
-                                        {report.icon}
-                                    </div>
-                                    <h3 className="font-semibold text-lg text-slate-800">{report.title}</h3>
-                                    <p className="text-sm text-slate-500 mt-1">{report.description}</p>
-                                    <div className="mt-4 flex gap-2">
-                                        <Button
-                                            variant="secondary"
-                                            size="sm"
-                                            onClick={() => handleViewReport(report.type, report.title)}
-                                        >
-                                            👁️ View Report
-                                        </Button>
-                                        <Button
-                                            variant="secondary"
-                                            size="sm"
-                                            onClick={() => handleDownloadReport(report.type)}
-                                        >
-                                            📥 Download
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
+                    <div className="grid gap-3 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                        {reportTypes.map((report, index) => {
+                            const Icon = report.icon;
+                            return (
+                                <Card key={index} className="border-none shadow-lg hover:shadow-xl transition-shadow">
+                                    <CardContent className="p-4 sm:p-6">
+                                        <div className="flex items-start gap-3 sm:block">
+                                            <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br ${report.color} flex items-center justify-center text-white sm:mb-4 flex-shrink-0`}>
+                                                <Icon className="h-5 w-5 sm:h-7 sm:w-7" />
+                                            </div>
+                                            <div className="flex-1 sm:flex-none">
+                                                <h3 className="font-semibold text-base sm:text-lg text-slate-800">{report.title}</h3>
+                                                <p className="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">{report.description}</p>
+                                            </div>
+                                        </div>
+                                        <div className="mt-3 sm:mt-4 flex gap-2">
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                className="flex-1 text-xs sm:text-sm"
+                                                onClick={() => handleViewReport(report.type, report.title)}
+                                            >
+                                                <Eye className="h-3.5 w-3.5 mr-1" /> View
+                                            </Button>
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                className="flex-1 text-xs sm:text-sm"
+                                                onClick={() => handleDownloadReport(report.type)}
+                                            >
+                                                <Download className="h-3.5 w-3.5 mr-1" /> Download
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            );
+                        })}
                     </div>
 
                     {/* Recent Generated Reports */}
                     <Card className="border-none shadow-lg">
-                        <CardHeader>
-                            <CardTitle>Recent Generated Reports</CardTitle>
+                        <CardHeader className="p-3 sm:p-6">
+                            <CardTitle className="text-base sm:text-lg">Recent Reports</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
+                        <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+                            <div className="space-y-3 sm:space-y-4">
                                 {generatedReports?.reports?.length === 0 ? (
-                                    <div className="text-center py-8 text-slate-400">
-                                        No reports generated yet. Click &quot;View Report&quot; or &quot;Download&quot; to generate reports.
+                                    <div className="text-center py-6 sm:py-8 text-slate-400 text-sm">
+                                        No reports generated yet. Click &quot;View&quot; or &quot;Download&quot; to generate reports.
                                     </div>
                                 ) : generatedReports?.reports ? (
                                     generatedReports.reports.map((report: any) => (
-                                        <div key={report.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-                                            <div className="flex items-center gap-4">
-                                                <span className="text-2xl">📄</span>
-                                                <div>
-                                                    <p className="font-medium text-slate-800">{report.report_name}</p>
-                                                    <p className="text-sm text-slate-500">
-                                                        Generated on {new Date(report.created_at).toLocaleDateString()} by {report.generated_by_email}
+                                        <div key={report.id} className="flex items-center justify-between p-3 sm:p-4 bg-slate-50 rounded-lg gap-2">
+                                            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                                                    <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="font-medium text-slate-800 text-sm sm:text-base truncate">{report.report_name}</p>
+                                                    <p className="text-xs sm:text-sm text-slate-500 truncate">
+                                                        {new Date(report.created_at).toLocaleDateString()}
                                                     </p>
                                                 </div>
                                             </div>
                                             <Button
                                                 variant="secondary"
                                                 size="sm"
+                                                className="flex-shrink-0 text-xs"
                                                 onClick={() => handleDownloadReport(report.report_type)}
                                             >
-                                                Download
+                                                <Download className="h-3.5 w-3.5" />
                                             </Button>
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="text-center py-8">
-                                        <span className="text-4xl mb-4 block">📊</span>
-                                        <p className="text-slate-600 font-medium">No reports generated yet</p>
-                                        <p className="text-sm text-slate-400 mt-1">Click "View Report" or "Download" on any report type above to generate your first report.</p>
+                                    <div className="text-center py-6 sm:py-8">
+                                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                                            <BarChart3 className="h-6 w-6 sm:h-8 sm:w-8 text-slate-400" />
+                                        </div>
+                                        <p className="text-slate-600 font-medium text-sm">No reports generated yet</p>
+                                        <p className="text-xs text-slate-400 mt-1">Click "View" or "Download" to generate your first report.</p>
                                     </div>
                                 )}
                             </div>
@@ -822,11 +865,11 @@ export default function ReportsPage() {
 
             {activeTab === 'activity' && (
                 <Card className="border-none shadow-lg">
-                    <CardHeader>
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <CardHeader className="p-3 sm:p-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
                             <div>
-                                <CardTitle>System-Wide Activity Logs</CardTitle>
-                                <p className="text-sm text-slate-500 mt-1">Tracking all activities across the entire system (auto-refreshes every 30s)</p>
+                                <CardTitle className="text-base sm:text-lg">Activity Logs</CardTitle>
+                                <p className="text-xs sm:text-sm text-slate-500 mt-1">All system activities (auto-refreshes)</p>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
@@ -836,9 +879,9 @@ export default function ReportsPage() {
                             </div>
                         </div>
                     </CardHeader>
-                    <CardContent>
-                        <div className="mb-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-700">
-                            <strong>📌 Note:</strong> This log captures all system activities including logins, patient registrations, appointments, prescriptions, lab orders, and more from all user roles.
+                    <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+                        <div className="mb-4 p-2 sm:p-3 bg-blue-50 rounded-lg text-xs sm:text-sm text-blue-700">
+                            <strong>📌 Note:</strong> Captures all activities including logins, registrations, appointments, and more.
                         </div>
                         <ActivityLogsSection />
                     </CardContent>
