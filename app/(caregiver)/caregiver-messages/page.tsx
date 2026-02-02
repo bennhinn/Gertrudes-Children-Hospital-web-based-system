@@ -217,7 +217,19 @@ export default function MessagesPage() {
                 throw new Error('Failed to fetch messages')
             }
             const data = await response.json()
-            setMessages(data.messages || [])
+            // Transform snake_case to camelCase
+            const transformedMessages = (data.messages || []).map((msg: any) => ({
+                id: msg.id,
+                conversationId: msg.conversation_id,
+                senderId: msg.sender_id,
+                senderType: msg.sender_type,
+                content: msg.content,
+                createdAt: msg.created_at,
+                isRead: msg.is_read,
+                readAt: msg.read_at,
+                attachments: msg.attachments
+            }))
+            setMessages(transformedMessages)
         } catch (err) {
             console.error('Error fetching messages:', err)
         } finally {
@@ -413,7 +425,10 @@ export default function MessagesPage() {
     }
 
     const formatTimestamp = (dateString: string) => {
+        if (!dateString) return ''
         const date = new Date(dateString)
+        if (isNaN(date.getTime())) return ''
+
         const now = new Date()
         const diffMs = now.getTime() - date.getTime()
         const diffMins = Math.floor(diffMs / 60000)
@@ -428,7 +443,9 @@ export default function MessagesPage() {
     }
 
     const formatMessageTime = (dateString: string) => {
+        if (!dateString) return ''
         const date = new Date(dateString)
+        if (isNaN(date.getTime())) return ''
         return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
     }
 
@@ -680,8 +697,8 @@ export default function MessagesPage() {
                                 className={`flex ${message.senderType === 'caregiver' ? 'justify-end' : 'justify-start'}`}
                             >
                                 <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.senderType === 'caregiver'
-                                        ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
-                                        : 'bg-slate-100 text-slate-900'
+                                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
+                                    : 'bg-slate-100 text-slate-900'
                                     }`}>
                                     <p className="text-sm leading-relaxed">{message.content}</p>
                                     <div className={`flex items-center gap-1 mt-1 ${message.senderType === 'caregiver' ? 'justify-end' : 'justify-start'
@@ -772,8 +789,8 @@ export default function MessagesPage() {
                         key={filter}
                         onClick={() => setActiveFilter(filter as typeof activeFilter)}
                         className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${activeFilter === filter
-                                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                             }`}
                     >
                         {filter.charAt(0).toUpperCase() + filter.slice(1)}

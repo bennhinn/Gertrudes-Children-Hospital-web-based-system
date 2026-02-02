@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { 
-  Package, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  Truck, 
-  AlertCircle 
+import {
+  Package,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Truck,
+  AlertCircle
 } from 'lucide-react';
 
 // This is the default export Next.js is looking for
@@ -22,7 +22,7 @@ export default function OrdersPage() {
       setLoading(true);
       const res = await fetch('/api/supplier/orders');
       const json = await res.json();
-      
+
       if (json.error) throw new Error(json.error);
       setOrders(json.data || []);
     } catch (err: any) {
@@ -66,84 +66,85 @@ export default function OrdersPage() {
   };
 
   if (loading) return (
-    <div className="flex items-center justify-center min-h-[400px]">
+    <div className="flex items-center justify-center min-h-[200px]">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
     </div>
   );
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Supply Orders</h1>
-          <p className="text-gray-500">Manage pharmacy requests and fulfillment</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Supply Orders</h1>
+          <p className="text-sm text-slate-500">Manage pharmacy requests and fulfillment</p>
         </div>
-        <button 
+        <button
           onClick={fetchOrders}
-          className="text-sm text-teal-600 hover:text-teal-700 font-medium"
+          className="text-sm text-teal-600 hover:text-teal-700 font-medium self-start sm:self-auto"
         >
           Refresh List
         </button>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg flex items-center gap-3">
-          <AlertCircle size={20} />
+        <div className="bg-red-50 border border-red-200 text-red-700 p-3 sm:p-4 rounded-lg flex items-center gap-3 text-sm">
+          <AlertCircle className="h-5 w-5 shrink-0" />
           <p>{error}</p>
         </div>
       )}
 
-      <div className="grid gap-4">
+      <div className="space-y-3">
         {orders.length === 0 ? (
-          <div className="bg-white border-2 border-dashed border-gray-200 rounded-xl p-12 text-center">
-            <Package className="mx-auto text-gray-300 mb-4" size={48} />
-            <h3 className="text-lg font-medium text-gray-900">No orders yet</h3>
-            <p className="text-gray-500">Incoming pharmacy requests will appear here.</p>
+          <div className="bg-white border-2 border-dashed border-slate-200 rounded-xl p-8 sm:p-12 text-center">
+            <Package className="mx-auto text-slate-300 mb-4 h-10 w-10 sm:h-12 sm:w-12" />
+            <h3 className="text-base sm:text-lg font-medium text-slate-800">No orders yet</h3>
+            <p className="text-sm text-slate-500 mt-1">Incoming pharmacy requests will appear here.</p>
           </div>
         ) : (
           orders.map((order) => (
-            <div 
-              key={order.id} 
-              className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col md:flex-row md:items-center justify-between gap-4"
+            <div
+              key={order.id}
+              className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm"
             >
-              <div className="flex items-start gap-4">
-                <div className={`p-3 rounded-lg border ${getStatusStyles(order.status)}`}>
-                  {order.status === 'pending' && <Clock size={24} />}
-                  {order.status === 'approved' && <Package size={24} />}
-                  {order.status === 'delivered' && <CheckCircle size={24} />}
-                  {order.status === 'cancelled' && <XCircle size={24} />}
+              <div className="flex items-start gap-3">
+                <div className={`p-2.5 rounded-lg border shrink-0 ${getStatusStyles(order.status)}`}>
+                  {order.status === 'pending' && <Clock className="h-5 w-5" />}
+                  {order.status === 'approved' && <Package className="h-5 w-5" />}
+                  {order.status === 'delivered' && <CheckCircle className="h-5 w-5" />}
+                  {order.status === 'cancelled' && <XCircle className="h-5 w-5" />}
                 </div>
-                
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-gray-900 text-lg">
-                      {order.medications?.name || 'Loading medication...'}
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-bold text-slate-800 text-sm sm:text-base truncate">
+                      {order.medications?.name || 'Loading...'}
                     </h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-full border font-medium uppercase ${getStatusStyles(order.status)}`}>
+                    <span className={`shrink-0 text-[10px] sm:text-xs px-2 py-0.5 rounded-full border font-medium uppercase ${getStatusStyles(order.status)}`}>
                       {order.status}
                     </span>
                   </div>
-                  <p className="text-gray-600 text-sm mt-1">
-                    Requested Quantity: <span className="font-bold text-gray-900">{order.quantity} units</span>
+                  <p className="text-slate-600 text-sm mt-1">
+                    Qty: <span className="font-bold text-slate-800">{order.quantity} units</span>
                   </p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    ID: #{order.id.slice(0, 8)} • {new Date(order.requested_at).toLocaleDateString()}
+                  <p className="text-xs text-slate-400 mt-1">
+                    #{order.id.slice(0, 8)} • {new Date(order.requested_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 self-end md:self-center">
+              {/* Action buttons */}
+              <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-2">
                 {order.status === 'pending' && (
                   <>
-                    <button 
+                    <button
                       onClick={() => updateStatus(order.id, 'approved')}
-                      className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-semibold transition-colors"
+                      className="flex-1 sm:flex-none px-3 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-xs sm:text-sm font-medium"
                     >
-                      Approve Order
+                      Approve
                     </button>
-                    <button 
+                    <button
                       onClick={() => updateStatus(order.id, 'cancelled')}
-                      className="px-4 py-2 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg text-sm font-medium"
+                      className="flex-1 sm:flex-none px-3 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg text-xs sm:text-sm font-medium"
                     >
                       Decline
                     </button>
@@ -151,17 +152,17 @@ export default function OrdersPage() {
                 )}
 
                 {order.status === 'approved' && (
-                  <button 
+                  <button
                     onClick={() => updateStatus(order.id, 'delivered')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold flex items-center gap-2"
+                    className="flex-1 sm:flex-none px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5"
                   >
-                    <Truck size={16} /> Mark as Shipped
+                    <Truck className="h-4 w-4" /> Mark Shipped
                   </button>
                 )}
 
                 {order.status === 'delivered' && (
-                  <div className="flex items-center gap-2 text-green-600 font-medium text-sm">
-                    <CheckCircle size={18} />
+                  <div className="flex items-center gap-1.5 text-green-600 font-medium text-xs sm:text-sm">
+                    <CheckCircle className="h-4 w-4" />
                     <span>Delivered {new Date(order.delivered_at).toLocaleDateString()}</span>
                   </div>
                 )}

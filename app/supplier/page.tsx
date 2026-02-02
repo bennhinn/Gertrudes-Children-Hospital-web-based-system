@@ -16,63 +16,70 @@ export default function SupplierDashboard() {
     fetchStats();
   }, []);
 
-  if (loading) return <div className="p-8">Loading dashboard...</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-[200px]">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-800">Overview</h1>
-      
+    <div className="space-y-4 sm:space-y-6">
+      <div>
+        <h1 className="text-xl sm:text-3xl font-bold text-slate-800">Overview</h1>
+        <p className="text-sm text-slate-500">Welcome to your supplier dashboard</p>
+      </div>
+
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
         {/* Total Meds Card */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-100">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm font-medium text-gray-500">Total Products</p>
-              <h3 className="text-3xl font-bold text-gray-800 mt-2">{stats.totalMeds}</h3>
+              <p className="text-xs sm:text-sm font-medium text-slate-500">Total Products</p>
+              <h3 className="text-2xl sm:text-3xl font-bold text-slate-800 mt-1">{stats.totalMeds}</h3>
             </div>
-            <div className="p-3 bg-teal-50 rounded-lg text-teal-600">
-              <Package size={24} />
+            <div className="p-2 sm:p-3 bg-teal-50 rounded-lg text-teal-600">
+              <Package className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
           </div>
-          <p className="text-sm text-green-600 mt-4 flex items-center gap-1">
-            <CheckCircle size={14} /> Active Catalog
+          <p className="text-xs sm:text-sm text-green-600 mt-3 flex items-center gap-1">
+            <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" /> Active Catalog
           </p>
         </div>
 
         {/* Low Stock Card */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-100">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm font-medium text-gray-500">Low Stock Alerts</p>
-              <h3 className="text-3xl font-bold text-gray-800 mt-2">{stats.lowStock}</h3>
+              <p className="text-xs sm:text-sm font-medium text-slate-500">Low Stock Alerts</p>
+              <h3 className="text-2xl sm:text-3xl font-bold text-slate-800 mt-1">{stats.lowStock}</h3>
             </div>
-            <div className="p-3 bg-orange-50 rounded-lg text-orange-600">
-              <AlertTriangle size={24} />
+            <div className="p-2 sm:p-3 bg-orange-50 rounded-lg text-orange-600">
+              <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
           </div>
-          <p className="text-sm text-orange-600 mt-4">Needs attention</p>
+          <p className="text-xs sm:text-sm text-orange-600 mt-3">Needs attention</p>
         </div>
 
         {/* Pending Orders Card */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-100">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm font-medium text-gray-500">Pending Requests</p>
-              <h3 className="text-3xl font-bold text-gray-800 mt-2">{stats.pendingOrders}</h3>
+              <p className="text-xs sm:text-sm font-medium text-slate-500">Pending Requests</p>
+              <h3 className="text-2xl sm:text-3xl font-bold text-slate-800 mt-1">{stats.pendingOrders}</h3>
             </div>
-            <div className="p-3 bg-blue-50 rounded-lg text-blue-600">
-              <TrendingUp size={24} />
+            <div className="p-2 sm:p-3 bg-blue-50 rounded-lg text-blue-600">
+              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
           </div>
-          <p className="text-sm text-blue-600 mt-4">Awaiting approval</p>
+          <p className="text-xs sm:text-sm text-blue-600 mt-3">Awaiting approval</p>
         </div>
       </div>
-      
-      {/* Quick Actions / Recent Activity could go here */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mt-8">
-        <h2 className="text-xl font-bold mb-4">Welcome Back</h2>
-        <p className="text-gray-600">Select an option from the sidebar to manage your inventory and orders.</p>
+
+      {/* Quick Actions */}
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-100">
+        <h2 className="text-lg sm:text-xl font-bold text-slate-800 mb-2">Welcome Back</h2>
+        <p className="text-sm text-slate-600">Use the navigation below to manage your inventory and orders.</p>
       </div>
     </div>
   );
