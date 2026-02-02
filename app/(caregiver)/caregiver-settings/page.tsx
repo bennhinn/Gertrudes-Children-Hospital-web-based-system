@@ -4,14 +4,17 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
-import { 
-  User, 
-  Bell, 
-  Shield, 
-  Palette, 
-  HelpCircle, 
+import { useFAQ } from '@/hooks/UseFAQ'
+import FAQItem from '@/components/faq-item'
+import {
+  User,
+  Bell,
+  Shield,
+  Palette,
+  HelpCircle,
   Info,
   ChevronRight,
+  ChevronDown,
   Mail,
   Phone,
   Lock,
@@ -31,7 +34,9 @@ import {
   LogOut,
   Trash2,
   Download,
-  CheckCircle
+  CheckCircle,
+  Search,
+  Loader2
 } from 'lucide-react'
 
 interface UserProfile {
@@ -67,6 +72,11 @@ export default function SettingsPage() {
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system')
   const [saving, setSaving] = useState(false)
 
+  // FAQ state
+  const [showFAQs, setShowFAQs] = useState(false)
+  const [faqSearchQuery, setFaqSearchQuery] = useState('')
+  const { items: faqItems, loading: faqLoading, searchFAQ, markHelpful } = useFAQ({ popular: true, limit: 10 })
+
   useEffect(() => {
     loadUserData()
   }, [])
@@ -74,7 +84,7 @@ export default function SettingsPage() {
   async function loadUserData() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    
+
     if (user) {
       setUser({
         id: user.id,
@@ -155,7 +165,7 @@ export default function SettingsPage() {
   if (activeSection === 'profile') {
     return (
       <div className="space-y-6">
-        <button 
+        <button
           onClick={() => setActiveSection(null)}
           className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors"
         >
@@ -187,8 +197,8 @@ export default function SettingsPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Full Name</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   defaultValue={user?.fullName}
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                 />
@@ -197,8 +207,8 @@ export default function SettingsPage() {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Email Address</label>
                 <div className="relative">
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     defaultValue={user?.email}
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed"
                     disabled
@@ -212,8 +222,8 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Phone Number</label>
-                <input 
-                  type="tel" 
+                <input
+                  type="tel"
                   defaultValue={user?.phone}
                   placeholder="+254 7XX XXX XXX"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
@@ -222,7 +232,7 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Address</label>
-                <textarea 
+                <textarea
                   rows={3}
                   placeholder="Enter your address"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all resize-none"
@@ -236,16 +246,16 @@ export default function SettingsPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Contact Name</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="Full name"
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Contact Phone</label>
-                  <input 
-                    type="tel" 
+                  <input
+                    type="tel"
                     placeholder="+254 7XX XXX XXX"
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                   />
@@ -266,7 +276,7 @@ export default function SettingsPage() {
   if (activeSection === 'notifications') {
     return (
       <div className="space-y-6">
-        <button 
+        <button
           onClick={() => setActiveSection(null)}
           className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors"
         >
@@ -294,13 +304,11 @@ export default function SettingsPage() {
               </div>
               <button
                 onClick={() => handleNotificationToggle('pushEnabled')}
-                className={`relative w-12 h-6 rounded-full transition-colors ${
-                  notifications.pushEnabled ? 'bg-blue-500' : 'bg-slate-200'
-                }`}
+                className={`relative w-12 h-6 rounded-full transition-colors ${notifications.pushEnabled ? 'bg-blue-500' : 'bg-slate-200'
+                  }`}
               >
-                <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                  notifications.pushEnabled ? 'translate-x-6' : 'translate-x-0'
-                }`} />
+                <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${notifications.pushEnabled ? 'translate-x-6' : 'translate-x-0'
+                  }`} />
               </button>
             </div>
 
@@ -317,26 +325,22 @@ export default function SettingsPage() {
                   <span className="text-sm text-slate-600">1 day before</span>
                   <button
                     onClick={() => handleNotificationToggle('appointmentReminder1Day')}
-                    className={`relative w-10 h-5 rounded-full transition-colors ${
-                      notifications.appointmentReminder1Day ? 'bg-blue-500' : 'bg-slate-200'
-                    }`}
+                    className={`relative w-10 h-5 rounded-full transition-colors ${notifications.appointmentReminder1Day ? 'bg-blue-500' : 'bg-slate-200'
+                      }`}
                   >
-                    <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                      notifications.appointmentReminder1Day ? 'translate-x-5' : 'translate-x-0'
-                    }`} />
+                    <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${notifications.appointmentReminder1Day ? 'translate-x-5' : 'translate-x-0'
+                      }`} />
                   </button>
                 </label>
                 <label className="flex items-center justify-between cursor-pointer">
                   <span className="text-sm text-slate-600">1 hour before</span>
                   <button
                     onClick={() => handleNotificationToggle('appointmentReminder1Hour')}
-                    className={`relative w-10 h-5 rounded-full transition-colors ${
-                      notifications.appointmentReminder1Hour ? 'bg-blue-500' : 'bg-slate-200'
-                    }`}
+                    className={`relative w-10 h-5 rounded-full transition-colors ${notifications.appointmentReminder1Hour ? 'bg-blue-500' : 'bg-slate-200'
+                      }`}
                   >
-                    <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                      notifications.appointmentReminder1Hour ? 'translate-x-5' : 'translate-x-0'
-                    }`} />
+                    <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${notifications.appointmentReminder1Hour ? 'translate-x-5' : 'translate-x-0'
+                      }`} />
                   </button>
                 </label>
               </div>
@@ -355,26 +359,22 @@ export default function SettingsPage() {
                   <span className="text-sm text-slate-600">Lab results ready</span>
                   <button
                     onClick={() => handleNotificationToggle('labResultsNotification')}
-                    className={`relative w-10 h-5 rounded-full transition-colors ${
-                      notifications.labResultsNotification ? 'bg-blue-500' : 'bg-slate-200'
-                    }`}
+                    className={`relative w-10 h-5 rounded-full transition-colors ${notifications.labResultsNotification ? 'bg-blue-500' : 'bg-slate-200'
+                      }`}
                   >
-                    <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                      notifications.labResultsNotification ? 'translate-x-5' : 'translate-x-0'
-                    }`} />
+                    <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${notifications.labResultsNotification ? 'translate-x-5' : 'translate-x-0'
+                      }`} />
                   </button>
                 </label>
                 <label className="flex items-center justify-between cursor-pointer">
                   <span className="text-sm text-slate-600">Prescription updates</span>
                   <button
                     onClick={() => handleNotificationToggle('prescriptionNotification')}
-                    className={`relative w-10 h-5 rounded-full transition-colors ${
-                      notifications.prescriptionNotification ? 'bg-blue-500' : 'bg-slate-200'
-                    }`}
+                    className={`relative w-10 h-5 rounded-full transition-colors ${notifications.prescriptionNotification ? 'bg-blue-500' : 'bg-slate-200'
+                      }`}
                   >
-                    <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                      notifications.prescriptionNotification ? 'translate-x-5' : 'translate-x-0'
-                    }`} />
+                    <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${notifications.prescriptionNotification ? 'translate-x-5' : 'translate-x-0'
+                      }`} />
                   </button>
                 </label>
               </div>
@@ -393,13 +393,11 @@ export default function SettingsPage() {
               </div>
               <button
                 onClick={() => handleNotificationToggle('messageNotification')}
-                className={`relative w-10 h-5 rounded-full transition-colors ${
-                  notifications.messageNotification ? 'bg-blue-500' : 'bg-slate-200'
-                }`}
+                className={`relative w-10 h-5 rounded-full transition-colors ${notifications.messageNotification ? 'bg-blue-500' : 'bg-slate-200'
+                  }`}
               >
-                <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                  notifications.messageNotification ? 'translate-x-5' : 'translate-x-0'
-                }`} />
+                <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${notifications.messageNotification ? 'translate-x-5' : 'translate-x-0'
+                  }`} />
               </button>
             </div>
 
@@ -416,13 +414,11 @@ export default function SettingsPage() {
               </div>
               <button
                 onClick={() => handleNotificationToggle('emailWeeklySummary')}
-                className={`relative w-10 h-5 rounded-full transition-colors ${
-                  notifications.emailWeeklySummary ? 'bg-blue-500' : 'bg-slate-200'
-                }`}
+                className={`relative w-10 h-5 rounded-full transition-colors ${notifications.emailWeeklySummary ? 'bg-blue-500' : 'bg-slate-200'
+                  }`}
               >
-                <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                  notifications.emailWeeklySummary ? 'translate-x-5' : 'translate-x-0'
-                }`} />
+                <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${notifications.emailWeeklySummary ? 'translate-x-5' : 'translate-x-0'
+                  }`} />
               </button>
             </div>
           </CardContent>
@@ -435,7 +431,7 @@ export default function SettingsPage() {
   if (activeSection === 'privacy') {
     return (
       <div className="space-y-6">
-        <button 
+        <button
           onClick={() => setActiveSection(null)}
           className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors"
         >
@@ -562,7 +558,7 @@ export default function SettingsPage() {
   if (activeSection === 'preferences') {
     return (
       <div className="space-y-6">
-        <button 
+        <button
           onClick={() => setActiveSection(null)}
           className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors"
         >
@@ -584,33 +580,30 @@ export default function SettingsPage() {
             <div className="grid grid-cols-3 gap-3">
               <button
                 onClick={() => setTheme('light')}
-                className={`p-4 rounded-xl border-2 transition-all ${
-                  theme === 'light' 
-                    ? 'border-blue-500 bg-blue-50' 
+                className={`p-4 rounded-xl border-2 transition-all ${theme === 'light'
+                    ? 'border-blue-500 bg-blue-50'
                     : 'border-slate-200 hover:border-slate-300'
-                }`}
+                  }`}
               >
                 <Sun className={`h-6 w-6 mx-auto mb-2 ${theme === 'light' ? 'text-blue-600' : 'text-slate-400'}`} />
                 <p className={`text-sm font-medium ${theme === 'light' ? 'text-blue-600' : 'text-slate-600'}`}>Light</p>
               </button>
               <button
                 onClick={() => setTheme('dark')}
-                className={`p-4 rounded-xl border-2 transition-all ${
-                  theme === 'dark' 
-                    ? 'border-blue-500 bg-blue-50' 
+                className={`p-4 rounded-xl border-2 transition-all ${theme === 'dark'
+                    ? 'border-blue-500 bg-blue-50'
                     : 'border-slate-200 hover:border-slate-300'
-                }`}
+                  }`}
               >
                 <Moon className={`h-6 w-6 mx-auto mb-2 ${theme === 'dark' ? 'text-blue-600' : 'text-slate-400'}`} />
                 <p className={`text-sm font-medium ${theme === 'dark' ? 'text-blue-600' : 'text-slate-600'}`}>Dark</p>
               </button>
               <button
                 onClick={() => setTheme('system')}
-                className={`p-4 rounded-xl border-2 transition-all ${
-                  theme === 'system' 
-                    ? 'border-blue-500 bg-blue-50' 
+                className={`p-4 rounded-xl border-2 transition-all ${theme === 'system'
+                    ? 'border-blue-500 bg-blue-50'
                     : 'border-slate-200 hover:border-slate-300'
-                }`}
+                  }`}
               >
                 <Smartphone className={`h-6 w-6 mx-auto mb-2 ${theme === 'system' ? 'text-blue-600' : 'text-slate-400'}`} />
                 <p className={`text-sm font-medium ${theme === 'system' ? 'text-blue-600' : 'text-slate-600'}`}>System</p>
@@ -660,7 +653,7 @@ export default function SettingsPage() {
   if (activeSection === 'help') {
     return (
       <div className="space-y-6">
-        <button 
+        <button
           onClick={() => setActiveSection(null)}
           className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors"
         >
@@ -673,22 +666,79 @@ export default function SettingsPage() {
           <p className="text-slate-500 mt-1">Get help and provide feedback</p>
         </div>
 
+        {/* FAQ Section */}
+        <Card className="border-slate-100 overflow-hidden">
+          <button
+            onClick={() => setShowFAQs(!showFAQs)}
+            className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                <HelpCircle className="h-5 w-5 text-blue-600" />
+              </div>
+              <div className="text-left">
+                <p className="font-medium text-slate-900">Frequently Asked Questions</p>
+                <p className="text-sm text-slate-500">Find answers to common questions</p>
+              </div>
+            </div>
+            <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${showFAQs ? 'rotate-180' : ''}`} />
+          </button>
+
+          {showFAQs && (
+            <div className="border-t border-slate-100">
+              {/* FAQ Search */}
+              <div className="p-4 bg-slate-50">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="text"
+                    value={faqSearchQuery}
+                    onChange={(e) => {
+                      setFaqSearchQuery(e.target.value)
+                      if (e.target.value.length > 2) {
+                        searchFAQ(e.target.value)
+                      }
+                    }}
+                    placeholder="Search FAQs..."
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* FAQ Items */}
+              <div className="divide-y divide-slate-100">
+                {faqLoading ? (
+                  <div className="p-8 flex flex-col items-center justify-center">
+                    <Loader2 className="h-6 w-6 text-blue-500 animate-spin" />
+                    <p className="text-sm text-slate-500 mt-2">Loading FAQs...</p>
+                  </div>
+                ) : faqItems.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <HelpCircle className="h-10 w-10 text-slate-300 mx-auto mb-2" />
+                    <p className="text-sm text-slate-500">No FAQs found</p>
+                  </div>
+                ) : (
+                  <div className="max-h-[400px] overflow-y-auto">
+                    {faqItems.map((item) => (
+                      <FAQItem
+                        key={item.id}
+                        item={item}
+                        onMarkHelpful={markHelpful}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </Card>
+
         <Card className="border-slate-100">
           <CardHeader className="border-b border-slate-100 pb-4">
-            <CardTitle className="text-base">Get Help</CardTitle>
+            <CardTitle className="text-base">Contact Support</CardTitle>
           </CardHeader>
           <CardContent className="p-0 divide-y divide-slate-100">
-            <button className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                  <HelpCircle className="h-5 w-5 text-blue-600" />
-                </div>
-                <p className="font-medium text-slate-900">FAQs</p>
-              </div>
-              <ChevronRight className="h-5 w-5 text-slate-300" />
-            </button>
-
-            <button className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+            <a href="mailto:support@gch.co.ke" className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-purple-50 flex items-center justify-center">
                   <Mail className="h-5 w-5 text-purple-600" />
@@ -699,9 +749,9 @@ export default function SettingsPage() {
                 </div>
               </div>
               <ChevronRight className="h-5 w-5 text-slate-300" />
-            </button>
+            </a>
 
-            <button className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+            <a href="tel:+254123456789" className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center">
                   <Phone className="h-5 w-5 text-emerald-600" />
@@ -712,7 +762,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               <ChevronRight className="h-5 w-5 text-slate-300" />
-            </button>
+            </a>
           </CardContent>
         </Card>
 
@@ -740,7 +790,7 @@ export default function SettingsPage() {
   if (activeSection === 'about') {
     return (
       <div className="space-y-6">
-        <button 
+        <button
           onClick={() => setActiveSection(null)}
           className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors"
         >

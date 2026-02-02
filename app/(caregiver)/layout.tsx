@@ -3,19 +3,18 @@ import { redirect } from 'next/navigation'
 import { supabaseServer } from '@/lib/supabaseServer'
 import { Button } from '@/components/ui/button'
 import { CaregiverBottomNav } from '@/components/caregiver-bottom-nav'
+import CaregiverHeader from '@/components/caregiver-header'
 import {
   Home,
   Users,
   Calendar,
   MessageSquare,
   Settings,
-  Bell,
   Plus,
   LogOut,
   ChevronRight,
   Shield,
-  FileText,
-  Activity
+  FileText
 } from 'lucide-react'
 
 const navItems = [
@@ -142,50 +141,8 @@ export default async function CaregiverLayout({ children }: { children: React.Re
 
         {/* Main area */}
         <div className="flex-1 min-w-0">
-          {/* Top header */}
-          <header className="sticky top-0 z-40 mb-4 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 lg:mb-6 lg:rounded-2xl lg:border lg:shadow-sm">
-            <div className="px-4 py-3 lg:px-6 lg:py-4">
-              <div className="flex items-center justify-between gap-3 lg:gap-4">
-                {/* Mobile: User avatar */}
-                <div className="flex items-center gap-3 lg:hidden">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-sm font-bold text-white shadow-md shadow-blue-500/25">
-                    {initials}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 truncate">{fullName}</p>
-                    <p className="text-xs text-slate-500">Welcome back!</p>
-                  </div>
-                </div>
-
-                {/* Desktop: Page title area */}
-                <div className="hidden lg:flex lg:items-center lg:gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 shadow-lg shadow-blue-500/25">
-                    <Activity className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-lg font-bold text-slate-900">Gertrude&apos;s Children Hospital</h1>
-                    <p className="text-xs text-slate-500">Caregiver Portal</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {/* Notification Bell */}
-                  <Button variant="ghost" size="sm" className="relative h-10 w-10 p-0 rounded-xl hover:bg-slate-100">
-                    <Bell className="h-5 w-5 text-slate-600" />
-                    <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center">3</span>
-                  </Button>
-
-                  {/* Primary CTA - Book Appointment */}
-                  <Link href="/caregiver-appointments" className="hidden sm:block">
-                    <Button size="sm" className="h-10 px-4 rounded-xl shadow-sm bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600">
-                      <Plus className="h-4 w-4 mr-1.5" />
-                      <span className="font-semibold">Book</span>
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </header>
+          {/* Top header with hamburger menu */}
+          <CaregiverHeader fullName={fullName} email={email} initials={initials} />
 
           {/* Content with mobile padding */}
           <div className="px-4 pb-28 lg:px-0 lg:pb-8">
