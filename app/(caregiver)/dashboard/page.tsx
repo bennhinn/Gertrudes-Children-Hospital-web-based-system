@@ -5,6 +5,19 @@ import { createClient } from '@/lib/supabase/server'
 import { getChildrenByCaregiver, getUpcomingAppointments, getCompletedAppointmentsCount } from '@/lib/db/queries'
 import type { Appointment } from '@/types'
 import Link from 'next/link'
+import {
+  QrCode,
+  CalendarPlus,
+  Baby,
+  Calendar,
+  CheckCircle,
+  ClipboardList,
+  Plus,
+  Lightbulb,
+  Bell,
+  Ticket,
+  ArrowRight
+} from 'lucide-react'
 
 function statusVariant(status: string) {
   if (status === 'pending') return 'blue' as const
@@ -110,7 +123,7 @@ export default async function DashboardPage() {
               <>
                 <Link href={`/caregiver-appointments?viewQR=${nextAppointment.id}`} className="flex-1 sm:flex-none">
                   <Button size="lg" className="w-full bg-white text-blue-600 hover:bg-white/95 shadow-lg shadow-blue-900/20 transition-all hover:shadow-xl sm:w-auto">
-                    <span className="mr-2">🎫</span>
+                    <QrCode className="h-5 w-5 mr-2" />
                     <span className="font-semibold">View QR Code</span>
                   </Button>
                 </Link>
@@ -120,7 +133,7 @@ export default async function DashboardPage() {
                     variant="ghost"
                     className="w-full bg-white/15 text-white backdrop-blur-md hover:bg-white/25 border border-white/20 sm:w-auto"
                   >
-                    <span className="mr-2">📅</span>
+                    <CalendarPlus className="h-5 w-5 mr-2" />
                     <span className="font-semibold">Book Another</span>
                   </Button>
                 </Link>
@@ -129,7 +142,7 @@ export default async function DashboardPage() {
               <>
                 <Link href="/caregiver-appointments" className="flex-1 sm:flex-none">
                   <Button size="lg" className="w-full bg-white text-blue-600 hover:bg-white/95 shadow-lg shadow-blue-900/20 transition-all hover:shadow-xl sm:w-auto">
-                    <span className="mr-2">📅</span>
+                    <CalendarPlus className="h-5 w-5 mr-2" />
                     <span className="font-semibold">Book Appointment</span>
                   </Button>
                 </Link>
@@ -139,7 +152,7 @@ export default async function DashboardPage() {
                     variant="ghost"
                     className="w-full bg-white/15 text-white backdrop-blur-md hover:bg-white/25 border border-white/20 sm:w-auto"
                   >
-                    <span className="mr-2">👶</span>
+                    <Baby className="h-5 w-5 mr-2" />
                     <span className="font-semibold">Add Child Profile</span>
                   </Button>
                 </Link>
@@ -155,8 +168,8 @@ export default async function DashboardPage() {
         <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-900/5 transition-all hover:shadow-md lg:rounded-3xl lg:p-8">
           <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-blue-50 transition-transform group-hover:scale-110 lg:-right-8 lg:-top-8 lg:h-32 lg:w-32" aria-hidden="true" />
           <div className="relative flex items-center gap-4 lg:block">
-            <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-xl shadow-lg shadow-blue-500/25 lg:mb-4 lg:h-14 lg:w-14 lg:rounded-2xl lg:text-2xl">
-              👶
+            <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25 lg:mb-4 lg:h-14 lg:w-14 lg:rounded-2xl">
+              <Baby className="h-6 w-6 text-white lg:h-7 lg:w-7" />
             </div>
             <div className="min-w-0 flex-1 space-y-0.5 lg:space-y-1">
               <p className="text-xs font-medium text-slate-600 lg:text-sm">Children</p>
@@ -172,8 +185,8 @@ export default async function DashboardPage() {
         <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-900/5 transition-all hover:shadow-md lg:rounded-3xl lg:p-8">
           <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-purple-50 transition-transform group-hover:scale-110 lg:-right-8 lg:-top-8 lg:h-32 lg:w-32" aria-hidden="true" />
           <div className="relative flex items-center gap-4 lg:block">
-            <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-xl shadow-lg shadow-purple-500/25 lg:mb-4 lg:h-14 lg:w-14 lg:rounded-2xl lg:text-2xl">
-              📅
+            <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-lg shadow-purple-500/25 lg:mb-4 lg:h-14 lg:w-14 lg:rounded-2xl">
+              <Calendar className="h-6 w-6 text-white lg:h-7 lg:w-7" />
             </div>
             <div className="min-w-0 flex-1 space-y-0.5 lg:space-y-1">
               <p className="text-xs font-medium text-slate-600 lg:text-sm">Upcoming</p>
@@ -189,8 +202,8 @@ export default async function DashboardPage() {
         <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-900/5 transition-all hover:shadow-md sm:col-span-2 lg:col-span-1 lg:rounded-3xl lg:p-8">
           <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-emerald-50 transition-transform group-hover:scale-110 lg:-right-8 lg:-top-8 lg:h-32 lg:w-32" aria-hidden="true" />
           <div className="relative flex items-center gap-4 lg:block">
-            <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-xl shadow-lg shadow-emerald-500/25 lg:mb-4 lg:h-14 lg:w-14 lg:rounded-2xl lg:text-2xl">
-              ✅
+            <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/25 lg:mb-4 lg:h-14 lg:w-14 lg:rounded-2xl">
+              <CheckCircle className="h-6 w-6 text-white lg:h-7 lg:w-7" />
             </div>
             <div className="min-w-0 flex-1 space-y-0.5 lg:space-y-1">
               <p className="text-xs font-medium text-slate-600 lg:text-sm">Completed</p>
@@ -212,7 +225,7 @@ export default async function DashboardPage() {
           </div>
           <Link href="/caregiver-appointments" className="w-full sm:w-auto">
             <Button className="w-full shadow-sm sm:w-auto">
-              <span className="mr-2">➕</span>
+              <Plus className="h-4 w-4 mr-2" />
               New Appointment
             </Button>
           </Link>
@@ -220,8 +233,8 @@ export default async function DashboardPage() {
 
         {appointments.length === 0 ? (
           <div className="rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/30 p-8 text-center lg:rounded-2xl lg:p-12">
-            <div className="mx-auto mb-4 inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-3xl shadow-sm ring-1 ring-slate-900/5 lg:mb-5 lg:h-20 lg:w-20 lg:text-4xl">
-              📋
+            <div className="mx-auto mb-4 inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-white shadow-sm ring-1 ring-slate-900/5 lg:mb-5 lg:h-20 lg:w-20">
+              <ClipboardList className="h-8 w-8 text-slate-400 lg:h-10 lg:w-10" />
             </div>
             <h3 className="mb-2 text-lg font-semibold text-slate-900 lg:text-xl">No appointments yet</h3>
             <p className="mx-auto mb-5 max-w-md text-sm text-slate-600 leading-relaxed lg:mb-6">
@@ -229,7 +242,7 @@ export default async function DashboardPage() {
             </p>
             <Link href="/caregiver-appointments">
               <Button size="lg" className="shadow-md">
-                <span className="mr-2">📅</span>
+                <CalendarPlus className="h-5 w-5 mr-2" />
                 Schedule First Appointment
               </Button>
             </Link>
@@ -268,7 +281,7 @@ export default async function DashboardPage() {
                         className="text-xs transition-all hover:bg-blue-50 sm:opacity-0 sm:group-hover:opacity-100"
                       >
                         QR Code
-                        <span className="ml-1">→</span>
+                        <ArrowRight className="h-3 w-3 ml-1" />
                       </Button>
                     </Link>
                   )}
@@ -281,7 +294,7 @@ export default async function DashboardPage() {
                         className="text-xs transition-all hover:bg-slate-50 sm:opacity-0 sm:group-hover:opacity-100"
                       >
                         Details
-                        <span className="ml-1">→</span>
+                        <ArrowRight className="h-3 w-3 ml-1" />
                       </Button>
                     </Link>
                   )}
@@ -299,12 +312,16 @@ export default async function DashboardPage() {
             <h2 className="text-base font-semibold text-slate-900 lg:text-lg">Quick Tips</h2>
             <p className="mt-0.5 text-xs text-slate-600 lg:mt-1 lg:text-sm">Getting the most from your dashboard</p>
           </div>
-          <span className="text-2xl lg:text-3xl" aria-hidden="true">💡</span>
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-100 to-yellow-100 flex items-center justify-center lg:h-12 lg:w-12">
+            <Lightbulb className="h-5 w-5 text-amber-600 lg:h-6 lg:w-6" />
+          </div>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="flex items-start gap-3 rounded-2xl bg-white/70 p-4 backdrop-blur-sm ring-1 ring-white/50">
-            <span className="text-xl shrink-0 lg:text-2xl" aria-hidden="true">🔔</span>
+            <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+              <Bell className="h-5 w-5 text-blue-600" />
+            </div>
             <div>
               <p className="font-medium text-slate-900 text-xs mb-1 lg:text-sm">Never miss a visit</p>
               <p className="text-[11px] text-slate-600 leading-relaxed lg:text-xs">
@@ -314,7 +331,9 @@ export default async function DashboardPage() {
           </div>
 
           <div className="flex items-start gap-3 rounded-2xl bg-white/70 p-4 backdrop-blur-sm ring-1 ring-white/50">
-            <span className="text-xl shrink-0 lg:text-2xl" aria-hidden="true">🎫</span>
+            <div className="h-10 w-10 rounded-xl bg-purple-100 flex items-center justify-center shrink-0">
+              <Ticket className="h-5 w-5 text-purple-600" />
+            </div>
             <div>
               <p className="font-medium text-slate-900 text-xs mb-1 lg:text-sm">Faster check-ins</p>
               <p className="text-[11px] text-slate-600 leading-relaxed lg:text-xs">

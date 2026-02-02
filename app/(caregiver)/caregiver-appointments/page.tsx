@@ -610,54 +610,62 @@ export default function AppointmentsPage() {
 
       {/* QR Code Modal */}
       {qrModalData && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
-          <div className="w-full max-w-md rounded-t-2xl sm:rounded-2xl bg-white p-5 sm:p-6 shadow-2xl animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:fade-in duration-300">
-            <div className="text-center">
-              {/* Drag handle for mobile */}
-              <div className="mx-auto mb-4 h-1 w-12 rounded-full bg-slate-300 sm:hidden" />
+        <div
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setQrModalData(null)}
+        >
+          <div
+            className="w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-5 sm:p-6">
+              <div className="text-center">
+                {/* Drag handle for mobile */}
+                <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-300 sm:hidden" />
 
-              <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-1">Appointment QR Code</h3>
-              <p className="text-xs sm:text-sm text-slate-600 mb-3 sm:mb-4">
-                Show this QR code at the hospital for check-in
-              </p>
+                <h3 className="text-xl font-bold text-slate-900 mb-1">Appointment QR Code</h3>
+                <p className="text-sm text-slate-500 mb-4">
+                  Show this QR code at the hospital for check-in
+                </p>
 
-              {/* Child Name */}
-              <div className="mb-3 sm:mb-4 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 p-2.5 sm:p-3">
-                <p className="text-xs sm:text-sm font-medium text-slate-700">
-                  Patient: <span className="text-blue-700">{qrModalData.childName}</span>
+                {/* Child Name */}
+                <div className="mb-4 rounded-xl bg-blue-50 border border-blue-100 p-3">
+                  <p className="text-sm font-medium text-slate-700">
+                    Patient: <span className="text-blue-600 font-semibold">{qrModalData.childName}</span>
+                  </p>
+                </div>
+
+                {/* QR Code Image */}
+                <div className="flex justify-center mb-5">
+                  <div className="rounded-2xl bg-white p-4 shadow-lg border border-slate-200">
+                    <img
+                      src={qrModalData.qrCode}
+                      alt="Appointment QR Code"
+                      className="w-52 h-52 sm:w-56 sm:h-56"
+                    />
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3">
+                  <Button
+                    onClick={downloadQR}
+                    className="flex-1 py-5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white font-semibold"
+                  >
+                    Download QR
+                  </Button>
+                  <Button
+                    onClick={() => setQrModalData(null)}
+                    className="flex-1 py-5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold"
+                  >
+                    Close
+                  </Button>
+                </div>
+
+                <p className="mt-4 text-xs text-slate-400">
+                  Tip: Save this image to your phone for easy access
                 </p>
               </div>
-
-              {/* QR Code Image */}
-              <div className="flex justify-center mb-4 sm:mb-6">
-                <div className="rounded-xl bg-white p-3 sm:p-4 shadow-lg border-2 border-slate-100">
-                  <img
-                    src={qrModalData.qrCode}
-                    alt="Appointment QR Code"
-                    className="w-48 h-48 sm:w-64 sm:h-64"
-                  />
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-2 sm:gap-3">
-                <Button
-                  onClick={downloadQR}
-                  className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white"
-                >
-                  ⬇️ Download
-                </Button>
-                <Button
-                  onClick={() => setQrModalData(null)}
-                  className="flex-1 bg-slate-200 text-slate-700 hover:bg-slate-300"
-                >
-                  Close
-                </Button>
-              </div>
-
-              <p className="mt-3 sm:mt-4 text-[10px] sm:text-xs text-slate-500">
-                Tip: Save this image to your phone for easy access
-              </p>
             </div>
           </div>
         </div>

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { Search, X } from 'lucide-react'
+import { Search, X, Baby, Plus, LayoutDashboard, Calendar, AlertTriangle, FileText } from 'lucide-react'
 
 interface Child {
   id: string
@@ -167,13 +167,15 @@ export default function PatientsPage() {
               onClick={() => setShowAddForm(true)}
               className="flex-1 sm:flex-none bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl text-sm sm:text-base"
             >
-              + Add Child
+              <Plus className="h-4 w-4 mr-1.5" />
+              Add Child
             </Button>
           )}
           <Button
             onClick={() => router.push('/dashboard')}
             className="flex-1 sm:flex-none bg-slate-200 text-slate-700 hover:bg-slate-300 text-sm sm:text-base"
           >
+            <LayoutDashboard className="h-4 w-4 mr-1.5" />
             Dashboard
           </Button>
         </div>
@@ -343,8 +345,8 @@ export default function PatientsPage() {
       {children.length === 0 ? (
         <Card className="border-none shadow-lg">
           <CardContent className="py-12 sm:py-16 text-center">
-            <div className="mx-auto mb-3 sm:mb-4 inline-flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-gradient-to-br from-purple-100 to-blue-100 text-3xl sm:text-4xl">
-              👶
+            <div className="mx-auto mb-3 sm:mb-4 inline-flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-gradient-to-br from-purple-100 to-blue-100">
+              <Baby className="h-8 w-8 sm:h-10 sm:w-10 text-purple-600" />
             </div>
             <h2 className="text-lg sm:text-xl font-bold text-slate-800">No Children Added Yet</h2>
             <p className="mt-1 sm:mt-2 text-sm sm:text-base text-slate-600">Add your first child to start booking appointments</p>
@@ -353,6 +355,7 @@ export default function PatientsPage() {
                 onClick={() => setShowAddForm(true)}
                 className="mt-3 sm:mt-4 bg-gradient-to-r from-blue-600 to-purple-600"
               >
+                <Plus className="h-4 w-4 mr-1.5" />
                 Add Your First Child
               </Button>
             )}
@@ -361,8 +364,8 @@ export default function PatientsPage() {
       ) : filteredChildren.length === 0 ? (
         <Card className="border-none shadow-lg">
           <CardContent className="py-12 sm:py-16 text-center">
-            <div className="mx-auto mb-3 sm:mb-4 inline-flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-slate-100 text-3xl sm:text-4xl">
-              🔍
+            <div className="mx-auto mb-3 sm:mb-4 inline-flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-slate-100">
+              <Search className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400" />
             </div>
             <h2 className="text-lg sm:text-xl font-bold text-slate-800">No Matching Children</h2>
             <p className="mt-1 sm:mt-2 text-sm sm:text-base text-slate-600">Try adjusting your search term</p>
@@ -384,8 +387,8 @@ export default function PatientsPage() {
               <CardContent className="p-4 sm:p-6">
                 {/* Header with Icon */}
                 <div className="mb-3 sm:mb-4 flex items-start justify-between gap-2">
-                  <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-purple-100 text-xl sm:text-2xl">
-                    {child.gender === 'male' ? '👦' : child.gender === 'female' ? '👧' : '👶'}
+                  <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-purple-100">
+                    <Baby className={`h-5 w-5 sm:h-6 sm:w-6 ${child.gender === 'male' ? 'text-blue-600' : child.gender === 'female' ? 'text-pink-600' : 'text-purple-600'}`} />
                   </div>
                   <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">
                     {calculateAge(child.date_of_birth)} {calculateAge(child.date_of_birth) === 1 ? 'year' : 'years'}
@@ -415,13 +418,19 @@ export default function PatientsPage() {
                     <div className="mt-3 sm:mt-4 space-y-2">
                       {child.allergies && (
                         <div className="rounded-lg bg-red-50 p-2.5 sm:p-3 border border-red-100">
-                          <p className="text-[10px] sm:text-xs font-medium text-red-700 mb-0.5 sm:mb-1">Allergies:</p>
+                          <div className="flex items-center gap-1.5 mb-0.5 sm:mb-1">
+                            <AlertTriangle className="h-3 w-3 text-red-700" />
+                            <p className="text-[10px] sm:text-xs font-medium text-red-700">Allergies</p>
+                          </div>
                           <p className="text-[10px] sm:text-xs text-red-600 line-clamp-2">{formatAllergies(child.allergies)}</p>
                         </div>
                       )}
                       {child.medical_notes && (
                         <div className="rounded-lg bg-blue-50 p-2.5 sm:p-3 border border-blue-100">
-                          <p className="text-[10px] sm:text-xs font-medium text-blue-700 mb-0.5 sm:mb-1">Medical Notes:</p>
+                          <div className="flex items-center gap-1.5 mb-0.5 sm:mb-1">
+                            <FileText className="h-3 w-3 text-blue-700" />
+                            <p className="text-[10px] sm:text-xs font-medium text-blue-700">Medical Notes</p>
+                          </div>
                           <p className="text-[10px] sm:text-xs text-blue-600 line-clamp-2">{child.medical_notes}</p>
                         </div>
                       )}
@@ -436,6 +445,7 @@ export default function PatientsPage() {
                     onClick={() => router.push('/caregiver-appointments')}
                     className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white"
                   >
+                    <Calendar className="h-4 w-4 mr-1.5" />
                     Book Appointment
                   </Button>
                 </div>
