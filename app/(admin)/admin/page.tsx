@@ -263,12 +263,12 @@ export default function AdminDashboardPage() {
                                         </div>
                                         <span
                                             className={`rounded-full px-3 py-1 text-xs font-semibold ${apt.status === 'pending'
-                                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                                : apt.status === 'confirmed'
-                                                    ? 'bg-blue-100 text-blue-800'
-                                                    : apt.status === 'completed'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-slate-100 text-slate-800'
+                                                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                                    : apt.status === 'confirmed'
+                                                        ? 'bg-blue-100 text-blue-800'
+                                                        : apt.status === 'completed'
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : 'bg-slate-100 text-slate-800'
                                                 }`}
                                         >
                                             {apt.status || 'unknown'}
@@ -344,20 +344,6 @@ export default function AdminDashboardPage() {
                                     <p className="text-xs text-slate-500">Analytics and insights</p>
                                 </div>
                                 <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-orange-500 group-hover:translate-x-1 transition-all" />
-                            </Link>
-
-                            <Link
-                                href="/admin/activity"
-                                className="group flex items-center gap-4 rounded-xl bg-white p-4 border border-slate-100 hover:border-cyan-200 hover:shadow-md transition-all"
-                            >
-                                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600 group-hover:bg-cyan-100 transition-colors">
-                                    <Activity className="h-5 w-5" />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="font-semibold text-slate-900 text-sm">Activity History</p>
-                                    <p className="text-xs text-slate-500">Complete audit trail</p>
-                                </div>
-                                <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-cyan-500 group-hover:translate-x-1 transition-all" />
                             </Link>
                         </div>
                     </CardContent>

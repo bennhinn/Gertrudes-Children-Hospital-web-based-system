@@ -94,12 +94,18 @@ export default function PharmacyLayout({
         return (
             <div className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-teal-50 via-cyan-50 to-emerald-50">
                 <div className="text-center">
-                    <div className="relative mx-auto mb-4 h-14 w-14">
-                        <div className="absolute inset-0 animate-spin rounded-full border-4 border-teal-200 border-t-teal-600"></div>
-                        <div className="absolute inset-2 rounded-full bg-white"></div>
-                        <Pill className="absolute inset-0 m-auto h-6 w-6 text-teal-600" />
+                    <div className="relative mx-auto mb-6 h-16 w-16">
+                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 opacity-20 blur-xl animate-pulse"></div>
+                        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-lg">
+                            <Pill className="h-8 w-8 text-white animate-pulse" />
+                        </div>
                     </div>
-                    <p className="text-sm font-medium text-slate-600">Loading Pharmacy Portal...</p>
+                    <div className="space-y-2">
+                        <div className="h-1.5 w-32 mx-auto rounded-full bg-teal-100 overflow-hidden">
+                            <div className="h-full w-1/2 rounded-full bg-gradient-to-r from-teal-500 to-cyan-600 animate-[loading_1s_ease-in-out_infinite]"></div>
+                        </div>
+                        <p className="text-sm text-slate-500 font-medium">Loading Pharmacy Portal...</p>
+                    </div>
                 </div>
             </div>
         )
@@ -135,20 +141,21 @@ export default function PharmacyLayout({
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className={`group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${isActive
-                                        ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg shadow-teal-200'
-                                        : 'text-slate-600 hover:bg-teal-50 hover:text-teal-700'
+                                    className={`group flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 ${isActive
+                                        ? 'bg-gradient-to-r from-teal-500 to-cyan-600 shadow-lg shadow-teal-200'
+                                        : 'hover:bg-teal-50'
                                         }`}
+                                    aria-current={isActive ? 'page' : undefined}
                                 >
-                                    <Icon className={`h-5 w-5 transition-transform duration-200 ${!isActive && 'group-hover:scale-110'}`} />
-                                    <span className="flex-1">{item.label}</span>
+                                    <Icon className={`transition-all duration-200 ${isActive ? 'h-6 w-6 text-white' : 'h-5 w-5 text-slate-600 group-hover:text-teal-700 group-hover:scale-110'}`} />
+                                    <span className={`flex-1 ${isActive ? 'text-white font-bold text-base' : 'text-slate-600 text-sm font-medium group-hover:text-teal-700'}`}>{item.label}</span>
                                     {item.label === 'Prescriptions' && notifications > 0 && (
                                         <span className={`flex h-5 min-w-5 items-center justify-center rounded-full text-xs font-bold ${isActive ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-600'
                                             }`}>
                                             {notifications}
                                         </span>
                                     )}
-                                    {isActive && <ChevronRight className="h-4 w-4 opacity-70" />}
+                                    {isActive && <ChevronRight className="h-4 w-4 text-white opacity-70" />}
                                 </Link>
                             )
                         })}

@@ -96,14 +96,11 @@ export default function LabDashboard() {
                 new Date(o.completed_at) >= today
             )
 
-            // Get critical results (simplified - would check abnormal flags in real app)
-            const { data: criticalResults } = await supabase
-                .from('lab_results')
-                .select('id, abnormal_flags')
-                .gte('created_at', today.toISOString())
-
-            const criticalCount = (criticalResults || []).filter(r =>
-                r.abnormal_flags && Object.values(r.abnormal_flags).some(v => v === true)
+            // Count critical results from completed orders with abnormal findings
+            const criticalCount = ordersData.filter(o =>
+                o.status === 'completed' &&
+                o.abnormal_findings &&
+                o.abnormal_findings.trim() !== ''
             ).length
 
             setStats({

@@ -270,83 +270,83 @@ export default function LabOrdersPage() {
     }
 
     return (
-        <div className="space-y-6 pb-20 lg:pb-6">
-            {/* Header */}
-            <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="space-y-4 px-1 pb-24 lg:space-y-6 lg:px-0 lg:pb-6">
+            {/* Header - compact on mobile */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800">Test Orders</h1>
-                    <p className="text-slate-500">Manage pending and in-progress lab orders</p>
+                    <h1 className="text-xl font-bold text-slate-800 lg:text-2xl">Test Orders</h1>
+                    <p className="text-sm text-slate-500">Pending & in-progress orders</p>
                 </div>
                 {stats.stat > 0 && (
-                    <div className="flex items-center gap-2 rounded-full bg-red-100 px-4 py-2">
-                        <span className="relative flex h-3 w-3">
+                    <div className="flex items-center gap-2 rounded-full bg-red-100 px-3 py-1.5 lg:px-4 lg:py-2">
+                        <span className="relative flex h-2.5 w-2.5 lg:h-3 lg:w-3">
                             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
-                            <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500"></span>
+                            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500 lg:h-3 lg:w-3"></span>
                         </span>
-                        <span className="text-sm font-medium text-red-700">{stats.stat} STAT orders pending</span>
+                        <span className="text-xs font-medium text-red-700 lg:text-sm">{stats.stat} STAT</span>
                     </div>
                 )}
             </div>
 
-            {/* Stats Row */}
-            <div className="grid gap-4 sm:grid-cols-3">
+            {/* Stats Row - horizontal scroll on mobile */}
+            <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-visible lg:pb-0">
                 <button
                     onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
-                    className={`rounded-xl p-4 text-left transition-all ${statusFilter === 'pending' ? 'ring-2 ring-yellow-500' : ''
-                        } bg-gradient-to-br from-yellow-50 to-orange-50 shadow-md hover:shadow-lg`}
+                    className={`flex-shrink-0 min-w-[120px] rounded-xl p-3 text-left transition-all lg:min-w-0 lg:p-4 ${statusFilter === 'pending' ? 'ring-2 ring-yellow-500' : ''
+                        } bg-gradient-to-br from-yellow-50 to-orange-50 shadow-md active:scale-95 lg:hover:shadow-lg`}
                 >
-                    <p className="text-sm text-yellow-700">Pending</p>
-                    <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+                    <p className="text-xs text-yellow-700 lg:text-sm">Pending</p>
+                    <p className="text-xl font-bold text-yellow-600 lg:text-2xl">{stats.pending}</p>
                 </button>
                 <button
                     onClick={() => setStatusFilter(statusFilter === 'collected' ? 'all' : 'collected')}
-                    className={`rounded-xl p-4 text-left transition-all ${statusFilter === 'collected' ? 'ring-2 ring-blue-500' : ''
-                        } bg-gradient-to-br from-blue-50 to-indigo-50 shadow-md hover:shadow-lg`}
+                    className={`flex-shrink-0 min-w-[120px] rounded-xl p-3 text-left transition-all lg:min-w-0 lg:p-4 ${statusFilter === 'collected' ? 'ring-2 ring-blue-500' : ''
+                        } bg-gradient-to-br from-blue-50 to-indigo-50 shadow-md active:scale-95 lg:hover:shadow-lg`}
                 >
-                    <p className="text-sm text-blue-700">Collected</p>
-                    <p className="text-2xl font-bold text-blue-600">{stats.collected}</p>
+                    <p className="text-xs text-blue-700 lg:text-sm">Collected</p>
+                    <p className="text-xl font-bold text-blue-600 lg:text-2xl">{stats.collected}</p>
                 </button>
                 <button
                     onClick={() => setStatusFilter(statusFilter === 'in_progress' ? 'all' : 'in_progress')}
-                    className={`rounded-xl p-4 text-left transition-all ${statusFilter === 'in_progress' ? 'ring-2 ring-purple-500' : ''
-                        } bg-gradient-to-br from-purple-50 to-purple-100 shadow-md hover:shadow-lg`}
+                    className={`flex-shrink-0 min-w-[120px] rounded-xl p-3 text-left transition-all lg:min-w-0 lg:p-4 ${statusFilter === 'in_progress' ? 'ring-2 ring-purple-500' : ''
+                        } bg-gradient-to-br from-purple-50 to-purple-100 shadow-md active:scale-95 lg:hover:shadow-lg`}
                 >
-                    <p className="text-sm text-purple-700">Processing</p>
-                    <p className="text-2xl font-bold text-purple-600">{stats.inProgress}</p>
+                    <p className="text-xs text-purple-700 lg:text-sm">Processing</p>
+                    <p className="text-xl font-bold text-purple-600 lg:text-2xl">{stats.inProgress}</p>
                 </button>
             </div>
 
-            {/* Urgency Filter */}
-            <div className="flex gap-2">
+            {/* Urgency Filter - scrollable pills */}
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
                 {(['all', 'stat', 'urgent', 'routine'] as const).map((filter) => (
                     <button
                         key={filter}
                         onClick={() => setUrgencyFilter(filter)}
-                        className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${urgencyFilter === filter
+                        className={`flex-shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all ${urgencyFilter === filter
                             ? filter === 'stat'
-                                ? 'bg-red-500 text-white'
+                                ? 'bg-red-500 text-white shadow-md'
                                 : filter === 'urgent'
-                                    ? 'bg-yellow-500 text-white'
+                                    ? 'bg-yellow-500 text-white shadow-md'
                                     : filter === 'routine'
-                                        ? 'bg-blue-500 text-white'
-                                        : 'bg-slate-800 text-white'
-                            : 'bg-white text-slate-600 hover:bg-slate-100'
+                                        ? 'bg-blue-500 text-white shadow-md'
+                                        : 'bg-slate-800 text-white shadow-md'
+                            : 'bg-white text-slate-600 shadow-sm active:bg-slate-100'
                             }`}
                     >
-                        {filter === 'all' ? 'All Urgency' : filter.charAt(0).toUpperCase() + filter.slice(1)}
+                        {filter === 'all' ? 'All' : filter.charAt(0).toUpperCase() + filter.slice(1)}
                     </button>
                 ))}
             </div>
 
-            {/* Search Input */}
+            {/* Search Input - sticky on scroll */}
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
                     type="text"
-                    placeholder="Search by test type, code, patient name, doctor..."
+                    placeholder="Search patient, test, doctor..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 bg-white text-base shadow-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 lg:py-2.5 lg:text-sm"
                 />
                 {searchQuery && (
                     <button
@@ -366,118 +366,121 @@ export default function LabOrdersPage() {
             )}
 
             {/* Orders List */}
-            <Card className="border-none shadow-lg">
-                <CardHeader>
-                    <CardTitle className="text-lg">
+            <Card className="border-none shadow-md lg:shadow-lg">
+                <CardHeader className="pb-2 lg:pb-4">
+                    <CardTitle className="text-base lg:text-lg">
                         {searchedOrders.length} Order{searchedOrders.length !== 1 ? 's' : ''}
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-3 pt-0 lg:p-6 lg:pt-0">
                     {searchedOrders.length === 0 ? (
-                        <div className="py-12 text-center">
-                            <p className="text-4xl">{searchQuery ? '🔍' : '✨'}</p>
-                            <p className="mt-4 text-lg font-medium text-slate-600">
-                                {searchQuery ? 'No matching orders found' : 'No orders found'}
+                        <div className="py-8 text-center lg:py-12">
+                            <p className="text-3xl lg:text-4xl">{searchQuery ? '🔍' : '✨'}</p>
+                            <p className="mt-3 text-base font-medium text-slate-600 lg:mt-4 lg:text-lg">
+                                {searchQuery ? 'No matching orders' : 'No orders found'}
                             </p>
-                            <p className="text-slate-400">
-                                {searchQuery ? 'Try adjusting your search term' : 'Adjust your filters to see more'}
+                            <p className="text-sm text-slate-400">
+                                {searchQuery ? 'Try a different search' : 'Adjust filters to see more'}
                             </p>
                             {searchQuery && (
                                 <Button
                                     onClick={() => setSearchQuery('')}
-                                    className="mt-4 bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                    size="sm"
+                                    className="mt-3 bg-slate-200 text-slate-700 hover:bg-slate-300"
                                 >
                                     Clear Search
                                 </Button>
                             )}
                         </div>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-3 lg:space-y-4">
                             {searchedOrders.map((order) => (
                                 <div
                                     key={order.id}
-                                    className={`rounded-xl border p-4 transition-all ${order.urgency === 'stat'
+                                    className={`rounded-xl border p-3 transition-all active:scale-[0.99] lg:p-4 ${order.urgency === 'stat'
                                         ? 'border-red-200 bg-red-50/50'
                                         : order.urgency === 'urgent'
                                             ? 'border-yellow-200 bg-yellow-50/50'
                                             : 'border-slate-200 bg-white'
                                         }`}
                                 >
-                                    <div className="flex flex-wrap items-start justify-between gap-4">
-                                        <div className="flex items-start gap-4">
-                                            <div className={`flex h-14 w-14 items-center justify-center rounded-xl text-2xl text-white ${order.urgency === 'stat'
-                                                ? 'bg-gradient-to-br from-red-400 to-red-600'
-                                                : order.urgency === 'urgent'
-                                                    ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
-                                                    : 'bg-gradient-to-br from-blue-400 to-blue-600'
-                                                }`}>
-                                                🧪
-                                            </div>
-                                            <div>
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <h3 className="font-semibold text-slate-800">{order.test_type}</h3>
-                                                    {getUrgencyBadge(order.urgency)}
-                                                    {getStatusBadge(order.status)}
-                                                </div>
-                                                {order.test_code && (
-                                                    <p className="text-xs text-slate-500">Code: {order.test_code}</p>
-                                                )}
-                                                <p className="mt-1 text-sm text-slate-600">
-                                                    Patient: {order.child?.full_name || 'Unknown'} •{' '}
-                                                    {order.child?.date_of_birth ? getAge(order.child.date_of_birth) : ''}
-                                                </p>
-                                                <p className="text-xs text-slate-500">
-                                                    Ordered by Dr. {order.doctor?.profiles?.full_name || 'Unknown'} • {getTimeAgo(order.ordered_at)}
-                                                </p>
-                                            </div>
+                                    {/* Mobile-optimized card layout */}
+                                    <div className="flex items-start gap-3">
+                                        <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-xl text-white lg:h-14 lg:w-14 lg:text-2xl ${order.urgency === 'stat'
+                                            ? 'bg-gradient-to-br from-red-400 to-red-600'
+                                            : order.urgency === 'urgent'
+                                                ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
+                                                : 'bg-gradient-to-br from-blue-400 to-blue-600'
+                                            }`}>
+                                            🧪
                                         </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                <h3 className="text-sm font-semibold text-slate-800 lg:text-base">{order.test_type}</h3>
+                                            </div>
+                                            <div className="mt-1 flex flex-wrap gap-1.5">
+                                                {getUrgencyBadge(order.urgency)}
+                                                {getStatusBadge(order.status)}
+                                            </div>
+                                            {order.test_code && (
+                                                <p className="mt-1 text-[11px] text-slate-500 lg:text-xs">Code: {order.test_code}</p>
+                                            )}
+                                            <p className="mt-1 text-xs text-slate-600 lg:text-sm">
+                                                <span className="font-medium">Patient:</span> {order.child?.full_name || 'Unknown'}{' '}
+                                                <span className="text-slate-400">•</span>{' '}
+                                                {order.child?.date_of_birth ? getAge(order.child.date_of_birth) : ''}
+                                            </p>
+                                            <p className="text-[11px] text-slate-500 lg:text-xs">
+                                                Dr. {order.doctor?.profiles?.full_name || 'Unknown'} • {getTimeAgo(order.ordered_at)}
+                                            </p>
 
-                                        {/* Actions based on status */}
-                                        <div className="flex gap-2">
-                                            {order.status === 'pending' && (
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => updateOrderStatus(
-                                                        order.id,
-                                                        'collected',
-                                                        {
-                                                            testType: order.test_type,
-                                                            patientName: order.child?.full_name || 'Unknown'
-                                                        }
-                                                    )}
-                                                    disabled={updating === order.id}
-                                                    className="bg-blue-600 hover:bg-blue-700"
-                                                >
-                                                    {updating === order.id ? '...' : '💉 Collect Sample'}
-                                                </Button>
+                                            {order.special_instructions && (
+                                                <div className="mt-2 rounded-lg bg-yellow-100 p-2">
+                                                    <p className="text-[11px] text-yellow-800 lg:text-xs">⚠️ {order.special_instructions}</p>
+                                                </div>
                                             )}
-                                            {order.status === 'collected' && (
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => updateOrderStatus(order.id, 'in_progress')}
-                                                    disabled={updating === order.id}
-                                                    className="bg-purple-600 hover:bg-purple-700"
-                                                >
-                                                    {updating === order.id ? '...' : '🔬 Start Processing'}
-                                                </Button>
-                                            )}
-                                            {order.status === 'in_progress' && (
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => router.push('/lab/results')}
-                                                    className="bg-green-600 hover:bg-green-700"
-                                                >
-                                                    📊 Enter Results
-                                                </Button>
-                                            )}
+
+                                            {/* Action button - full width on mobile */}
+                                            <div className="mt-3">
+                                                {order.status === 'pending' && (
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => updateOrderStatus(
+                                                            order.id,
+                                                            'collected',
+                                                            {
+                                                                testType: order.test_type,
+                                                                patientName: order.child?.full_name || 'Unknown'
+                                                            }
+                                                        )}
+                                                        disabled={updating === order.id}
+                                                        className="w-full bg-blue-600 text-sm hover:bg-blue-700 lg:w-auto"
+                                                    >
+                                                        {updating === order.id ? '...' : '💉 Collect Sample'}
+                                                    </Button>
+                                                )}
+                                                {order.status === 'collected' && (
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => updateOrderStatus(order.id, 'in_progress')}
+                                                        disabled={updating === order.id}
+                                                        className="w-full bg-purple-600 text-sm hover:bg-purple-700 lg:w-auto"
+                                                    >
+                                                        {updating === order.id ? '...' : '🔬 Start Processing'}
+                                                    </Button>
+                                                )}
+                                                {order.status === 'in_progress' && (
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => router.push('/lab/results')}
+                                                        className="w-full bg-green-600 text-sm hover:bg-green-700 lg:w-auto"
+                                                    >
+                                                        📊 Enter Results
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-
-                                    {order.special_instructions && (
-                                        <div className="mt-3 rounded-lg bg-yellow-100 p-2">
-                                            <p className="text-xs text-yellow-800">⚠️ Special Instructions: {order.special_instructions}</p>
-                                        </div>
-                                    )}
                                 </div>
                             ))}
                         </div>

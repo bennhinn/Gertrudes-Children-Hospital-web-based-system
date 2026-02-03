@@ -14,7 +14,7 @@ interface LabOrder {
     test_name: string
     priority: 'routine' | 'urgent' | 'stat'
     // FIX: Updated status to match DB schema
-    status: 'pending' | 'collected' | 'in_progress' | 'completed' 
+    status: 'pending' | 'collected' | 'in_progress' | 'completed'
     clinical_notes: string | null
     special_instructions: string | null
     ordered_at: string
@@ -63,7 +63,7 @@ export default function LabEnterResultsPage() {
                     child:children(full_name, date_of_birth),
                     doctor:doctors!lab_orders_doctor_id_fkey(profiles(full_name))
                 `)
-                .in('status', ['collected', 'in_progress']) 
+                .in('status', ['collected', 'in_progress'])
                 .order('collected_at', { ascending: true })
 
             if (error) {
@@ -105,7 +105,7 @@ export default function LabEnterResultsPage() {
 
     function getAge(dateOfBirth: string) {
         if (!dateOfBirth) return 'N/A'
-        
+
         const today = new Date()
         const birthDate = new Date(dateOfBirth)
         let age = today.getFullYear() - birthDate.getFullYear()
@@ -113,7 +113,7 @@ export default function LabEnterResultsPage() {
         if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
             age--
         }
-        
+
         if (age < 1) {
             const months = (today.getFullYear() - birthDate.getFullYear()) * 12 + (today.getMonth() - birthDate.getMonth())
             return `${months} months`
@@ -151,7 +151,7 @@ export default function LabEnterResultsPage() {
     function openResultModal(order: LabOrder) {
         setSelectedOrder(order)
         setResultForm({
-            results: '', 
+            results: '',
             result_notes: order.result_notes || '',
             abnormal_findings: order.abnormal_findings || ''
         })
@@ -227,8 +227,8 @@ export default function LabEnterResultsPage() {
         }
     }
 
-    const filteredOrders = filter === 'all' 
-        ? orders 
+    const filteredOrders = filter === 'all'
+        ? orders
         : orders.filter(o => o.status === filter)
 
     const collectedCount = orders.filter(o => o.status === 'collected').length
@@ -245,187 +245,175 @@ export default function LabEnterResultsPage() {
     }
 
     return (
-        <div className="space-y-6 p-6 pb-20 lg:pb-6">
+        <div className="space-y-4 px-1 pb-24 lg:space-y-6 lg:px-0 lg:pb-6">
             {error && (
                 <Card className="border-red-200 bg-red-50">
-                    <CardContent className="p-4">
+                    <CardContent className="p-3 lg:p-4">
                         <p className="text-sm font-medium text-red-800">⚠️ {error}</p>
                         <Button onClick={loadOrders} size="sm" className="mt-2">Retry</Button>
                     </CardContent>
                 </Card>
             )}
 
-            <div className="rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 p-6 text-white shadow-xl">
+            {/* Header - Compact on mobile */}
+            <div className="rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 p-4 text-white shadow-xl lg:rounded-2xl lg:p-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">📊 Enter Results</h1>
-                        <p className="mt-1 text-blue-100">Process collected samples and enter test results</p>
+                        <h1 className="text-lg font-bold lg:text-2xl">📊 Enter Results</h1>
+                        <p className="mt-0.5 text-sm text-blue-100 lg:mt-1">Process samples & enter results</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="relative flex h-3 w-3">
+                        <span className="relative flex h-2.5 w-2.5 lg:h-3 lg:w-3">
                             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
-                            <span className="relative inline-flex h-3 w-3 rounded-full bg-green-500"></span>
+                            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500 lg:h-3 lg:w-3"></span>
                         </span>
-                        <span className="text-sm">Live updates</span>
+                        <span className="text-xs lg:text-sm">Live</span>
                     </div>
                 </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-                <Card className="border-none shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-100 to-blue-200 text-2xl">
+            {/* Stats - Side by side on mobile */}
+            <div className="grid grid-cols-2 gap-3 lg:gap-4">
+                <Card className="border-none shadow-md lg:shadow-lg">
+                    <CardContent className="p-4 lg:p-6">
+                        <div className="flex items-center gap-3 lg:gap-4">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 text-xl lg:h-14 lg:w-14 lg:rounded-2xl lg:text-2xl">
                                 🧪
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-slate-500">Ready for Processing</p>
-                                <p className="text-3xl font-bold text-blue-600">{collectedCount}</p>
+                                <p className="text-xs font-medium text-slate-500 lg:text-sm">Ready</p>
+                                <p className="text-2xl font-bold text-blue-600 lg:text-3xl">{collectedCount}</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-100 to-purple-200 text-2xl">
+                <Card className="border-none shadow-md lg:shadow-lg">
+                    <CardContent className="p-4 lg:p-6">
+                        <div className="flex items-center gap-3 lg:gap-4">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 text-xl lg:h-14 lg:w-14 lg:rounded-2xl lg:text-2xl">
                                 ⚗️
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-slate-500">In Progress</p>
-                                <p className="text-3xl font-bold text-purple-600">{processingCount}</p>
+                                <p className="text-xs font-medium text-slate-500 lg:text-sm">In Progress</p>
+                                <p className="text-2xl font-bold text-purple-600 lg:text-3xl">{processingCount}</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Filter Tabs */}
-            <div className="flex gap-2">
+            {/* Filter Tabs - Scrollable on mobile */}
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
                 <button
                     onClick={() => setFilter('all')}
-                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-                        filter === 'all'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-white text-slate-600 hover:bg-slate-100'
-                    }`}
+                    className={`flex-shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all ${filter === 'all'
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'bg-white text-slate-600 shadow-sm active:bg-slate-100'
+                        }`}
                 >
                     All ({orders.length})
                 </button>
                 <button
                     onClick={() => setFilter('collected')}
-                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-                        filter === 'collected'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-white text-slate-600 hover:bg-slate-100'
-                    }`}
+                    className={`flex-shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all ${filter === 'collected'
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'bg-white text-slate-600 shadow-sm active:bg-slate-100'
+                        }`}
                 >
                     Collected ({collectedCount})
                 </button>
                 <button
                     onClick={() => setFilter('in_progress')}
-                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-                        filter === 'in_progress'
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-white text-slate-600 hover:bg-slate-100'
-                    }`}
+                    className={`flex-shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all ${filter === 'in_progress'
+                        ? 'bg-purple-600 text-white shadow-md'
+                        : 'bg-white text-slate-600 shadow-sm active:bg-slate-100'
+                        }`}
                 >
                     Processing ({processingCount})
                 </button>
             </div>
 
             {/* Orders List */}
-            <Card className="border-none shadow-lg">
-                <CardContent className="p-6">
+            <Card className="border-none shadow-md lg:shadow-lg">
+                <CardContent className="p-3 lg:p-6">
                     {filteredOrders.length === 0 ? (
-                        <div className="py-12 text-center">
-                            <p className="text-4xl">✨</p>
-                            <p className="mt-4 text-lg font-medium text-slate-600">No samples to process</p>
-                            <p className="text-slate-400">
-                                {filter === 'collected' 
-                                    ? 'Samples will appear here after collection from the Test Orders page'
+                        <div className="py-8 text-center lg:py-12">
+                            <p className="text-3xl lg:text-4xl">✨</p>
+                            <p className="mt-3 text-base font-medium text-slate-600 lg:mt-4 lg:text-lg">No samples to process</p>
+                            <p className="text-sm text-slate-400">
+                                {filter === 'collected'
+                                    ? 'Samples will appear here after collection'
                                     : 'No samples in this status'}
                             </p>
                         </div>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-3 lg:space-y-4">
                             {filteredOrders.map((order) => (
                                 <div
                                     key={order.id}
-                                    className="rounded-xl border border-slate-200 bg-white p-4 transition-all hover:shadow-md"
+                                    className="rounded-xl border border-slate-200 bg-white p-3 transition-all active:bg-slate-50 lg:p-4 lg:hover:shadow-md"
                                 >
-                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                                        <div className="flex-1">
-                                            <div className="flex items-start gap-3">
-                                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-2xl">
-                                                    🧪
-                                                </div>
-                                                <div className="flex-1">
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <h3 className="font-semibold text-slate-800">
-                                                            {order.test_name || 'Lab Test'}
-                                                        </h3>
-                                                        <Badge className={getPriorityColor(order.priority)}>
-                                                            {order.priority.toUpperCase()}
-                                                        </Badge>
-                                                        <Badge className={getStatusColor(order.status)}>
-                                                            {order.status === 'in_progress' ? 'PROCESSING' : order.status.toUpperCase()}
-                                                        </Badge>
-                                                    </div>
-                                                    
-                                                    <p className="mt-1 text-sm text-slate-600">
-                                                        <span className="font-medium">Patient:</span> {order.child?.full_name || 'Unknown'} 
-                                                        {order.child?.date_of_birth && ` • ${getAge(order.child.date_of_birth)}`}
-                                                    </p>
-                                                    
-                                                    <p className="text-sm text-slate-500">
-                                                        <span className="font-medium">Ordered by:</span> Dr. {order.doctor?.profiles?.full_name || 'Unknown'}
-                                                    </p>
-
-                                                    {order.clinical_notes && (
-                                                        <div className="mt-2 rounded-lg bg-yellow-50 p-2">
-                                                            <p className="text-xs font-medium text-yellow-800">📋 Clinical Notes:</p>
-                                                            <p className="text-xs text-yellow-700">{order.clinical_notes}</p>
-                                                        </div>
-                                                    )}
-
-                                                    {order.special_instructions && (
-                                                        <div className="mt-2 rounded-lg bg-purple-50 p-2">
-                                                            <p className="text-xs font-medium text-purple-800">⚠️ Special Instructions:</p>
-                                                            <p className="text-xs text-purple-700">{order.special_instructions}</p>
-                                                        </div>
-                                                    )}
-
-                                                    <p className="mt-2 text-xs text-slate-400">
-                                                        Collected: {order.collected_at ? new Date(order.collected_at).toLocaleString() : 'N/A'}
-                                                    </p>
-                                                </div>
-                                            </div>
+                                    {/* Mobile-first card layout */}
+                                    <div className="flex items-start gap-3">
+                                        <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-xl lg:h-12 lg:w-12 ${order.priority === 'stat'
+                                                ? 'bg-red-100 animate-pulse'
+                                                : order.priority === 'urgent'
+                                                    ? 'bg-amber-100'
+                                                    : 'bg-blue-100'
+                                            }`}>
+                                            🧪
                                         </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                <h3 className="text-sm font-semibold text-slate-800 lg:text-base">
+                                                    {order.test_name || 'Lab Test'}
+                                                </h3>
+                                            </div>
+                                            <div className="mt-1 flex flex-wrap gap-1.5">
+                                                <Badge className={`text-[10px] lg:text-xs ${getPriorityColor(order.priority)}`}>
+                                                    {order.priority.toUpperCase()}
+                                                </Badge>
+                                                <Badge className={`text-[10px] lg:text-xs ${getStatusColor(order.status)}`}>
+                                                    {order.status === 'in_progress' ? 'PROCESSING' : order.status.toUpperCase()}
+                                                </Badge>
+                                            </div>
 
-                                        {/* Actions */}
-                                        <div className="flex gap-2">
-                                            {order.status === 'collected' && (
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => handleStartProcessing(order)}
-                                                    className="bg-purple-600 hover:bg-purple-700"
-                                                >
-                                                    ▶️ Start Processing
-                                                </Button>
-                                            )}
-                                            
-                                            {/* FIX: Check for in_progress status */}
-                                            {order.status === 'in_progress' && (
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => openResultModal(order)}
-                                                    className="bg-green-600 hover:bg-green-700"
-                                                >
-                                                    📊 Enter Results
-                                                </Button>
-                                            )}
+                                            <p className="mt-1.5 text-xs text-slate-600 lg:text-sm">
+                                                <span className="font-medium">Patient:</span> {order.child?.full_name || 'Unknown'}
+                                                {order.child?.date_of_birth && ` • ${getAge(order.child.date_of_birth)}`}
+                                            </p>
+
+                                            <p className="text-xs text-slate-500">
+                                                <span className="font-medium">Dr.</span> {order.doctor?.profiles?.full_name || 'Unknown'}
+                                            </p>
+
+                                            <p className="mt-1 text-[11px] text-slate-400 lg:mt-2 lg:text-xs">
+                                                Collected: {order.collected_at ? new Date(order.collected_at).toLocaleString() : 'N/A'}
+                                            </p>
+
+                                            {/* Action button - full width on mobile */}
+                                            <div className="mt-3">
+                                                {order.status === 'collected' && (
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => handleStartProcessing(order)}
+                                                        className="w-full bg-purple-600 text-sm hover:bg-purple-700 lg:w-auto"
+                                                    >
+                                                        ▶️ Start Processing
+                                                    </Button>
+                                                )}
+
+                                                {order.status === 'in_progress' && (
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => openResultModal(order)}
+                                                        className="w-full bg-green-600 text-sm hover:bg-green-700 lg:w-auto"
+                                                    >
+                                                        📊 Enter Results
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -435,61 +423,73 @@ export default function LabEnterResultsPage() {
                 </CardContent>
             </Card>
 
-            {/* Result Entry Modal - Same as before, logic handled by parent state */}
+            {/* Result Entry Modal - Full screen on mobile */}
             {showResultModal && selectedOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-                        <div className="mb-4">
-                            <h3 className="text-xl font-bold text-slate-800">📊 Enter Test Results</h3>
-                            <p className="text-sm text-slate-600 mt-1">
-                                {selectedOrder.test_name} - {selectedOrder.child?.full_name}
-                            </p>
+                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 lg:items-center lg:p-4">
+                    <div className="w-full max-h-[95vh] overflow-y-auto rounded-t-2xl bg-white p-4 shadow-2xl lg:max-w-2xl lg:rounded-2xl lg:p-6">
+                        {/* Modal header */}
+                        <div className="mb-4 flex items-start justify-between">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-800 lg:text-xl">📊 Enter Results</h3>
+                                <p className="text-sm text-slate-600 mt-0.5">
+                                    {selectedOrder.test_name} - {selectedOrder.child?.full_name}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setShowResultModal(false)
+                                    setSelectedOrder(null)
+                                }}
+                                className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 lg:hidden"
+                            >
+                                ✕
+                            </button>
                         </div>
 
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                <label className="block text-sm font-medium text-slate-700 mb-1.5">
                                     Test Results *
                                 </label>
                                 <textarea
                                     value={resultForm.results}
-                                    onChange={(e) => setResultForm({...resultForm, results: e.target.value})}
-                                    rows={6}
-                                    className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-blue-500 focus:outline-none font-mono text-sm"
+                                    onChange={(e) => setResultForm({ ...resultForm, results: e.target.value })}
+                                    rows={5}
+                                    className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 lg:text-sm"
                                     placeholder="Enter test results here..."
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Abnormal Findings (if any)
+                                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                                    Abnormal Findings
                                 </label>
                                 <textarea
                                     value={resultForm.abnormal_findings}
-                                    onChange={(e) => setResultForm({...resultForm, abnormal_findings: e.target.value})}
-                                    rows={3}
-                                    className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-red-500 focus:outline-none"
-                                    placeholder="List any values outside normal range or concerning findings..."
+                                    onChange={(e) => setResultForm({ ...resultForm, abnormal_findings: e.target.value })}
+                                    rows={2}
+                                    className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-base focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 lg:text-sm"
+                                    placeholder="List abnormal values..."
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Additional Notes
+                                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                                    Notes
                                 </label>
                                 <textarea
                                     value={resultForm.result_notes}
-                                    onChange={(e) => setResultForm({...resultForm, result_notes: e.target.value})}
-                                    rows={3}
-                                    className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-                                    placeholder="Any additional observations..."
+                                    onChange={(e) => setResultForm({ ...resultForm, result_notes: e.target.value })}
+                                    rows={2}
+                                    className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 lg:text-sm"
+                                    placeholder="Additional notes..."
                                 />
                             </div>
                         </div>
 
-                        <div className="flex gap-3 mt-6">
+                        <div className="flex gap-3 mt-6 pb-safe">
                             <Button
                                 onClick={handleSaveResults}
                                 disabled={savingResult || !resultForm.results.trim()}
-                                className="flex-1 bg-green-600 hover:bg-green-700"
+                                className="flex-1 h-12 bg-green-600 text-base font-semibold hover:bg-green-700 lg:h-10 lg:text-sm"
                             >
                                 {savingResult ? 'Saving...' : '✅ Save & Complete'}
                             </Button>
@@ -499,7 +499,7 @@ export default function LabEnterResultsPage() {
                                     setSelectedOrder(null)
                                 }}
                                 variant="secondary"
-                                className="flex-1"
+                                className="flex-1 h-12 text-base lg:h-10 lg:text-sm"
                             >
                                 Cancel
                             </Button>

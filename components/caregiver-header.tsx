@@ -34,10 +34,7 @@ const menuItems = [
     {
         section: 'Health Records',
         items: [
-            { href: '/caregiver-lab-results', label: 'Lab Results', icon: TestTube, description: 'View test results', color: 'bg-purple-50 text-purple-600' },
-            { href: '/caregiver-prescriptions', label: 'Prescriptions', icon: Pill, description: 'Medications & refills', color: 'bg-pink-50 text-pink-600' },
             { href: '/caregiver-health-records', label: 'Medical Records', icon: FileText, description: 'Health history', color: 'bg-emerald-50 text-emerald-600' },
-            { href: '/caregiver-vaccinations', label: 'Vaccinations', icon: Heart, description: 'Immunization records', color: 'bg-red-50 text-red-600' },
         ]
     },
     {

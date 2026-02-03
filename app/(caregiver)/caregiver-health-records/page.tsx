@@ -5,10 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
-import { 
-  FileText, 
-  TestTube, 
-  Pill, 
+import {
+  FileText,
+  TestTube,
+  Pill,
   Syringe,
   TrendingUp,
   Download,
@@ -192,20 +192,38 @@ export default function HealthRecordsPage() {
   const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [childFilter, setChildFilter] = useState<string>('all')
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    setTimeout(() => {
-      setLabResults(mockLabResults)
-      setPrescriptions(mockPrescriptions)
-      setLoading(false)
-    }, 500)
+    fetchHealthRecords()
   }, [])
+
+  async function fetchHealthRecords() {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const response = await fetch('/api/health-records')
+      if (!response.ok) {
+        throw new Error('Failed to fetch health records')
+      }
+
+      const data = await response.json()
+      setLabResults(data.labResults || [])
+      setPrescriptions(data.prescriptions || [])
+    } catch (err) {
+      console.error('Error fetching health records:', err)
+      setError('Failed to load health records. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const filteredLabResults = labResults.filter(result => {
     if (childFilter !== 'all' && result.childId !== childFilter) return false
     if (searchQuery) {
       return result.testName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-             result.childName.toLowerCase().includes(searchQuery.toLowerCase())
+        result.childName.toLowerCase().includes(searchQuery.toLowerCase())
     }
     return true
   })
@@ -214,7 +232,7 @@ export default function HealthRecordsPage() {
     if (childFilter !== 'all' && rx.childId !== childFilter) return false
     if (searchQuery) {
       return rx.medicationName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-             rx.childName.toLowerCase().includes(searchQuery.toLowerCase())
+        rx.childName.toLowerCase().includes(searchQuery.toLowerCase())
     }
     return true
   })
@@ -247,11 +265,33 @@ export default function HealthRecordsPage() {
     )
   }
 
+  // Error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-slate-900">Health Records</h1>
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-6 text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
+            <p className="text-red-800 font-medium mb-4">{error}</p>
+            <Button
+              onClick={fetchHealthRecords}
+              className="rounded-xl"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   // Lab Result Detail View
   if (selectedLabResult) {
     return (
       <div className="space-y-6">
-        <button 
+        <button
           onClick={() => setSelectedLabResult(null)}
           className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors"
         >
@@ -310,9 +350,8 @@ export default function HealthRecordsPage() {
                     </span>
                     <span className="text-sm text-slate-500">{measurement.unit}</span>
                     {measurement.flag && (
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                        measurement.flag === 'low' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
-                      }`}>
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${measurement.flag === 'low' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
+                        }`}>
                         {measurement.flag.toUpperCase()}
                       </span>
                     )}
@@ -358,7 +397,7 @@ export default function HealthRecordsPage() {
   if (selectedPrescription) {
     return (
       <div className="space-y-6">
-        <button 
+        <button
           onClick={() => setSelectedPrescription(null)}
           className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors"
         >
@@ -455,12 +494,10 @@ export default function HealthRecordsPage() {
                   <p className="text-sm text-slate-500">Get notified when it&apos;s time to take</p>
                 </div>
               </div>
-              <button className={`relative w-12 h-6 rounded-full transition-colors ${
-                selectedPrescription.reminderEnabled ? 'bg-blue-500' : 'bg-slate-200'
-              }`}>
-                <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                  selectedPrescription.reminderEnabled ? 'translate-x-6' : 'translate-x-0'
-                }`} />
+              <button className={`relative w-12 h-6 rounded-full transition-colors ${selectedPrescription.reminderEnabled ? 'bg-blue-500' : 'bg-slate-200'
+                }`}>
+                <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${selectedPrescription.reminderEnabled ? 'translate-x-6' : 'translate-x-0'
+                  }`} />
               </button>
             </div>
           </CardContent>
@@ -481,20 +518,30 @@ export default function HealthRecordsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Health Records</h1>
-        <p className="text-slate-500 mt-1">Lab results, prescriptions & medical history</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Health Records</h1>
+          <p className="text-slate-500 mt-1">Lab results, prescriptions & medical history</p>
+        </div>
+        <Button
+          onClick={fetchHealthRecords}
+          variant="ghost"
+          size="sm"
+          className="rounded-xl"
+          disabled={loading}
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        </Button>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
         <button
           onClick={() => setActiveTab('lab')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
-            activeTab === 'lab'
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'lab'
               ? 'bg-white text-slate-900 shadow-sm'
               : 'text-slate-600 hover:text-slate-900'
-          }`}
+            }`}
         >
           <TestTube className="h-4 w-4" />
           Lab Results
@@ -506,11 +553,10 @@ export default function HealthRecordsPage() {
         </button>
         <button
           onClick={() => setActiveTab('prescriptions')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
-            activeTab === 'prescriptions'
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'prescriptions'
               ? 'bg-white text-slate-900 shadow-sm'
               : 'text-slate-600 hover:text-slate-900'
-          }`}
+            }`}
         >
           <Pill className="h-4 w-4" />
           Prescriptions
@@ -563,13 +609,12 @@ export default function HealthRecordsPage() {
                 onClick={() => setSelectedLabResult(result)}
                 className="w-full flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all text-left"
               >
-                <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${
-                  result.isAbnormal 
-                    ? 'bg-red-50' 
-                    : result.status === 'completed' 
-                      ? 'bg-emerald-50' 
+                <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${result.isAbnormal
+                    ? 'bg-red-50'
+                    : result.status === 'completed'
+                      ? 'bg-emerald-50'
                       : 'bg-amber-50'
-                }`}>
+                  }`}>
                   {result.isAbnormal ? (
                     <AlertCircle className="h-6 w-6 text-red-500" />
                   ) : result.status === 'completed' ? (
@@ -578,7 +623,7 @@ export default function HealthRecordsPage() {
                     <Clock className="h-6 w-6 text-amber-500" />
                   )}
                 </div>
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <p className="font-semibold text-slate-900 truncate">{result.testName}</p>
@@ -621,7 +666,7 @@ export default function HealthRecordsPage() {
                     <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center shrink-0">
                       <Pill className="h-6 w-6 text-purple-600" />
                     </div>
-                    
+
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-slate-900">{rx.medicationName}</p>
                       <p className="text-sm text-slate-500">{rx.dosage} • {rx.frequency}</p>
@@ -659,7 +704,7 @@ export default function HealthRecordsPage() {
                     <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
                       <Pill className="h-6 w-6 text-slate-400" />
                     </div>
-                    
+
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-slate-700">{rx.medicationName}</p>
                       <p className="text-sm text-slate-500">{rx.dosage} • {rx.frequency}</p>

@@ -125,13 +125,14 @@ export default function AdminLayout({
                   <Link
                     href={item.href}
                     className={`group flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 ${isActive
-                      ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/25'
+                      : 'hover:bg-slate-100'
                       }`}
+                    aria-current={isActive ? 'page' : undefined}
                   >
-                    <Icon className={`h-5 w-5 transition-transform duration-200 ${!isActive && 'group-hover:scale-110'}`} />
-                    <span className="font-medium flex-1">{item.label}</span>
-                    {isActive && <ChevronRight className="h-4 w-4 opacity-70" />}
+                    <Icon className={`transition-all duration-200 ${isActive ? 'h-6 w-6 text-white' : 'h-5 w-5 text-slate-600 group-hover:text-slate-900 group-hover:scale-110'}`} />
+                    <span className={`flex-1 ${isActive ? 'text-white font-bold text-base' : 'text-slate-600 font-medium group-hover:text-slate-900'}`}>{item.label}</span>
+                    {isActive && <ChevronRight className="h-4 w-4 text-white opacity-70" />}
                   </Link>
                 </li>
               )

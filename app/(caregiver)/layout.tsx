@@ -10,11 +10,13 @@ import {
   Calendar,
   MessageSquare,
   Settings,
+  Bell,
   Plus,
   LogOut,
   ChevronRight,
   Shield,
-  FileText
+  FileText,
+  Activity
 } from 'lucide-react'
 
 const navItems = [

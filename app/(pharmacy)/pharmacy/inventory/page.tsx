@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { createClient } from '@/lib/supabase/client'
-import { logActivity } from '@/lib/activity-logger'
 import { CheckCircle2, Package, History, Plus, Loader2, Download, ShoppingCart, AlertTriangle, Truck, Pill, TrendingDown } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -33,10 +32,10 @@ interface Medication {
 
 interface Supplier {
     id: string
-    company_name: string | null
     profiles: {
         full_name: string
     } | null
+    company_name?: string | null
 }
 
 interface SupplyOrder {
@@ -77,33 +76,13 @@ export default function PharmacyInventoryPage() {
                 .select(`id, requested_at, delivered_at, quantity, status, medication_id, supplier_id, medication:medications(name, stock)`)
                 .order('requested_at', { ascending: false })
 
-            // Load all suppliers - fetch suppliers then get profiles separately
+            // Load all suppliers - query suppliers table and join with profiles
             const { data: supplierData, error: supplierError } = await supabase
                 .from('suppliers')
-                .select('id, company_name')
+                .select('id, company_name, profiles(full_name)')
 
             if (supplierError) {
                 console.error('Error loading suppliers:', supplierError)
-            } else {
-                console.log('✅ Loaded suppliers:', supplierData?.length || 0, supplierData)
-            }
-
-            // Get profile names for suppliers
-            let supplierProfiles: Record<string, string> = {}
-            if (supplierData && supplierData.length > 0) {
-                const supplierIds = supplierData.map(s => s.id)
-                const { data: profileData } = await supabase
-                    .from('profiles')
-                    .select('id, full_name')
-                    .in('id', supplierIds)
-
-                if (profileData) {
-                    supplierProfiles = profileData.reduce((acc, p) => {
-                        acc[p.id] = p.full_name || ''
-                        return acc
-                    }, {} as Record<string, string>)
-                }
-                console.log('✅ Supplier profiles:', supplierProfiles)
             }
 
             // Load dispensing logs - prescriptions link to children directly via child_id
@@ -130,12 +109,15 @@ export default function PharmacyInventoryPage() {
             }
 
             setMedications(medData || [])
-            // Map suppliers with their profile names
+            // Map suppliers - normalize the profile join
+            console.log('📦 Raw supplier data:', supplierData)
             setSuppliers((supplierData || []).map((s: any) => {
+                // The join returns 'profiles' (plural) as the key
+                const profile = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles
                 return {
                     id: s.id,
-                    company_name: s.company_name || null,
-                    profiles: supplierProfiles[s.id] ? { full_name: supplierProfiles[s.id] } : null
+                    company_name: s.company_name,
+                    profiles: profile ? { full_name: profile.full_name } : null
                 }
             }))
             setOrders((orderData || []).map((order: any) => ({
@@ -243,21 +225,6 @@ export default function PharmacyInventoryPage() {
                 .update({ supplier_id: selectedSupplierId })
                 .eq('id', selectedMedication.id)
 
-            // Log the restock order activity
-            const supplierName = suppliers.find(s => s.id === selectedSupplierId)?.company_name ||
-                suppliers.find(s => s.id === selectedSupplierId)?.profiles?.full_name || 'Unknown'
-            await logActivity({
-                action: 'create_supply_order',
-                target_table: 'order',
-                description: `Placed restock order for ${orderQuantity} units of ${selectedMedication.name} from ${supplierName}`,
-                metadata: {
-                    medication_name: selectedMedication.name,
-                    quantity: orderQuantity,
-                    supplier_id: selectedSupplierId,
-                    supplier_name: supplierName
-                }
-            })
-
             setShowOrderModal(false)
             setSelectedMedication(null)
             loadData()
@@ -277,20 +244,6 @@ export default function PharmacyInventoryPage() {
 
             const newStock = (order.medication.stock || 0) + order.quantity
             await supabase.from('medications').update({ stock: newStock }).eq('id', order.medication_id)
-
-            // Log the delivery activity
-            await logActivity({
-                action: 'receive_delivery',
-                target_table: 'order',
-                target_id: order.id,
-                description: `Received delivery of ${order.quantity} units of ${order.medication.name}. New stock: ${newStock}`,
-                metadata: {
-                    medication_name: order.medication.name,
-                    quantity_received: order.quantity,
-                    new_stock: newStock
-                }
-            })
-
             loadData()
         } catch (error: any) { alert(error.message) } finally { setSaving(false) }
     }
@@ -300,20 +253,7 @@ export default function PharmacyInventoryPage() {
         setSaving(true)
         try {
             const supabase = createClient()
-            const { data: newMed } = await supabase.from('medications').insert([formData]).select().single()
-
-            // Log the new medication activity
-            await logActivity({
-                action: 'create_medication',
-                target_table: 'medication',
-                target_id: newMed?.id,
-                description: `Added new medication: ${formData.name} with initial stock of ${formData.stock}`,
-                metadata: {
-                    medication_name: formData.name,
-                    initial_stock: formData.stock
-                }
-            })
-
+            await supabase.from('medications').insert([formData])
             setShowAddModal(false)
             setFormData({ name: '', stock: 0 })
             loadData()

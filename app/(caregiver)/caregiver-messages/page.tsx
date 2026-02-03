@@ -217,19 +217,7 @@ export default function MessagesPage() {
                 throw new Error('Failed to fetch messages')
             }
             const data = await response.json()
-            // Transform snake_case to camelCase
-            const transformedMessages = (data.messages || []).map((msg: any) => ({
-                id: msg.id,
-                conversationId: msg.conversation_id,
-                senderId: msg.sender_id,
-                senderType: msg.sender_type,
-                content: msg.content,
-                createdAt: msg.created_at,
-                isRead: msg.is_read,
-                readAt: msg.read_at,
-                attachments: msg.attachments
-            }))
-            setMessages(transformedMessages)
+            setMessages(data.messages || [])
         } catch (err) {
             console.error('Error fetching messages:', err)
         } finally {

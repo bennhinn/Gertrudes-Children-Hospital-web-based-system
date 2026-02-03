@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
-import { logActivity } from '@/lib/activity-logger'
 import { Search, X } from 'lucide-react'
 
 interface Prescription {
@@ -201,25 +200,6 @@ export default function PharmacyPrescriptionsPage() {
                 .eq('id', id)
 
             if (error) throw error
-
-            // Log the activity for audit trail
-            const prescription = prescriptions.find(p => p.id === id)
-            const patientName = prescription?.child?.full_name || 'Unknown Patient'
-            const medications = prescription?.prescription_items?.map(i => i.medication_name).join(', ') || prescription?.medication_name || 'Unknown'
-
-            await logActivity({
-                action: newStatus === 'dispensed' ? 'dispense_prescription' : `update_prescription_${newStatus}`,
-                target_table: 'prescription',
-                target_id: id,
-                description: newStatus === 'dispensed'
-                    ? `Dispensed prescription for ${patientName}: ${medications}`
-                    : `Updated prescription status to ${newStatus} for ${patientName}`,
-                metadata: {
-                    patient_name: patientName,
-                    medications: medications,
-                    new_status: newStatus
-                }
-            })
 
             if (selectedPrescription?.id === id && newStatus === 'dispensed') {
                 setSelectedPrescription(null)

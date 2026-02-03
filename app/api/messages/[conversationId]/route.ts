@@ -55,7 +55,20 @@ export async function GET(
                 .in('id', unreadIds)
         }
 
-        return NextResponse.json({ messages: messages || [] })
+        // Transform to camelCase for frontend
+        const transformedMessages = (messages || []).map(m => ({
+            id: m.id,
+            conversationId: m.conversation_id,
+            senderId: m.sender_id,
+            senderType: m.sender_type,
+            content: m.content,
+            createdAt: m.created_at,
+            isRead: m.is_read,
+            readAt: m.read_at,
+            attachments: m.attachments
+        }))
+
+        return NextResponse.json({ messages: transformedMessages })
     } catch (error) {
         console.error('Error in GET /api/messages/[conversationId]:', error)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

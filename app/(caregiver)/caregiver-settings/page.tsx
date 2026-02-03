@@ -72,6 +72,13 @@ export default function SettingsPage() {
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system')
   const [saving, setSaving] = useState(false)
 
+  // Feedback state
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
+  const [feedbackType, setFeedbackType] = useState<'suggestion' | 'bug' | 'compliment' | 'general'>('general')
+  const [feedbackContent, setFeedbackContent] = useState('')
+  const [feedbackSending, setFeedbackSending] = useState(false)
+  const [feedbackSuccess, setFeedbackSuccess] = useState(false)
+
   // FAQ state
   const [showFAQs, setShowFAQs] = useState(false)
   const [faqSearchQuery, setFaqSearchQuery] = useState('')
@@ -101,6 +108,41 @@ export default function SettingsPage() {
       ...prev,
       [key]: !prev[key]
     }))
+  }
+
+  const handleSendFeedback = async () => {
+    if (!feedbackContent.trim()) return
+
+    setFeedbackSending(true)
+    try {
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: feedbackType,
+          content: feedbackContent.trim()
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to send feedback')
+      }
+
+      setFeedbackSuccess(true)
+      setFeedbackContent('')
+
+      // Close modal after showing success
+      setTimeout(() => {
+        setShowFeedbackModal(false)
+        setFeedbackSuccess(false)
+        setFeedbackType('general')
+      }, 2000)
+    } catch (error) {
+      console.error('Error sending feedback:', error)
+      alert('Failed to send feedback. Please try again.')
+    } finally {
+      setFeedbackSending(false)
+    }
   }
 
   const settingsSections = [
@@ -581,8 +623,8 @@ export default function SettingsPage() {
               <button
                 onClick={() => setTheme('light')}
                 className={`p-4 rounded-xl border-2 transition-all ${theme === 'light'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-slate-200 hover:border-slate-300'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-slate-200 hover:border-slate-300'
                   }`}
               >
                 <Sun className={`h-6 w-6 mx-auto mb-2 ${theme === 'light' ? 'text-blue-600' : 'text-slate-400'}`} />
@@ -591,8 +633,8 @@ export default function SettingsPage() {
               <button
                 onClick={() => setTheme('dark')}
                 className={`p-4 rounded-xl border-2 transition-all ${theme === 'dark'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-slate-200 hover:border-slate-300'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-slate-200 hover:border-slate-300'
                   }`}
               >
                 <Moon className={`h-6 w-6 mx-auto mb-2 ${theme === 'dark' ? 'text-blue-600' : 'text-slate-400'}`} />
@@ -601,8 +643,8 @@ export default function SettingsPage() {
               <button
                 onClick={() => setTheme('system')}
                 className={`p-4 rounded-xl border-2 transition-all ${theme === 'system'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-slate-200 hover:border-slate-300'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-slate-200 hover:border-slate-300'
                   }`}
               >
                 <Smartphone className={`h-6 w-6 mx-auto mb-2 ${theme === 'system' ? 'text-blue-600' : 'text-slate-400'}`} />
@@ -771,7 +813,10 @@ export default function SettingsPage() {
             <CardTitle className="text-base">Feedback</CardTitle>
           </CardHeader>
           <CardContent className="p-0 divide-y divide-slate-100">
-            <button className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+            <button
+              onClick={() => setShowFeedbackModal(true)}
+              className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+            >
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-amber-50 flex items-center justify-center">
                   <MessageSquare className="h-5 w-5 text-amber-600" />
@@ -782,6 +827,106 @@ export default function SettingsPage() {
             </button>
           </CardContent>
         </Card>
+
+        {/* Feedback Modal */}
+        {showFeedbackModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={() => !feedbackSending && setShowFeedbackModal(false)}
+            />
+            <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+              {feedbackSuccess ? (
+                <div className="p-8 text-center">
+                  <div className="h-16 w-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="h-8 w-8 text-emerald-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">Thank You!</h3>
+                  <p className="text-slate-600">Your feedback has been submitted successfully.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-slate-900">Send Feedback</h3>
+                    <button
+                      onClick={() => setShowFeedbackModal(false)}
+                      disabled={feedbackSending}
+                      className="h-8 w-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors"
+                    >
+                      <span className="text-xl text-slate-500">×</span>
+                    </button>
+                  </div>
+
+                  <div className="p-4 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Feedback Type
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { value: 'suggestion', label: '💡 Suggestion' },
+                          { value: 'bug', label: '🐛 Bug Report' },
+                          { value: 'compliment', label: '❤️ Compliment' },
+                          { value: 'general', label: '💬 General' },
+                        ].map((type) => (
+                          <button
+                            key={type.value}
+                            onClick={() => setFeedbackType(type.value as any)}
+                            className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${feedbackType === type.value
+                                ? 'bg-blue-100 text-blue-700 border-2 border-blue-500'
+                                : 'bg-slate-50 text-slate-600 border-2 border-transparent hover:bg-slate-100'
+                              }`}
+                          >
+                            {type.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Your Feedback
+                      </label>
+                      <textarea
+                        value={feedbackContent}
+                        onChange={(e) => setFeedbackContent(e.target.value)}
+                        placeholder="Tell us what you think..."
+                        rows={4}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-slate-900 placeholder:text-slate-400"
+                        disabled={feedbackSending}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-4 border-t border-slate-100 flex gap-3">
+                    <Button
+                      variant="ghost"
+                      onClick={() => setShowFeedbackModal(false)}
+                      disabled={feedbackSending}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSendFeedback}
+                      disabled={feedbackSending || !feedbackContent.trim()}
+                      className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
+                    >
+                      {feedbackSending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        'Send Feedback'
+                      )}
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     )
   }

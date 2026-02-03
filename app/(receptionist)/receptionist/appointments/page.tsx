@@ -114,93 +114,118 @@ export default function AppointmentsPage() {
     })
 
     return (
-        <div className="space-y-6 pb-20 lg:pb-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800">Appointments</h1>
-                    <p className="text-slate-500">{filteredAppointments.length} appointments found</p>
+        <div className="space-y-4 pb-20 lg:space-y-6 lg:pb-6">
+            {/* Header - Compact on Mobile */}
+            <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                    <h1 className="text-lg font-bold text-slate-800 lg:text-2xl">Appointments</h1>
+                    <p className="text-xs text-slate-500 lg:text-sm">{filteredAppointments.length} appointments found</p>
                 </div>
                 <Link href="/receptionist">
-                    <Button variant="ghost">← Back</Button>
+                    <Button variant="ghost" size="sm" className="h-8 px-2 lg:h-10 lg:px-4">← Back</Button>
                 </Link>
             </div>
 
-            {/* Search and Filter */}
-            <div className="flex flex-col gap-4 sm:flex-row">
+            {/* Search Input */}
+            <div className="relative">
                 <Input
                     placeholder="Search by patient, caregiver, or phone..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-12 sm:flex-1"
+                    className="h-12 pr-4"
                 />
-                <div className="flex gap-2">
-                    <Button
-                        variant={dateFilter === 'today' ? 'primary' : 'secondary'}
-                        onClick={() => setDateFilter('today')}
-                    >
-                        Today
-                    </Button>
-                    <Button
-                        variant={dateFilter === 'week' ? 'primary' : 'secondary'}
-                        onClick={() => setDateFilter('week')}
-                    >
-                        This Week
-                    </Button>
-                    <Button
-                        variant={dateFilter === 'all' ? 'primary' : 'secondary'}
-                        onClick={() => setDateFilter('all')}
-                    >
-                        All
-                    </Button>
-                </div>
+            </div>
+
+            {/* Date Filter - Pill Style with Horizontal Scroll */}
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 lg:mx-0 lg:px-0 lg:overflow-visible">
+                <button
+                    onClick={() => setDateFilter('today')}
+                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${dateFilter === 'today'
+                            ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                >
+                    Today
+                </button>
+                <button
+                    onClick={() => setDateFilter('week')}
+                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${dateFilter === 'week'
+                            ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                >
+                    This Week
+                </button>
+                <button
+                    onClick={() => setDateFilter('all')}
+                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${dateFilter === 'all'
+                            ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                >
+                    All
+                </button>
             </div>
 
             {/* Appointments List */}
             {loading ? (
-                <div className="space-y-3">
+                <div className="space-y-2 lg:space-y-3">
                     {[1, 2, 3].map((i) => (
                         <div key={i} className="h-24 animate-pulse rounded-xl bg-slate-200"></div>
                     ))}
                 </div>
             ) : filteredAppointments.length === 0 ? (
                 <Card className="border-none shadow-lg">
-                    <CardContent className="py-12 text-center">
+                    <CardContent className="py-10 text-center lg:py-12">
                         <p className="text-4xl">📅</p>
-                        <p className="mt-4 text-lg font-medium text-slate-600">No appointments found</p>
-                        <p className="text-slate-400">Try adjusting your search or filters</p>
+                        <p className="mt-3 text-base font-medium text-slate-600 lg:mt-4 lg:text-lg">No appointments found</p>
+                        <p className="text-sm text-slate-400">Try adjusting your search or filters</p>
                     </CardContent>
                 </Card>
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-2 lg:space-y-3">
                     {filteredAppointments.map((apt) => {
                         const { date, time } = formatDateTime(apt.scheduled_for)
                         return (
-                            <Card key={apt.id} className="border-none shadow-lg">
-                                <CardContent className="p-4">
-                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                                        <div className="flex items-center gap-4">
-                                            <div className="flex h-14 w-14 flex-col items-center justify-center rounded-xl bg-blue-50 text-center">
-                                                <span className="text-xs font-medium text-blue-600">{date.split(' ')[0]}</span>
-                                                <span className="text-lg font-bold text-blue-700">{date.split(' ')[2]}</span>
+                            <Card key={apt.id} className="border-none shadow-md hover:shadow-lg transition-shadow">
+                                <CardContent className="p-3 lg:p-4">
+                                    <div className="flex items-start gap-3 lg:gap-4">
+                                        {/* Date Badge */}
+                                        <div className="flex h-12 w-12 flex-shrink-0 flex-col items-center justify-center rounded-xl bg-blue-50 text-center lg:h-14 lg:w-14">
+                                            <span className="text-[10px] font-medium text-blue-600 lg:text-xs">{date.split(' ')[0]}</span>
+                                            <span className="text-base font-bold text-blue-700 lg:text-lg">{date.split(' ')[2]}</span>
+                                        </div>
+
+                                        {/* Appointment Info */}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <p className="font-semibold text-slate-800 truncate">
+                                                    {apt.child?.full_name || 'Unknown'}
+                                                </p>
+                                                {getStatusBadge(apt.status)}
                                             </div>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <p className="font-semibold text-slate-800">
-                                                        {apt.child?.full_name || 'Unknown'}
-                                                    </p>
-                                                    {getStatusBadge(apt.status)}
-                                                </div>
-                                                <p className="text-sm text-slate-500">
-                                                    🕐 {time} • {apt.visit_type || 'General'}
-                                                </p>
-                                                <p className="text-xs text-slate-400">
-                                                    👤 {apt.caregiver?.profiles?.full_name || 'Unknown'} •
-                                                    📞 {apt.caregiver?.profiles?.phone || 'N/A'}
-                                                </p>
+                                            <p className="text-xs text-slate-500 mt-0.5 lg:text-sm">
+                                                🕐 {time} • {apt.visit_type || 'General'}
+                                            </p>
+                                            <p className="text-xs text-slate-400 mt-0.5 truncate">
+                                                👤 {apt.caregiver?.profiles?.full_name || 'Unknown'} • 📞 {apt.caregiver?.profiles?.phone || 'N/A'}
+                                            </p>
+
+                                            {/* Mobile Action Buttons */}
+                                            <div className="flex gap-2 mt-3 lg:hidden">
+                                                {(apt.status === 'pending' || apt.status === 'confirmed') && (
+                                                    <Link href="/receptionist/check-in" className="flex-1">
+                                                        <Button size="sm" className="w-full h-9 text-xs">Check In</Button>
+                                                    </Link>
+                                                )}
+                                                <Button size="sm" variant="secondary" className="flex-1 h-9 text-xs">
+                                                    View
+                                                </Button>
                                             </div>
                                         </div>
-                                        <div className="flex gap-2">
+
+                                        {/* Desktop Action Buttons */}
+                                        <div className="hidden lg:flex gap-2 shrink-0">
                                             {(apt.status === 'pending' || apt.status === 'confirmed') && (
                                                 <Link href="/receptionist/check-in">
                                                     <Button size="sm">Check In</Button>

@@ -158,101 +158,120 @@ export default function CheckInPage() {
     }
 
     return (
-        <div className="space-y-6 pb-20 lg:pb-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800">Patient Check-In</h1>
-                    <p className="text-slate-500">Search for a patient or scan their QR code</p>
+        <div className="space-y-4 pb-20 lg:space-y-6 lg:pb-6">
+            {/* Header - Compact on Mobile */}
+            <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                    <h1 className="text-lg font-bold text-slate-800 lg:text-2xl">Patient Check-In</h1>
+                    <p className="text-xs text-slate-500 lg:text-sm">Search for a patient or scan their QR code</p>
                 </div>
                 <Link href="/receptionist">
-                    <Button variant="ghost">← Back</Button>
+                    <Button variant="ghost" size="sm" className="h-8 px-2 lg:h-10 lg:px-4">← Back</Button>
                 </Link>
             </div>
 
             {/* Success/Error Messages */}
             {success && (
-                <div className="rounded-lg bg-green-50 p-4 text-green-700">
+                <div className="rounded-xl bg-green-50 border border-green-200 p-3 text-sm text-green-700 lg:p-4 lg:text-base">
                     ✅ {success}
                 </div>
             )}
             {error && (
-                <div className="rounded-lg bg-red-50 p-4 text-red-700">
+                <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700 lg:p-4 lg:text-base">
                     ❌ {error}
                 </div>
             )}
 
-            {/* QR Scanner Placeholder */}
+            {/* QR Scanner Placeholder - Smaller on Mobile */}
             <Card className="border-none shadow-lg">
-                <CardHeader>
-                    <CardTitle className="text-lg">📱 Scan QR Code</CardTitle>
+                <CardHeader className="pb-2 px-4 pt-4 lg:px-6 lg:pt-6">
+                    <CardTitle className="text-base lg:text-lg">📱 Scan QR Code</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-12">
-                        <span className="text-5xl">📷</span>
-                        <p className="mt-4 text-slate-500">QR Scanner Coming Soon</p>
-                        <p className="text-sm text-slate-400">Use manual search below for now</p>
+                <CardContent className="px-4 pb-4 lg:px-6 lg:pb-6">
+                    <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-8 lg:py-12">
+                        <span className="text-4xl lg:text-5xl">📷</span>
+                        <p className="mt-3 text-sm text-slate-500 lg:mt-4 lg:text-base">QR Scanner Coming Soon</p>
+                        <p className="text-xs text-slate-400 lg:text-sm">Use manual search below for now</p>
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Manual Search */}
+            {/* Manual Search - Optimized for Mobile */}
             <Card className="border-none shadow-lg">
-                <CardHeader>
-                    <CardTitle className="text-lg">🔍 Search Patient</CardTitle>
+                <CardHeader className="pb-2 px-4 pt-4 lg:px-6 lg:pt-6">
+                    <CardTitle className="text-base lg:text-lg">🔍 Search Patient</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 px-4 pb-4 lg:px-6 lg:pb-6">
                     <Input
-                        placeholder="Search by patient name, caregiver name, or phone..."
+                        placeholder="Search by patient name, caregiver, or phone..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="h-12"
                     />
 
                     {loading && (
-                        <div className="py-8 text-center text-slate-500">
-                            Searching...
+                        <div className="py-6 text-center text-slate-500 lg:py-8">
+                            <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
+                            <p className="mt-2 text-sm">Searching...</p>
                         </div>
                     )}
 
                     {!loading && appointments.length === 0 && searchQuery.length >= 2 && (
-                        <div className="py-8 text-center">
+                        <div className="py-6 text-center lg:py-8">
                             <p className="text-3xl">🔍</p>
-                            <p className="mt-2 text-slate-500">No appointments found</p>
+                            <p className="mt-2 text-sm text-slate-500">No appointments found</p>
                         </div>
                     )}
 
                     {appointments.length > 0 && (
-                        <div className="space-y-3">
+                        <div className="space-y-2 lg:space-y-3">
                             {appointments.map((apt) => (
                                 <div
                                     key={apt.id}
-                                    className="flex items-center justify-between rounded-xl border bg-white p-4 shadow-sm"
+                                    className="rounded-xl border border-slate-100 bg-white p-3 shadow-sm lg:p-4"
                                 >
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-xl">
+                                    <div className="flex items-start gap-3 lg:gap-4">
+                                        {/* Avatar */}
+                                        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-blue-100 text-lg lg:h-12 lg:w-12 lg:text-xl">
                                             👶
                                         </div>
-                                        <div>
-                                            <p className="font-semibold text-slate-800">
+
+                                        {/* Patient Info */}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-semibold text-slate-800 truncate">
                                                 {apt.child?.full_name || 'Unknown'}
                                             </p>
-                                            <p className="text-sm text-slate-500">
+                                            <p className="text-xs text-slate-500 mt-0.5 lg:text-sm">
                                                 {apt.child?.date_of_birth ? calculateAge(apt.child.date_of_birth) : ''} •
-                                                {apt.caregiver?.profiles?.full_name || 'Unknown caregiver'}
+                                                {apt.caregiver?.profiles?.full_name || 'Unknown'}
                                             </p>
-                                            <p className="text-xs text-slate-400">
-                                                📞 {apt.caregiver?.profiles?.phone || 'No phone'} •
-                                                🕐 {formatTime(apt.scheduled_for)}
-                                            </p>
+                                            <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                                                <span>📞 {apt.caregiver?.profiles?.phone || 'No phone'}</span>
+                                                <span>• 🕐 {formatTime(apt.scheduled_for)}</span>
+                                            </div>
+
+                                            {/* Mobile Check-In Button */}
+                                            <div className="mt-3 lg:hidden">
+                                                <Button
+                                                    className="w-full h-10 text-sm"
+                                                    onClick={() => handleCheckIn(apt)}
+                                                    disabled={checkingIn === apt.id}
+                                                >
+                                                    {checkingIn === apt.id ? 'Checking in...' : 'Check In'}
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        {/* Desktop Check-In Button */}
+                                        <div className="hidden lg:block shrink-0">
+                                            <Button
+                                                onClick={() => handleCheckIn(apt)}
+                                                disabled={checkingIn === apt.id}
+                                            >
+                                                {checkingIn === apt.id ? 'Checking in...' : 'Check In'}
+                                            </Button>
                                         </div>
                                     </div>
-                                    <Button
-                                        onClick={() => handleCheckIn(apt)}
-                                        disabled={checkingIn === apt.id}
-                                    >
-                                        {checkingIn === apt.id ? 'Checking in...' : 'Check In'}
-                                    </Button>
                                 </div>
                             ))}
                         </div>
