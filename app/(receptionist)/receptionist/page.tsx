@@ -19,7 +19,11 @@ import {
     CheckCircle,
     Stethoscope,
     Calendar,
-    Baby
+    Baby,
+    X,
+    Loader2,
+    Ticket,
+    Eye
 } from 'lucide-react'
 
 interface QueueStats {
@@ -64,6 +68,82 @@ interface CheckIn {
     }
 }
 
+// Queue Ticket Modal Component
+function QueueTicketModal({
+    isOpen,
+    onClose,
+    queueNumber,
+    patientName,
+    time
+}: {
+    isOpen: boolean
+    onClose: () => void
+    queueNumber: number
+    patientName: string
+    time: string
+}) {
+    if (!isOpen) return null
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+            <div
+                className="relative w-full max-w-sm animate-in zoom-in-95 fade-in duration-200"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Ticket Design */}
+                <div className="overflow-hidden rounded-3xl bg-white shadow-2xl">
+                    {/* Header */}
+                    <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 px-6 py-8 text-center text-white">
+                        <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
+                            <Ticket className="h-8 w-8" />
+                        </div>
+                        <h2 className="text-lg font-semibold text-blue-100">Queue Ticket</h2>
+                        <p className="mt-1 text-sm text-blue-200">Grand Children&apos;s Hospital</p>
+                    </div>
+
+                    {/* Dotted separator */}
+                    <div className="relative">
+                        <div className="absolute left-0 top-1/2 h-8 w-4 -translate-y-1/2 rounded-r-full bg-black/50"></div>
+                        <div className="absolute right-0 top-1/2 h-8 w-4 -translate-y-1/2 rounded-l-full bg-black/50"></div>
+                        <div className="border-t-2 border-dashed border-slate-200"></div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="px-6 py-6 text-center">
+                        <p className="text-xs font-medium uppercase tracking-wider text-slate-400">Your Queue Number</p>
+                        <div className="my-4 flex items-center justify-center">
+                            <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30">
+                                <span className="text-5xl font-bold text-white">{queueNumber}</span>
+                            </div>
+                        </div>
+                        <p className="text-lg font-semibold text-slate-800">{patientName}</p>
+                        <p className="mt-1 text-sm text-slate-500">Checked in at {time}</p>
+
+                        <div className="mt-6 rounded-xl bg-slate-50 p-4">
+                            <p className="text-xs text-slate-500">Please wait in the waiting area. Your number will be called when it&apos;s your turn.</p>
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="border-t border-slate-100 px-6 py-4">
+                        <Button onClick={onClose} className="w-full">
+                            Done
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Close button */}
+                <button
+                    onClick={onClose}
+                    className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-lg"
+                >
+                    <X className="h-4 w-4 text-slate-500" />
+                </button>
+            </div>
+        </div>
+    )
+}
+
 export default function ReceptionistDashboard() {
     const [stats, setStats] = useState<QueueStats>({
         checkedInToday: 0,
@@ -74,6 +154,73 @@ export default function ReceptionistDashboard() {
     const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([])
     const [recentCheckIns, setRecentCheckIns] = useState<CheckIn[]>([])
     const [loading, setLoading] = useState(true)
+    const [checkingIn, setCheckingIn] = useState<string | null>(null)
+    const [ticketModal, setTicketModal] = useState<{
+        isOpen: boolean
+        queueNumber: number
+        patientName: string
+        time: string
+    }>({ isOpen: false, queueNumber: 0, patientName: '', time: '' })
+
+    // Handle quick check-in from dashboard
+    async function handleQuickCheckIn(appointment: Appointment) {
+        setCheckingIn(appointment.id)
+        try {
+            const supabase = createClient()
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+
+            // Get the next queue number for today
+            const { data: existingCheckIns } = await supabase
+                .from('check_ins')
+                .select('queue_number')
+                .gte('checked_in_at', today.toISOString())
+                .order('queue_number', { ascending: false })
+                .limit(1)
+
+            const nextQueueNumber = (existingCheckIns?.[0]?.queue_number || 0) + 1
+
+            // Create check-in record
+            const { error: checkInError } = await supabase
+                .from('check_ins')
+                .insert({
+                    appointment_id: appointment.id,
+                    queue_number: nextQueueNumber,
+                    status: 'waiting',
+                    reason: 'Scheduled appointment',
+                    checked_in_at: new Date().toISOString(),
+                })
+
+            if (checkInError) throw checkInError
+
+            // Update appointment status
+            await supabase
+                .from('appointments')
+                .update({ status: 'checked_in' })
+                .eq('id', appointment.id)
+
+            // Show queue ticket modal
+            const checkInTime = new Date().toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+            })
+
+            setTicketModal({
+                isOpen: true,
+                queueNumber: nextQueueNumber,
+                patientName: appointment.child?.full_name || 'Patient',
+                time: checkInTime,
+            })
+
+            // Refresh data
+            loadDashboardData()
+        } catch (error) {
+            console.error('Error checking in:', error)
+            alert('Failed to check in patient. Please try again.')
+        } finally {
+            setCheckingIn(null)
+        }
+    }
 
     const loadDashboardData = useCallback(async () => {
         try {
@@ -345,10 +492,15 @@ export default function ReceptionistDashboard() {
                         <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
                             <Users className="h-5 w-5 text-blue-600" />
                             Current Queue
+                            {stats.currentlyWaiting > 0 && (
+                                <Badge className="bg-amber-100 text-amber-700 border-amber-200">
+                                    {stats.currentlyWaiting} waiting
+                                </Badge>
+                            )}
                         </CardTitle>
                         <Link href="/receptionist/queue">
                             <Badge className="cursor-pointer bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-                                All <ChevronRight className="ml-0.5 h-3 w-3" />
+                                Manage <ChevronRight className="ml-0.5 h-3 w-3" />
                             </Badge>
                         </Link>
                     </CardHeader>
@@ -359,28 +511,65 @@ export default function ReceptionistDashboard() {
                                     <Users className="h-6 w-6 text-slate-400" />
                                 </div>
                                 <p className="text-sm text-slate-500">No patients checked in yet</p>
+                                <p className="text-xs text-slate-400">Check in patients to see them here</p>
                             </div>
                         ) : (
-                            <div className="space-y-2.5">
-                                {recentCheckIns.map((checkIn) => (
-                                    <div
+                            <div className="space-y-2">
+                                {recentCheckIns.slice(0, 5).map((checkIn, index) => (
+                                    <Link
+                                        href="/receptionist/queue"
                                         key={checkIn.id}
-                                        className="flex items-center gap-3 rounded-xl bg-slate-50 p-3 lg:p-4"
+                                        className={`flex items-center gap-3 rounded-xl p-3 lg:p-4 transition-colors ${checkIn.status === 'waiting' && index === 0
+                                                ? 'bg-amber-50 border border-amber-200'
+                                                : checkIn.status === 'in_consultation'
+                                                    ? 'bg-blue-50 border border-blue-100'
+                                                    : 'bg-slate-50'
+                                            }`}
                                     >
-                                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-600 lg:h-11 lg:w-11 lg:text-base">
-                                            {checkIn.queue_number || '#'}
+                                        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-base font-bold lg:h-12 lg:w-12 ${checkIn.status === 'waiting' && index === 0
+                                                ? 'bg-amber-500 text-white'
+                                                : checkIn.status === 'in_consultation'
+                                                    ? 'bg-blue-500 text-white'
+                                                    : checkIn.status === 'completed'
+                                                        ? 'bg-green-500 text-white'
+                                                        : 'bg-slate-200 text-slate-600'
+                                            }`}>
+                                            {checkIn.queue_number}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <p className="truncate text-sm font-medium text-slate-800">
-                                                {checkIn.appointment?.child?.full_name || 'Unknown'}
-                                            </p>
-                                            <p className="flex items-center gap-1 text-xs text-slate-500">
-                                                <Clock className="h-3 w-3" />
-                                                {checkIn.reason || 'General'} • {getWaitTime(checkIn.checked_in_at)}
+                                            <div className="flex items-center gap-2">
+                                                <p className="truncate text-sm font-medium text-slate-800">
+                                                    {checkIn.appointment?.child?.full_name || 'Unknown'}
+                                                </p>
+                                                {checkIn.status === 'waiting' && index === 0 && (
+                                                    <Badge className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0 animate-pulse">
+                                                        Next
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                            <p className="flex items-center gap-1.5 text-xs text-slate-500">
+                                                {checkIn.status === 'waiting' && (
+                                                    <>
+                                                        <Clock className="h-3 w-3 text-amber-500" />
+                                                        <span>Waiting {getWaitTime(checkIn.checked_in_at)}</span>
+                                                    </>
+                                                )}
+                                                {checkIn.status === 'in_consultation' && (
+                                                    <>
+                                                        <Stethoscope className="h-3 w-3 text-blue-500" />
+                                                        <span>With Doctor</span>
+                                                    </>
+                                                )}
+                                                {checkIn.status === 'completed' && (
+                                                    <>
+                                                        <CheckCircle className="h-3 w-3 text-green-500" />
+                                                        <span>Completed</span>
+                                                    </>
+                                                )}
                                             </p>
                                         </div>
-                                        {getStatusBadge(checkIn.status)}
-                                    </div>
+                                        <ChevronRight className="h-4 w-4 text-slate-300" />
+                                    </Link>
                                 ))}
                             </div>
                         )}
@@ -426,8 +615,20 @@ export default function ReceptionistDashboard() {
                                                 {formatTime(apt.scheduled_for)} • {apt.caregiver?.profiles?.full_name || 'Unknown'}
                                             </p>
                                         </div>
-                                        <Button size="sm" variant="secondary" className="h-8 text-xs">
-                                            Check In
+                                        <Button
+                                            size="sm"
+                                            className="h-8 text-xs"
+                                            onClick={() => handleQuickCheckIn(apt)}
+                                            disabled={checkingIn === apt.id}
+                                        >
+                                            {checkingIn === apt.id ? (
+                                                <>
+                                                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                                    ...
+                                                </>
+                                            ) : (
+                                                'Check In'
+                                            )}
                                         </Button>
                                     </div>
                                 ))}
@@ -436,6 +637,15 @@ export default function ReceptionistDashboard() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Queue Ticket Modal */}
+            <QueueTicketModal
+                isOpen={ticketModal.isOpen}
+                onClose={() => setTicketModal(prev => ({ ...prev, isOpen: false }))}
+                queueNumber={ticketModal.queueNumber}
+                patientName={ticketModal.patientName}
+                time={ticketModal.time}
+            />
         </div>
     )
 }

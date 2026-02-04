@@ -28,21 +28,32 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
         return;
       }
 
-      // Check if user is a supplier
-      const { data: supplier } = await supabase
-        .from('suppliers')
-        .select('company_name')
-        .eq('user_id', authUser.id)
-        .single();
-
-      if (!supplier) {
+      // Check if user has supplier role
+      const role = authUser.app_metadata?.role || authUser.user_metadata?.role;
+      if (role !== 'supplier' && role !== 'admin') {
         router.push('/login');
         return;
       }
 
+      // Try to get supplier company info (optional - don't block if not found)
+      let companyName = 'Supplier';
+      try {
+        const { data: supplier } = await supabase
+          .from('suppliers')
+          .select('company_name')
+          .eq('user_id', authUser.id)
+          .single();
+
+        if (supplier?.company_name) {
+          companyName = supplier.company_name;
+        }
+      } catch {
+        // Supplier record might not exist yet, that's okay
+      }
+
       setUser({
         fullName: authUser.user_metadata?.full_name || 'Supplier',
-        companyName: supplier.company_name || 'PharmaSupply',
+        companyName: companyName,
       });
       setLoading(false);
     }

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { X, Ticket, Loader2, Search, RefreshCw, ArrowLeft } from 'lucide-react'
 
 interface Appointment {
     id: string
@@ -26,35 +27,109 @@ interface Appointment {
     }
 }
 
+// Queue Ticket Modal Component
+function QueueTicketModal({
+    isOpen,
+    onClose,
+    queueNumber,
+    patientName,
+    time
+}: {
+    isOpen: boolean
+    onClose: () => void
+    queueNumber: number
+    patientName: string
+    time: string
+}) {
+    if (!isOpen) return null
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+            <div
+                className="relative w-full max-w-sm animate-in zoom-in-95 fade-in duration-200"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Ticket Design */}
+                <div className="overflow-hidden rounded-3xl bg-white shadow-2xl">
+                    {/* Header */}
+                    <div className="bg-gradient-to-br from-green-500 via-green-600 to-emerald-600 px-6 py-8 text-center text-white">
+                        <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
+                            <Ticket className="h-8 w-8" />
+                        </div>
+                        <h2 className="text-lg font-semibold text-green-100">Check-In Successful!</h2>
+                        <p className="mt-1 text-sm text-green-200">Grand Children&apos;s Hospital</p>
+                    </div>
+
+                    {/* Dotted separator */}
+                    <div className="relative">
+                        <div className="absolute left-0 top-1/2 h-8 w-4 -translate-y-1/2 rounded-r-full bg-black/50"></div>
+                        <div className="absolute right-0 top-1/2 h-8 w-4 -translate-y-1/2 rounded-l-full bg-black/50"></div>
+                        <div className="border-t-2 border-dashed border-slate-200"></div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="px-6 py-6 text-center">
+                        <p className="text-xs font-medium uppercase tracking-wider text-slate-400">Queue Number</p>
+                        <div className="my-4 flex items-center justify-center">
+                            <div className="flex h-28 w-28 items-center justify-center rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg shadow-green-500/30">
+                                <span className="text-6xl font-bold text-white">{queueNumber}</span>
+                            </div>
+                        </div>
+                        <p className="text-xl font-semibold text-slate-800">{patientName}</p>
+                        <p className="mt-1 text-sm text-slate-500">Checked in at {time}</p>
+
+                        <div className="mt-6 rounded-xl bg-green-50 border border-green-100 p-4">
+                            <p className="text-sm text-green-700">✓ Patient is now in the queue</p>
+                            <p className="mt-1 text-xs text-green-600">Please ask them to wait in the waiting area</p>
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="border-t border-slate-100 px-6 py-4 flex gap-3">
+                        <Button variant="secondary" onClick={onClose} className="flex-1">
+                            Check Another
+                        </Button>
+                        <Link href="/receptionist/queue" className="flex-1">
+                            <Button className="w-full">
+                                View Queue
+                            </Button>
+                        </Link>
+                    </div>
+                </div>
+
+                {/* Close button */}
+                <button
+                    onClick={onClose}
+                    className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-lg"
+                >
+                    <X className="h-4 w-4 text-slate-500" />
+                </button>
+            </div>
+        </div>
+    )
+}
+
 export default function CheckInPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [appointments, setAppointments] = useState<Appointment[]>([])
-    const [loading, setLoading] = useState(false)
+    const [allAppointments, setAllAppointments] = useState<Appointment[]>([])
+    const [loading, setLoading] = useState(true)
     const [checkingIn, setCheckingIn] = useState<string | null>(null)
-    const [success, setSuccess] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const [ticketModal, setTicketModal] = useState<{
+        isOpen: boolean
+        queueNumber: number
+        patientName: string
+        time: string
+    }>({ isOpen: false, queueNumber: 0, patientName: '', time: '' })
     const searchTimeout = useRef<NodeJS.Timeout | undefined>(undefined)
 
+    // Load all today's appointments on mount
     useEffect(() => {
-        if (searchQuery.length >= 2) {
-            if (searchTimeout.current) {
-                clearTimeout(searchTimeout.current)
-            }
-            searchTimeout.current = setTimeout(() => {
-                searchAppointments(searchQuery)
-            }, 300)
-        } else {
-            setAppointments([])
-        }
+        loadTodayAppointments()
+    }, [])
 
-        return () => {
-            if (searchTimeout.current) {
-                clearTimeout(searchTimeout.current)
-            }
-        }
-    }, [searchQuery])
-
-    async function searchAppointments(query: string) {
+    async function loadTodayAppointments() {
         setLoading(true)
         setError(null)
         try {
@@ -62,7 +137,7 @@ export default function CheckInPage() {
             const today = new Date()
             today.setHours(0, 0, 0, 0)
 
-            const { data, error: searchError } = await supabase
+            const { data, error: fetchError } = await supabase
                 .from('appointments')
                 .select(`
                     *,
@@ -71,24 +146,62 @@ export default function CheckInPage() {
                 `)
                 .gte('scheduled_for', today.toISOString())
                 .in('status', ['pending', 'confirmed'])
-                .or(`child.full_name.ilike.%${query}%,caregiver.profiles.full_name.ilike.%${query}%,caregiver.profiles.phone.ilike.%${query}%`)
                 .order('scheduled_for', { ascending: true })
-                .limit(10)
+                .limit(50)
 
-            if (searchError) throw searchError
+            if (fetchError) {
+                console.error('Fetch error:', fetchError)
+                throw fetchError
+            }
+
+            setAllAppointments(data || [])
             setAppointments(data || [])
         } catch (err) {
-            console.error('Search error:', err)
-            setError('Failed to search appointments')
+            console.error('Load error:', err)
+            setError('Failed to load appointments. Please refresh the page.')
         } finally {
             setLoading(false)
         }
     }
 
+    // Filter appointments when search query changes
+    useEffect(() => {
+        if (searchTimeout.current) {
+            clearTimeout(searchTimeout.current)
+        }
+
+        if (searchQuery.length === 0) {
+            setAppointments(allAppointments)
+            return
+        }
+
+        if (searchQuery.length >= 2) {
+            searchTimeout.current = setTimeout(() => {
+                const lowerQuery = searchQuery.toLowerCase()
+                const filtered = allAppointments.filter((apt) => {
+                    const childName = apt.child?.full_name?.toLowerCase() || ''
+                    const caregiverName = apt.caregiver?.profiles?.full_name?.toLowerCase() || ''
+                    const phone = apt.caregiver?.profiles?.phone?.toLowerCase() || ''
+                    return (
+                        childName.includes(lowerQuery) ||
+                        caregiverName.includes(lowerQuery) ||
+                        phone.includes(lowerQuery)
+                    )
+                })
+                setAppointments(filtered)
+            }, 200)
+        }
+
+        return () => {
+            if (searchTimeout.current) {
+                clearTimeout(searchTimeout.current)
+            }
+        }
+    }, [searchQuery, allAppointments])
+
     async function handleCheckIn(appointment: Appointment) {
         setCheckingIn(appointment.id)
         setError(null)
-        setSuccess(null)
 
         try {
             const supabase = createClient()
@@ -97,12 +210,16 @@ export default function CheckInPage() {
             const today = new Date()
             today.setHours(0, 0, 0, 0)
 
-            const { data: existingCheckIns } = await supabase
+            const { data: existingCheckIns, error: queueError } = await supabase
                 .from('check_ins')
                 .select('queue_number')
                 .gte('checked_in_at', today.toISOString())
                 .order('queue_number', { ascending: false })
                 .limit(1)
+
+            if (queueError) {
+                console.error('Queue number fetch error:', queueError)
+            }
 
             const nextQueueNumber = (existingCheckIns?.[0]?.queue_number || 0) + 1
 
@@ -117,19 +234,42 @@ export default function CheckInPage() {
                     checked_in_at: new Date().toISOString(),
                 })
 
-            if (checkInError) throw checkInError
+            if (checkInError) {
+                console.error('Check-in insert error:', checkInError)
+                throw new Error(checkInError.message || 'Failed to create check-in record')
+            }
 
             // Update appointment status
-            await supabase
+            const { error: updateError } = await supabase
                 .from('appointments')
                 .update({ status: 'checked_in' })
                 .eq('id', appointment.id)
 
-            setSuccess(`${appointment.child.full_name} checked in successfully! Queue #${nextQueueNumber}`)
+            if (updateError) {
+                console.error('Appointment update error:', updateError)
+                // Don't throw here - check-in was successful
+            }
+
+            const childName = appointment.child?.full_name || 'Patient'
+            const checkInTime = new Date().toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+            })
+
+            // Show queue ticket modal
+            setTicketModal({
+                isOpen: true,
+                queueNumber: nextQueueNumber,
+                patientName: childName,
+                time: checkInTime,
+            })
+
+            // Remove from both lists
             setAppointments(prev => prev.filter(a => a.id !== appointment.id))
+            setAllAppointments(prev => prev.filter(a => a.id !== appointment.id))
         } catch (err) {
             console.error('Check-in error:', err)
-            setError('Failed to check in patient')
+            setError(err instanceof Error ? err.message : 'Failed to check in patient. Please try again.')
         } finally {
             setCheckingIn(null)
         }
@@ -161,123 +301,192 @@ export default function CheckInPage() {
         <div className="space-y-4 pb-20 lg:space-y-6 lg:pb-6">
             {/* Header - Compact on Mobile */}
             <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                    <h1 className="text-lg font-bold text-slate-800 lg:text-2xl">Patient Check-In</h1>
-                    <p className="text-xs text-slate-500 lg:text-sm">Search for a patient or scan their QR code</p>
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <Link href="/receptionist">
+                        <Button variant="ghost" size="sm" className="h-9 w-9 p-0 lg:h-10 lg:w-10">
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                    </Link>
+                    <div>
+                        <h1 className="text-lg font-bold text-slate-800 lg:text-2xl">Patient Check-In</h1>
+                        <p className="text-xs text-slate-500 lg:text-sm">
+                            {allAppointments.length} appointments today
+                        </p>
+                    </div>
                 </div>
-                <Link href="/receptionist">
-                    <Button variant="ghost" size="sm" className="h-8 px-2 lg:h-10 lg:px-4">← Back</Button>
-                </Link>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 w-9 p-0"
+                    onClick={() => loadTodayAppointments()}
+                    disabled={loading}
+                >
+                    <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                </Button>
             </div>
 
-            {/* Success/Error Messages */}
-            {success && (
-                <div className="rounded-xl bg-green-50 border border-green-200 p-3 text-sm text-green-700 lg:p-4 lg:text-base">
-                    ✅ {success}
-                </div>
-            )}
+            {/* Error Message */}
             {error && (
-                <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700 lg:p-4 lg:text-base">
-                    ❌ {error}
+                <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700 lg:p-4 lg:text-base flex items-center gap-2">
+                    <span>❌</span>
+                    <span className="flex-1">{error}</span>
+                    <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
+                        <X className="h-4 w-4" />
+                    </button>
                 </div>
             )}
 
-            {/* QR Scanner Placeholder - Smaller on Mobile */}
+            {/* Search and Filter Section */}
             <Card className="border-none shadow-lg">
-                <CardHeader className="pb-2 px-4 pt-4 lg:px-6 lg:pt-6">
-                    <CardTitle className="text-base lg:text-lg">📱 Scan QR Code</CardTitle>
-                </CardHeader>
-                <CardContent className="px-4 pb-4 lg:px-6 lg:pb-6">
-                    <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-8 lg:py-12">
-                        <span className="text-4xl lg:text-5xl">📷</span>
-                        <p className="mt-3 text-sm text-slate-500 lg:mt-4 lg:text-base">QR Scanner Coming Soon</p>
-                        <p className="text-xs text-slate-400 lg:text-sm">Use manual search below for now</p>
+                <CardContent className="p-4 lg:p-6">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                        <Input
+                            placeholder="Search by patient name, caregiver, or phone..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="h-12 pl-10 pr-10 text-base"
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        )}
                     </div>
+                    {searchQuery && (
+                        <p className="mt-2 text-sm text-slate-500">
+                            Showing {appointments.length} of {allAppointments.length} appointments
+                        </p>
+                    )}
                 </CardContent>
             </Card>
 
-            {/* Manual Search - Optimized for Mobile */}
-            <Card className="border-none shadow-lg">
-                <CardHeader className="pb-2 px-4 pt-4 lg:px-6 lg:pt-6">
-                    <CardTitle className="text-base lg:text-lg">🔍 Search Patient</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 px-4 pb-4 lg:px-6 lg:pb-6">
-                    <Input
-                        placeholder="Search by patient name, caregiver, or phone..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="h-12"
-                    />
-
-                    {loading && (
-                        <div className="py-6 text-center text-slate-500 lg:py-8">
-                            <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
-                            <p className="mt-2 text-sm">Searching...</p>
+            {/* Appointments List */}
+            {loading ? (
+                <Card className="border-none shadow-lg">
+                    <CardContent className="py-10 lg:py-12">
+                        <div className="flex flex-col items-center justify-center">
+                            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                            <p className="mt-3 text-sm text-slate-500">Loading appointments...</p>
                         </div>
-                    )}
-
-                    {!loading && appointments.length === 0 && searchQuery.length >= 2 && (
-                        <div className="py-6 text-center lg:py-8">
-                            <p className="text-3xl">🔍</p>
-                            <p className="mt-2 text-sm text-slate-500">No appointments found</p>
-                        </div>
-                    )}
-
-                    {appointments.length > 0 && (
-                        <div className="space-y-2 lg:space-y-3">
-                            {appointments.map((apt) => (
-                                <div
-                                    key={apt.id}
-                                    className="rounded-xl border border-slate-100 bg-white p-3 shadow-sm lg:p-4"
+                    </CardContent>
+                </Card>
+            ) : appointments.length === 0 ? (
+                <Card className="border-none shadow-lg">
+                    <CardContent className="py-10 lg:py-12">
+                        <div className="flex flex-col items-center justify-center text-center">
+                            <div className="text-4xl">{searchQuery ? '🔍' : '📅'}</div>
+                            <p className="mt-3 text-base font-medium text-slate-600">
+                                {searchQuery
+                                    ? 'No matching patients found'
+                                    : 'No pending appointments today'}
+                            </p>
+                            <p className="text-sm text-slate-400">
+                                {searchQuery
+                                    ? 'Try a different search term'
+                                    : 'All patients have been checked in'}
+                            </p>
+                            {searchQuery && (
+                                <Button
+                                    variant="secondary"
+                                    className="mt-4"
+                                    onClick={() => setSearchQuery('')}
                                 >
-                                    <div className="flex items-start gap-3 lg:gap-4">
-                                        {/* Avatar */}
-                                        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-blue-100 text-lg lg:h-12 lg:w-12 lg:text-xl">
-                                            👶
-                                        </div>
+                                    Clear Search
+                                </Button>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+            ) : (
+                <div className="space-y-3">
+                    {appointments.map((apt) => (
+                        <Card key={apt.id} className="border-none shadow-md hover:shadow-lg transition-shadow">
+                            <CardContent className="p-4 lg:p-5">
+                                <div className="flex items-start gap-4">
+                                    {/* Avatar */}
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 text-xl lg:h-14 lg:w-14 lg:text-2xl">
+                                        👶
+                                    </div>
 
-                                        {/* Patient Info */}
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-semibold text-slate-800 truncate">
+                                    {/* Patient Info */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <p className="font-semibold text-slate-800 truncate text-base lg:text-lg">
                                                 {apt.child?.full_name || 'Unknown'}
                                             </p>
-                                            <p className="text-xs text-slate-500 mt-0.5 lg:text-sm">
-                                                {apt.child?.date_of_birth ? calculateAge(apt.child.date_of_birth) : ''} •
-                                                {apt.caregiver?.profiles?.full_name || 'Unknown'}
-                                            </p>
-                                            <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
-                                                <span>📞 {apt.caregiver?.profiles?.phone || 'No phone'}</span>
-                                                <span>• 🕐 {formatTime(apt.scheduled_for)}</span>
-                                            </div>
-
-                                            {/* Mobile Check-In Button */}
-                                            <div className="mt-3 lg:hidden">
-                                                <Button
-                                                    className="w-full h-10 text-sm"
-                                                    onClick={() => handleCheckIn(apt)}
-                                                    disabled={checkingIn === apt.id}
-                                                >
-                                                    {checkingIn === apt.id ? 'Checking in...' : 'Check In'}
-                                                </Button>
-                                            </div>
+                                            <Badge variant="blue" className="text-[10px] lg:text-xs">
+                                                {formatTime(apt.scheduled_for)}
+                                            </Badge>
                                         </div>
+                                        <p className="text-sm text-slate-500 mt-1">
+                                            {apt.child?.date_of_birth ? calculateAge(apt.child.date_of_birth) : ''} •
+                                            Guardian: {apt.caregiver?.profiles?.full_name || 'Unknown'}
+                                        </p>
+                                        <p className="text-xs text-slate-400 mt-0.5">
+                                            📞 {apt.caregiver?.profiles?.phone || 'No phone'}
+                                        </p>
 
-                                        {/* Desktop Check-In Button */}
-                                        <div className="hidden lg:block shrink-0">
+                                        {/* Mobile Check-In Button */}
+                                        <div className="mt-3 lg:hidden">
                                             <Button
+                                                className="w-full h-11 text-sm font-medium"
                                                 onClick={() => handleCheckIn(apt)}
                                                 disabled={checkingIn === apt.id}
                                             >
-                                                {checkingIn === apt.id ? 'Checking in...' : 'Check In'}
+                                                {checkingIn === apt.id ? (
+                                                    <>
+                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                        Checking in...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Ticket className="mr-2 h-4 w-4" />
+                                                        Check In Patient
+                                                    </>
+                                                )}
                                             </Button>
                                         </div>
                                     </div>
+
+                                    {/* Desktop Check-In Button */}
+                                    <div className="hidden lg:block shrink-0">
+                                        <Button
+                                            className="h-11"
+                                            onClick={() => handleCheckIn(apt)}
+                                            disabled={checkingIn === apt.id}
+                                        >
+                                            {checkingIn === apt.id ? (
+                                                <>
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                    Checking in...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Ticket className="mr-2 h-4 w-4" />
+                                                    Check In
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            )}
+
+            {/* Queue Ticket Modal */}
+            <QueueTicketModal
+                isOpen={ticketModal.isOpen}
+                onClose={() => setTicketModal(prev => ({ ...prev, isOpen: false }))}
+                queueNumber={ticketModal.queueNumber}
+                patientName={ticketModal.patientName}
+                time={ticketModal.time}
+            />
         </div>
     )
 }
