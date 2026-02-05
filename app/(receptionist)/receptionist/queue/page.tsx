@@ -616,7 +616,7 @@ export default function QueuePage() {
                                     <div className="hidden lg:flex items-center gap-2 shrink-0">
                                         <Button
                                             size="sm"
-                                            variant="outline"
+                                            variant="secondary"
                                             onClick={(e) => { e.stopPropagation(); openPatientDetails(checkIn); }}
                                         >
                                             <Eye className="mr-1.5 h-4 w-4" />
