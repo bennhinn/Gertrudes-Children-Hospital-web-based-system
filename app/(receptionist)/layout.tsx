@@ -1,5 +1,6 @@
 'use client'
 
+import './mobile.css'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -106,7 +107,7 @@ export default function ReceptionistLayout({
     }
 
     return (
-        <div className="min-h-dvh bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
+        <div className="receptionist-root min-h-dvh bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
             {/* Desktop Sidebar */}
             <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-blue-100 bg-white/80 backdrop-blur-xl lg:block">
                 <div className="flex h-full flex-col">
@@ -280,12 +281,13 @@ export default function ReceptionistLayout({
                                             key={item.href}
                                             href={item.href}
                                             className={`flex items-center gap-3 rounded-xl px-4 py-3.5 text-sm font-medium transition-all ${isActive
-                                                ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
+                                                ? 'bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg'
                                                 : 'text-slate-600 hover:bg-blue-50'
                                                 }`}
+                                            style={isActive ? { color: '#ffffff' } : undefined}
                                         >
-                                            <Icon className="h-5 w-5" />
-                                            <span className="flex-1">{item.label}</span>
+                                            <Icon className={`transition-all ${isActive ? 'h-6 w-6 text-white' : 'h-5 w-5 text-slate-600'}`} />
+                                            <span className={`flex-1 ${isActive ? 'text-white font-bold text-base' : ''}`}>{item.label}</span>
                                             {item.label === 'Queue' && notifications > 0 && (
                                                 <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${isActive ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-600'
                                                     }`}>

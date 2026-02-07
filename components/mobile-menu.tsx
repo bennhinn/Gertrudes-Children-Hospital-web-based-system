@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
+import { usePathname } from "next/navigation"
 
 export default function MobileMenu() {
     const [isOpen, setIsOpen] = useState(false)
@@ -27,6 +28,25 @@ export default function MobileMenu() {
 
     // Close menu when clicking nav links
     const handleLinkClick = () => setIsOpen(false)
+
+    const pathname = usePathname()
+    const [hash, setHash] = useState("")
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            setHash(window.location.hash || "")
+
+            const onHash = () => setHash(window.location.hash || "")
+            window.addEventListener("hashchange", onHash)
+            return () => window.removeEventListener("hashchange", onHash)
+        }
+    }, [])
+
+    const isActive = (href: string) => {
+        if (href.startsWith("#")) return hash === href
+        if (!pathname) return false
+        return pathname === href || pathname.startsWith(href)
+    }
 
     return (
         <div className="sm:hidden">
@@ -86,33 +106,73 @@ export default function MobileMenu() {
                                     <a
                                         href="#about"
                                         onClick={handleLinkClick}
-                                        className="flex items-center h-14 rounded-xl px-4 text-base font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                        className={
+                                            `flex items-center h-14 rounded-xl px-4 text-base font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ` +
+                                            (isActive("#about")
+                                                ? "bg-blue-600 text-white"
+                                                : "text-slate-700 hover:bg-blue-50 hover:text-blue-600")
+                                        }
                                     >
-                                        <span className="mr-4 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-xl">📖</span>
+                                        <span className={
+                                            `mr-4 flex h-10 w-10 items-center justify-center rounded-lg text-xl ` +
+                                            (isActive("#about") ? "bg-white/20 text-white" : "bg-blue-50 text-slate-700")
+                                        }>
+                                            📖
+                                        </span>
                                         About
                                     </a>
                                     <a
                                         href="#services"
                                         onClick={handleLinkClick}
-                                        className="flex items-center h-14 rounded-xl px-4 text-base font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                        className={
+                                            `flex items-center h-14 rounded-xl px-4 text-base font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ` +
+                                            (isActive("#services")
+                                                ? "bg-blue-600 text-white"
+                                                : "text-slate-700 hover:bg-blue-50 hover:text-blue-600")
+                                        }
                                     >
-                                        <span className="mr-4 flex h-10 w-10 items-center justify-center rounded-lg bg-pink-50 text-xl">🏥</span>
+                                        <span className={
+                                            `mr-4 flex h-10 w-10 items-center justify-center rounded-lg text-xl ` +
+                                            (isActive("#services") ? "bg-white/20 text-white" : "bg-pink-50 text-slate-700")
+                                        }>
+                                            🏥
+                                        </span>
                                         Services
                                     </a>
                                     <a
                                         href="#why-us"
                                         onClick={handleLinkClick}
-                                        className="flex items-center h-14 rounded-xl px-4 text-base font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                        className={
+                                            `flex items-center h-14 rounded-xl px-4 text-base font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ` +
+                                            (isActive("#why-us")
+                                                ? "bg-blue-600 text-white"
+                                                : "text-slate-700 hover:bg-blue-50 hover:text-blue-600")
+                                        }
                                     >
-                                        <span className="mr-4 flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-xl">⭐</span>
+                                        <span className={
+                                            `mr-4 flex h-10 w-10 items-center justify-center rounded-lg text-xl ` +
+                                            (isActive("#why-us") ? "bg-white/20 text-white" : "bg-amber-50 text-slate-700")
+                                        }>
+                                            ⭐
+                                        </span>
                                         Why Us
                                     </a>
                                     <a
                                         href="#contact"
                                         onClick={handleLinkClick}
-                                        className="flex items-center h-14 rounded-xl px-4 text-base font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                        className={
+                                            `flex items-center h-14 rounded-xl px-4 text-base font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ` +
+                                            (isActive("#contact")
+                                                ? "bg-blue-600 text-white"
+                                                : "text-slate-700 hover:bg-blue-50 hover:text-blue-600")
+                                        }
                                     >
-                                        <span className="mr-4 flex h-10 w-10 items-center justify-center rounded-lg bg-green-50 text-xl">📞</span>
+                                        <span className={
+                                            `mr-4 flex h-10 w-10 items-center justify-center rounded-lg text-xl ` +
+                                            (isActive("#contact") ? "bg-white/20 text-white" : "bg-green-50 text-slate-700")
+                                        }>
+                                            📞
+                                        </span>
                                         Contact
                                     </a>
                                 </nav>
