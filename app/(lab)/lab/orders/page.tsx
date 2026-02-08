@@ -123,7 +123,8 @@ export default function LabOrdersPage() {
                     updateData.collected_by = user.id
                 }
             } else if (newStatus === 'in_progress') {
-                updateData.started_at = new Date().toISOString()
+                // Use processing_started_at to match DB field used elsewhere
+                updateData.processing_started_at = new Date().toISOString()
             }
 
             console.log('Updating order:', orderId, 'with data:', updateData)

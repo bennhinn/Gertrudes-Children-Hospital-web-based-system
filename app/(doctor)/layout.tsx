@@ -1,5 +1,7 @@
 'use client'
 
+import './mobile.css'
+
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -15,7 +17,6 @@ import {
     X,
     Bell,
     ChevronRight,
-    Activity,
     User
 } from 'lucide-react'
 
@@ -100,7 +101,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
     }
 
     return (
-        <div className="min-h-dvh bg-gradient-to-br from-slate-50 via-purple-50/30 to-slate-50">
+        <div className="doctor-root min-h-dvh bg-gradient-to-br from-slate-50 via-purple-50/30 to-slate-50">
             {/* Desktop Sidebar */}
             <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-purple-100 bg-white/80 backdrop-blur-xl lg:block">
                 <div className="flex h-full flex-col">
@@ -247,12 +248,13 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
                                         <Link
                                             key={item.href}
                                             href={item.href}
+                                            style={isActive ? { color: '#ffffff' } : undefined}
                                             className={`flex items-center gap-3 rounded-xl px-4 py-3.5 text-sm font-medium transition-all ${isActive
                                                 ? 'bg-gradient-to-r from-purple-500 to-violet-600 text-white shadow-lg'
                                                 : 'text-slate-600 hover:bg-purple-50'
                                                 }`}
                                         >
-                                            <Icon className="h-5 w-5" />
+                                            <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-slate-600'}`} />
                                             <span className="flex-1">{item.label}</span>
                                             {item.label === 'Messages' && notifications > 0 && (
                                                 <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${isActive ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-600'
@@ -280,14 +282,14 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
                 </div>
             )}
 
-            {/* Main Content */}
-            <main className="pt-14 pb-24 lg:pb-8 lg:pl-72 lg:pt-0">
+            {/* Main Content - reserve space for mobile bottom nav (includes safe-area inset) */}
+            <main className="pt-14 pb-[calc(64px+env(safe-area-inset-bottom))] lg:pb-8 lg:pl-72 lg:pt-0">
                 <div className="p-4 lg:p-6">{children}</div>
             </main>
 
-            {/* Mobile Bottom Navigation */}
+            {/* Mobile Bottom Navigation - FIX #3: Reduced height and spacing */}
             <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white pb-safe lg:hidden">
-                <div className="flex items-center justify-around py-2">
+                <div className="flex items-center">
                     {navItems.map((item) => {
                         const isActive = pathname === item.href
                         const Icon = item.icon
@@ -295,18 +297,17 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`flex flex-col items-center gap-1 px-3 py-1.5 ${isActive ? 'text-purple-600' : 'text-slate-400'
-                                    }`}
+                                className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1 ${isActive ? 'text-purple-600' : 'text-slate-400'}`}
                             >
                                 <div className="relative">
-                                    <Icon className={`h-6 w-6 ${isActive ? 'stroke-[2.5px]' : ''}`} />
+                                    <Icon className={`h-5 w-5 ${isActive ? 'stroke-[2.5px]' : ''}`} />
                                     {item.label === 'Messages' && notifications > 0 && (
-                                        <span className="absolute -right-2 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+                                        <span className="absolute -right-1.5 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
                                             {notifications > 9 ? '9+' : notifications}
                                         </span>
                                     )}
                                 </div>
-                                <span className={`text-[11px] ${isActive ? 'font-semibold' : 'font-medium'}`}>
+                                <span className={`text-[10px] ${isActive ? 'font-semibold' : 'font-medium'}`}>
                                     {item.label.split(' ')[0]}
                                 </span>
                             </Link>

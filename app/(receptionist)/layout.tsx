@@ -321,7 +321,7 @@ export default function ReceptionistLayout({
 
             {/* Mobile Bottom Navigation */}
             <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white pb-safe lg:hidden">
-                <div className="flex items-center justify-around py-2">
+                <div className="flex items-center">
                     {navItems.map((item) => {
                         const isActive = pathname === item.href
                         const Icon = item.icon
@@ -329,8 +329,7 @@ export default function ReceptionistLayout({
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`flex flex-col items-center gap-1 px-3 py-1.5 ${isActive ? 'text-blue-600' : 'text-slate-400'
-                                    }`}
+                                className={`flex-1 flex flex-col items-center justify-center gap-1 py-1.5 ${isActive ? 'text-blue-600' : 'text-slate-400'}`}
                             >
                                 <div className="relative">
                                     <Icon className={`h-6 w-6 ${isActive ? 'stroke-[2.5px]' : ''}`} />

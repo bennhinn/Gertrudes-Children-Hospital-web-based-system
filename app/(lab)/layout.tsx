@@ -257,12 +257,13 @@ export default function LabLayout({ children }: { children: React.ReactNode }) {
                                         <Link
                                             key={item.href}
                                             href={item.href}
+                                            style={isActive ? { color: '#ffffff' } : undefined}
                                             className={`flex items-center gap-3 rounded-xl px-4 py-3.5 text-sm font-medium transition-all ${isActive
                                                 ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg'
                                                 : 'text-slate-600 hover:bg-amber-50'
                                                 }`}
                                         >
-                                            <Icon className="h-5 w-5" />
+                                            <Icon className={`h-5 w-5 ${isActive ? 'text-white' : ''}`} />
                                             <span className="flex-1">{item.label}</span>
                                             {item.label === 'Test Orders' && notifications > 0 && (
                                                 <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${isActive ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-600'
@@ -312,7 +313,7 @@ export default function LabLayout({ children }: { children: React.ReactNode }) {
 
             {/* Mobile Bottom Navigation */}
             <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white pb-safe lg:hidden">
-                <div className="flex items-center justify-around py-2">
+                <div className="flex items-center">
                     {navItems.map((item) => {
                         const isActive = pathname === item.href
                         const Icon = item.icon
@@ -320,8 +321,7 @@ export default function LabLayout({ children }: { children: React.ReactNode }) {
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`flex flex-col items-center gap-1 px-3 py-1.5 ${isActive ? 'text-amber-600' : 'text-slate-400'
-                                    }`}
+                                className={`flex-1 flex flex-col items-center justify-center gap-1 py-1.5 ${isActive ? 'text-amber-600' : 'text-slate-400'}`}
                             >
                                 <div className="relative">
                                     <Icon className={`h-6 w-6 ${isActive ? 'stroke-[2.5px]' : ''}`} />

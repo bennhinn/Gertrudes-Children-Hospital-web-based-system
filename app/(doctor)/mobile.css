@@ -1,0 +1,58 @@
+/* Mobile-specific overrides for Doctor layout (scoped under .doctor-root) */
+
+.doctor-root {
+    -webkit-font-smoothing: antialiased;
+}
+
+@media (max-width: 640px) {
+    .doctor-root {
+        font-size: 15px;
+        line-height: 1.4;
+    }
+
+    /* Make header slightly taller and compact the logo */
+    .doctor-root header.fixed {
+        height: 56px;
+    }
+
+    /* Main content padding for phones: reserve space for header + mobile nav */
+    .doctor-root main {
+        padding-top: 56px !important;
+        padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    .doctor-root .p-4 {
+        padding: 8px !important;
+    }
+
+    .doctor-root .lg\:p-6 {
+        padding: 8px !important;
+    }
+
+    /* Improve card spacing and touch targets */
+    .doctor-root .card,
+    .doctor-root .rounded-xl,
+    .doctor-root .appointment-card {
+        padding: 12px !important;
+        border-radius: 12px !important;
+        margin-bottom: 10px !important;
+    }
+
+    /* Bottom nav sizing */
+    .doctor-root nav.fixed.inset-x-0.bottom-0 {
+        height: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+        padding-bottom: env(safe-area-inset-bottom, 8px) !important;
+        box-shadow: 0 -6px 18px rgba(2, 6, 23, 0.04) !important;
+    }
+
+    .doctor-root nav.fixed.inset-x-0.bottom-0 a {
+        min-height: 56px !important;
+        min-width: 56px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 4px !important;
+        font-size: 12px !important;
+    }
+}

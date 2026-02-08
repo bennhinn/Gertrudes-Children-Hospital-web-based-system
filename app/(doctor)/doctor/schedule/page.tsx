@@ -209,7 +209,7 @@ export default function DoctorSchedulePage() {
     ).length
 
     return (
-        <div className="space-y-6 pb-20 lg:pb-6">
+        <div className="space-y-6 pb-36 lg:pb-6">
             {/* Header */}
             <div className="rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 p-6 text-white shadow-xl">
                 <div className="flex flex-wrap items-center justify-between gap-4">
@@ -355,7 +355,7 @@ export default function DoctorSchedulePage() {
                                         {dayAppts.map((apt) => (
                                             <div
                                                 key={apt.id}
-                                                className="rounded-xl border border-slate-200 bg-white p-4 transition-shadow hover:shadow-md"
+                                                className="rounded-xl border border-slate-200 bg-white p-4 transition-shadow hover:shadow-md overflow-hidden"
                                             >
                                                 <div className="flex items-start justify-between gap-4">
                                                     <div className="flex items-start gap-4">
@@ -371,7 +371,7 @@ export default function DoctorSchedulePage() {
                                                         </div>
 
                                                         {/* Info */}
-                                                        <div className="flex-1">
+                                                        <div className="flex-1 min-w-0">
                                                             <div className="flex items-center gap-2">
                                                                 <User className="h-4 w-4 text-slate-400" />
                                                                 <h4 className="font-semibold text-slate-900">{apt.child_name}</h4>
@@ -438,6 +438,9 @@ export default function DoctorSchedulePage() {
                     )}
                 </CardContent>
             </Card>
+            {/* mobile spacer to clear fixed bottom nav */}
+            <div className="h-20 lg:hidden" />
+
         </div>
     )
 }
