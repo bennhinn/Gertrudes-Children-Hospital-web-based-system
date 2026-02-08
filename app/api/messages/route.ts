@@ -174,6 +174,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST - Create a new conversation
+// POST - Create a new conversation
 export async function POST(request: NextRequest) {
     try {
         const supabase = await createClient()
@@ -234,15 +235,15 @@ export async function POST(request: NextRequest) {
                 doctor: 'doctor',
                 pharmacist: 'pharmacy',
                 lab_tech: 'lab',
-                receptionist: 'reception',
-                admin: 'admin',
+                receptionist: 'receptionist',
+                admin: 'receptionist',
             }
-            const currentStaffType = staffTypeMap[profile?.role || ''] || 'staff'
+            const currentStaffType = staffTypeMap[profile?.role || ''] || 'receptionist'  // ✅ ADDED THIS LINE
 
             conversationData = {
                 ...conversationData,
                 staff_id: user.id,
-                staff_type: currentStaffType,
+                staff_type: currentStaffType,  // ✅ Now defined
                 staff_id_2: staffId2,
                 staff_type_2: staffType2,
                 caregiver_id: null,
@@ -270,8 +271,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: convError.message }, { status: 500 })
         }
 
-        // Determine sender type
-        const senderType = isCaregiver ? 'caregiver' : (profile?.role || 'staff')
+        // Determine sender type - ALWAYS 'caregiver' or 'staff'
+        const senderType = isCaregiver ? 'caregiver' : 'staff'  // ✅ FIXED THIS LINE
 
         // Create the initial message
         const { data: message, error: msgError } = await supabase

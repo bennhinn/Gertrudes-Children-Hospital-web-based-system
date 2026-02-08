@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { AppointmentDetailsModal, AdmitPatientModal } from './_components/appointment-modals'
 
 interface Appointment {
     id: string
@@ -32,6 +33,11 @@ export default function AppointmentsPage() {
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
     const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'all'>('today')
+    
+    // Modal states
+    const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
+    const [showDetailsModal, setShowDetailsModal] = useState(false)
+    const [showAdmitModal, setShowAdmitModal] = useState(false)
 
     const loadAppointments = useCallback(async () => {
         setLoading(true)
@@ -77,6 +83,33 @@ export default function AppointmentsPage() {
     useEffect(() => {
         loadAppointments()
     }, [loadAppointments])
+
+    // Modal handlers
+    const handleViewDetails = (appointment: Appointment) => {
+        setSelectedAppointment(appointment)
+        setShowDetailsModal(true)
+    }
+
+    const handleAdmitFromDetails = () => {
+        setShowDetailsModal(false)
+        setShowAdmitModal(true)
+    }
+
+    const handleDirectAdmit = (appointment: Appointment) => {
+        setSelectedAppointment(appointment)
+        setShowAdmitModal(true)
+    }
+
+    const handleAdmitSuccess = () => {
+        loadAppointments() // Refresh the list
+        setSelectedAppointment(null)
+    }
+
+    const handleCloseModals = () => {
+        setShowDetailsModal(false)
+        setShowAdmitModal(false)
+        setSelectedAppointment(null)
+    }
 
     function formatDateTime(dateString: string) {
         const date = new Date(dateString)
@@ -140,28 +173,31 @@ export default function AppointmentsPage() {
             <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 lg:mx-0 lg:px-0 lg:overflow-visible">
                 <button
                     onClick={() => setDateFilter('today')}
-                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${dateFilter === 'today'
+                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                        dateFilter === 'today'
                             ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
+                    }`}
                 >
                     Today
                 </button>
                 <button
                     onClick={() => setDateFilter('week')}
-                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${dateFilter === 'week'
+                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                        dateFilter === 'week'
                             ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
+                    }`}
                 >
                     This Week
                 </button>
                 <button
                     onClick={() => setDateFilter('all')}
-                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${dateFilter === 'all'
+                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                        dateFilter === 'all'
                             ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
+                    }`}
                 >
                     All
                 </button>
@@ -214,11 +250,20 @@ export default function AppointmentsPage() {
                                             {/* Mobile Action Buttons */}
                                             <div className="flex gap-2 mt-3 lg:hidden">
                                                 {(apt.status === 'pending' || apt.status === 'confirmed') && (
-                                                    <Link href="/receptionist/check-in" className="flex-1">
-                                                        <Button size="sm" className="w-full h-9 text-xs">Check In</Button>
-                                                    </Link>
+                                                    <Button 
+                                                        size="sm" 
+                                                        className="flex-1 h-9 text-xs"
+                                                        onClick={() => handleDirectAdmit(apt)}
+                                                    >
+                                                        Admit
+                                                    </Button>
                                                 )}
-                                                <Button size="sm" variant="secondary" className="flex-1 h-9 text-xs">
+                                                <Button 
+                                                    size="sm" 
+                                                    variant="secondary" 
+                                                    className="flex-1 h-9 text-xs"
+                                                    onClick={() => handleViewDetails(apt)}
+                                                >
                                                     View
                                                 </Button>
                                             </div>
@@ -227,11 +272,18 @@ export default function AppointmentsPage() {
                                         {/* Desktop Action Buttons */}
                                         <div className="hidden lg:flex gap-2 shrink-0">
                                             {(apt.status === 'pending' || apt.status === 'confirmed') && (
-                                                <Link href="/receptionist/check-in">
-                                                    <Button size="sm">Check In</Button>
-                                                </Link>
+                                                <Button 
+                                                    size="sm"
+                                                    onClick={() => handleDirectAdmit(apt)}
+                                                >
+                                                    Admit Patient
+                                                </Button>
                                             )}
-                                            <Button size="sm" variant="secondary">
+                                            <Button 
+                                                size="sm" 
+                                                variant="secondary"
+                                                onClick={() => handleViewDetails(apt)}
+                                            >
                                                 View Details
                                             </Button>
                                         </div>
@@ -242,6 +294,21 @@ export default function AppointmentsPage() {
                     })}
                 </div>
             )}
+
+            {/* Modals */}
+            <AppointmentDetailsModal
+                appointment={selectedAppointment}
+                open={showDetailsModal}
+                onClose={handleCloseModals}
+                onAdmit={handleAdmitFromDetails}
+            />
+
+            <AdmitPatientModal
+                appointment={selectedAppointment}
+                open={showAdmitModal}
+                onClose={handleCloseModals}
+                onSuccess={handleAdmitSuccess}
+            />
         </div>
     )
 }

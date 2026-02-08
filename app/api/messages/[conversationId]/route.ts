@@ -17,19 +17,25 @@ export async function GET(
         const { conversationId } = await params
 
         // Verify user has access to this conversation
-        const { data: conversation, error: convError } = await supabase
-            .from('chat_conversations')
-            .select('*')
-            .eq('id', conversationId)
-            .single()
+      // Verify user has access to this conversation
+const { data: conversation, error: convError } = await supabase
+    .from('chat_conversations')
+    .select('*')
+    .eq('id', conversationId)
+    .single()
 
-        if (convError || !conversation) {
-            return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
-        }
+if (convError || !conversation) {
+    return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
+}
 
-        if (conversation.caregiver_id !== user.id && conversation.staff_id !== user.id) {
-            return NextResponse.json({ error: 'Access denied' }, { status: 403 })
-        }
+// Check if user is part of this conversation
+const hasAccess = conversation.caregiver_id === user.id || 
+                  conversation.staff_id === user.id || 
+                  conversation.staff_id_2 === user.id  // ✅ Added this check
+
+if (!hasAccess) {
+    return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+}
 
         // Fetch messages
         const { data: messages, error: msgError } = await supabase

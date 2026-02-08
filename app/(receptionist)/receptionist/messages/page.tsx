@@ -163,7 +163,7 @@ export default function StaffMessagesPage() {
                 doctor: 'doctor',
                 pharmacist: 'pharmacy',
                 lab_tech: 'lab',
-                receptionist: 'reception',
+                receptionist: 'receptionist',
             }
 
             const response = await fetch('/api/messages', {
