@@ -48,15 +48,15 @@ export async function PATCH(
         // If role is doctor, update or create doctor record
         if (newRole === 'doctor' || (specialization !== undefined || license_number !== undefined)) {
             const doctorUpdateData: any = {};
-            if (specialization !== undefined) doctorUpdateData.specialization = specialization;
+            if (specialization !== undefined) doctorUpdateData.specialty = specialization;
             if (license_number !== undefined) doctorUpdateData.license_number = license_number;
 
             if (Object.keys(doctorUpdateData).length > 0) {
-                // Check if doctor record exists
+                // Check if doctor record exists (doctors.id stores the user id)
                 const { data: existingDoctor } = await supabase
                     .from('doctors')
-                    .select('user_id')
-                    .eq('user_id', params.id)
+                    .select('id')
+                    .eq('id', params.id)
                     .single();
 
                 if (existingDoctor) {
@@ -64,17 +64,17 @@ export async function PATCH(
                     const { error: doctorUpdateError } = await supabase
                         .from('doctors')
                         .update(doctorUpdateData)
-                        .eq('user_id', params.id);
+                        .eq('id', params.id);
 
                     if (doctorUpdateError) {
                         console.error('Error updating doctor record:', doctorUpdateError);
                     }
                 } else {
-                    // Create new doctor record
+                    // Create new doctor record (use id = user id)
                     const { error: doctorInsertError } = await supabase
                         .from('doctors')
                         .insert({
-                            user_id: params.id,
+                            id: params.id,
                             ...doctorUpdateData
                         });
 
@@ -116,12 +116,12 @@ export async function PATCH(
         if (updatedProfile?.role === 'doctor') {
             const { data: doctor } = await supabase
                 .from('doctors')
-                .select('specialization, license_number')
-                .eq('user_id', params.id)
+                .select('specialty, license_number')
+                .eq('id', params.id)
                 .single();
 
             if (doctor) {
-                staffMember.specialization = doctor.specialization;
+                staffMember.specialization = doctor.specialty;
                 staffMember.license_number = doctor.license_number;
             }
         }

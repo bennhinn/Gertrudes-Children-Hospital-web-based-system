@@ -72,122 +72,17 @@ interface Prescription {
   reminderEnabled: boolean
 }
 
-// Mock data
-const mockLabResults: LabResult[] = [
-  {
-    id: '1',
-    testName: 'Complete Blood Count (CBC)',
-    testCode: 'CBC-001',
-    category: 'Hematology',
-    orderedBy: 'Dr. Sarah Johnson',
-    orderedDate: '2026-01-15',
-    resultDate: '2026-01-16',
-    status: 'completed',
-    isAbnormal: true,
-    childName: 'Mary Wanjiku',
-    childId: '1',
-    measurements: [
-      { name: 'White Blood Cells', value: '8.5', unit: 'cells/μL', referenceRange: '4.5-11.0', isAbnormal: false },
-      { name: 'Hemoglobin', value: '10.2', unit: 'g/dL', referenceRange: '11.5-15.5', isAbnormal: true, flag: 'low' },
-      { name: 'Platelets', value: '250', unit: 'K/μL', referenceRange: '150-400', isAbnormal: false },
-    ],
-    interpretation: 'Mild anemia detected. Recommend iron supplementation and follow-up in 2 weeks.',
-  },
-  {
-    id: '2',
-    testName: 'Urinalysis',
-    testCode: 'UA-001',
-    category: 'Chemistry',
-    orderedBy: 'Dr. Michael Chen',
-    orderedDate: '2026-01-10',
-    resultDate: '2026-01-10',
-    status: 'completed',
-    isAbnormal: false,
-    childName: 'Mary Wanjiku',
-    childId: '1',
-    measurements: [
-      { name: 'pH', value: '6.0', unit: '', referenceRange: '4.5-8.0', isAbnormal: false },
-      { name: 'Specific Gravity', value: '1.020', unit: '', referenceRange: '1.005-1.030', isAbnormal: false },
-    ],
-  },
-  {
-    id: '3',
-    testName: 'Blood Glucose',
-    testCode: 'BG-001',
-    category: 'Chemistry',
-    orderedBy: 'Dr. Sarah Johnson',
-    orderedDate: '2026-01-20',
-    resultDate: '',
-    status: 'pending',
-    isAbnormal: false,
-    childName: 'John Kamau',
-    childId: '2',
-  },
-]
-
-const mockPrescriptions: Prescription[] = [
-  {
-    id: '1',
-    medicationName: 'Amoxicillin',
-    genericName: 'Amoxicillin',
-    dosage: '250mg',
-    form: 'Capsule',
-    frequency: 'Twice daily',
-    prescribedBy: 'Dr. Sarah Johnson',
-    prescribedDate: '2026-01-20',
-    startDate: '2026-01-20',
-    endDate: '2026-01-30',
-    status: 'active',
-    refillsRemaining: 1,
-    daysLeft: 5,
-    instructions: 'Take with food. Complete full course.',
-    childName: 'Mary Wanjiku',
-    childId: '1',
-    reminderEnabled: true,
-  },
-  {
-    id: '2',
-    medicationName: 'Vitamin D3',
-    genericName: 'Cholecalciferol',
-    dosage: '400 IU',
-    form: 'Drops',
-    frequency: 'Once daily',
-    prescribedBy: 'Dr. Michael Chen',
-    prescribedDate: '2026-01-15',
-    startDate: '2026-01-15',
-    status: 'active',
-    refillsRemaining: 3,
-    daysLeft: 25,
-    instructions: 'Take in the morning.',
-    childName: 'Mary Wanjiku',
-    childId: '1',
-    reminderEnabled: false,
-  },
-  {
-    id: '3',
-    medicationName: 'Ibuprofen',
-    genericName: 'Ibuprofen',
-    dosage: '100mg',
-    form: 'Suspension',
-    frequency: 'As needed',
-    prescribedBy: 'Dr. Sarah Johnson',
-    prescribedDate: '2026-01-10',
-    startDate: '2026-01-10',
-    endDate: '2026-01-15',
-    status: 'completed',
-    refillsRemaining: 0,
-    instructions: 'For fever above 38°C.',
-    childName: 'John Kamau',
-    childId: '2',
-    reminderEnabled: false,
-  },
-]
+interface Child {
+  id: string
+  full_name: string
+}
 
 export default function HealthRecordsPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'lab' | 'prescriptions'>('lab')
   const [labResults, setLabResults] = useState<LabResult[]>([])
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([])
+  const [children, setChildren] = useState<Child[]>([])
   const [selectedLabResult, setSelectedLabResult] = useState<LabResult | null>(null)
   const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -209,6 +104,7 @@ export default function HealthRecordsPage() {
       }
 
       const data = await response.json()
+      setChildren(data.children || [])
       setLabResults(data.labResults || [])
       setPrescriptions(data.prescriptions || [])
     } catch (err) {
@@ -254,7 +150,7 @@ export default function HealthRecordsPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 pb-20 lg:pb-6">
         <div className="h-8 w-40 bg-slate-200 rounded-lg animate-pulse" />
         <div className="grid gap-4">
           {[...Array(4)].map((_, i) => (
@@ -268,7 +164,7 @@ export default function HealthRecordsPage() {
   // Error state
   if (error) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 pb-20 lg:pb-6">
         <h1 className="text-2xl font-bold text-slate-900">Health Records</h1>
         <Card className="border-red-200 bg-red-50">
           <CardContent className="p-6 text-center">
@@ -290,7 +186,7 @@ export default function HealthRecordsPage() {
   // Lab Result Detail View
   if (selectedLabResult) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 pb-20 lg:pb-6">
         <button
           onClick={() => setSelectedLabResult(null)}
           className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors"
@@ -396,7 +292,7 @@ export default function HealthRecordsPage() {
   // Prescription Detail View
   if (selectedPrescription) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 pb-20 lg:pb-6">
         <button
           onClick={() => setSelectedPrescription(null)}
           className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors"
@@ -516,7 +412,7 @@ export default function HealthRecordsPage() {
 
   // Main View
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20 lg:pb-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -545,7 +441,7 @@ export default function HealthRecordsPage() {
         >
           <TestTube className="h-4 w-4" />
           Lab Results
-          {labResults.filter(r => !r.status.includes('completed')).length > 0 && (
+          {labResults.filter(r => r.status !== 'completed').length > 0 && (
             <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center">
               {labResults.filter(r => r.status !== 'completed').length}
             </span>
@@ -586,8 +482,11 @@ export default function HealthRecordsPage() {
           className="px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all bg-white"
         >
           <option value="all">All Children</option>
-          <option value="1">Mary Wanjiku</option>
-          <option value="2">John Kamau</option>
+          {children.map(child => (
+            <option key={child.id} value={child.id}>
+              {child.full_name}
+            </option>
+          ))}
         </select>
       </div>
 

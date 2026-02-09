@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import {
     MessageSquare,
@@ -59,6 +61,23 @@ interface StaffMember {
     role: string
 }
 
+interface LabResultPreview {
+    id: string
+    test_name: string
+    test_type: string
+    completed_at: string
+    abnormal_findings: string | null
+    child: {
+        full_name: string
+    }
+    results?: string | null
+    result_notes?: string | null
+    clinical_notes?: string | null
+    special_instructions?: string | null
+    reviewed_at?: string | null
+}
+
+
 const STAFF_TYPE_MAP: Record<string, { label: string; icon: React.ComponentType<any>; color: string }> = {
     doctor: { label: 'Doctor', icon: Stethoscope, color: 'from-blue-500 to-cyan-500' },
     pharmacy: { label: 'Pharmacy', icon: Pill, color: 'from-purple-500 to-pink-500' },
@@ -68,7 +87,12 @@ const STAFF_TYPE_MAP: Record<string, { label: string; icon: React.ComponentType<
 
 export default function StaffMessagesPage() {
     const supabase = createClient()
+    const searchParams = useSearchParams()
     const messagesEndRef = useRef<HTMLDivElement>(null)
+
+    // Lab result sharing params
+    const labOrderId = searchParams.get('labOrderId')
+    const testName = searchParams.get('testName')
 
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -82,6 +106,10 @@ export default function StaffMessagesPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'caregivers' | 'staff'>('all')
 
+    // Lab result preview state
+    const [labResult, setLabResult] = useState<LabResultPreview | null>(null)
+    const [loadingLabResult, setLoadingLabResult] = useState(false)
+
     // New Message Modal State
     const [showNewMessage, setShowNewMessage] = useState(false)
     const [staffMembers, setStaffMembers] = useState<StaffMember[]>([])
@@ -90,6 +118,53 @@ export default function StaffMessagesPage() {
     const [newConversationMessage, setNewConversationMessage] = useState('')
     const [newConversationSubject, setNewConversationSubject] = useState('')
     const [creatingConversation, setCreatingConversation] = useState(false)
+
+    // Fetch lab result if sharing
+    useEffect(() => {
+        if (!labOrderId) return
+
+        async function fetchLabResult() {
+            setLoadingLabResult(true)
+            try {
+                const { data, error } = await supabase
+                    .from('lab_orders')
+                    .select(`
+                        id,
+                        test_name,
+                        test_type,
+                        completed_at,
+                        results,
+                        result_notes,
+                        clinical_notes,
+                        special_instructions,
+                        abnormal_findings,
+                        reviewed_at,
+                        child:children(full_name)
+                    `)
+                    .eq('id', labOrderId)
+                    .single()
+
+                if (error) throw error
+                // Fix: Convert child array to single object as expected by LabResultPreview
+                const labResult: LabResultPreview = {
+                    ...data,
+                    child: Array.isArray(data.child) && data.child.length > 0 ? data.child[0] : { full_name: '' }
+                }
+                setLabResult(labResult)
+
+                // Pre-fill message with full lab result details (no link)
+                const message = `Lab Result: ${labResult.test_name || labResult.test_type}\nPatient: ${labResult.child?.full_name}\nCompleted: ${labResult.completed_at ? new Date(labResult.completed_at).toLocaleString() : 'N/A'}\n\nResults:\n${labResult.results || 'N/A'}\n\nLab Notes:\n${labResult.result_notes || 'N/A'}\n\nClinical Notes:\n${labResult.clinical_notes || 'N/A'}\n\nSpecial Instructions:\n${labResult.special_instructions || 'N/A'}\n\nAbnormal Findings:\n${labResult.abnormal_findings || 'None'}\n\nReviewed At: ${labResult.reviewed_at ? new Date(labResult.reviewed_at).toLocaleString() : 'N/A'}`
+                setNewConversationMessage(message)
+                setNewConversationSubject(`Lab Result: ${labResult.test_name || labResult.test_type}`)
+            } catch (err) {
+                console.error('Error fetching lab result:', err)
+            } finally {
+                setLoadingLabResult(false)
+            }
+        }
+
+        fetchLabResult()
+    }, [labOrderId, supabase])
 
     // Fetch current user
     useEffect(() => {
@@ -129,13 +204,18 @@ export default function StaffMessagesPage() {
     const fetchStaffMembers = useCallback(async () => {
         try {
             setLoadingStaff(true)
-            const { data, error } = await supabase
+            let q: any = supabase
                 .from('profiles')
                 .select('id, full_name, role')
                 .in('role', ['doctor', 'pharmacist', 'lab_tech', 'receptionist'])
-                .neq('id', currentUserId || '')
-                .order('role')
-                .order('full_name')
+
+            if (currentUserId) {
+                q = q.neq('id', currentUserId)
+            }
+
+            q = q.order('role').order('full_name')
+
+            const { data, error } = await q
 
             if (error) throw error
             setStaffMembers(data || [])
@@ -152,13 +232,19 @@ export default function StaffMessagesPage() {
         fetchStaffMembers()
     }
 
+    // Auto-open modal if sharing lab result
+    useEffect(() => {
+        if (labOrderId && !showNewMessage && !selectedConversation) {
+            handleOpenNewMessage()
+        }
+    }, [labOrderId])
+
     // Create new staff-to-staff conversation
     const handleCreateStaffConversation = async () => {
         if (!selectedRecipient || !newConversationMessage.trim()) return
 
         setCreatingConversation(true)
         try {
-            // Map role to staff type
             const roleToType: Record<string, string> = {
                 doctor: 'doctor',
                 pharmacist: 'pharmacy',
@@ -194,7 +280,6 @@ export default function StaffMessagesPage() {
             // Refresh conversations and open the new one
             await fetchConversations()
 
-            // Select the new conversation
             const newConv: Conversation = {
                 id: data.conversation.id,
                 otherStaffId: selectedRecipient.id,
@@ -229,7 +314,6 @@ export default function StaffMessagesPage() {
     useEffect(() => {
         if (!currentUserId) return
 
-        // Subscribe to conversations where user is staff_id
         const channel1 = supabase
             .channel('staff-chat-conversations-1')
             .on(
@@ -246,7 +330,6 @@ export default function StaffMessagesPage() {
             )
             .subscribe()
 
-        // Subscribe to conversations where user is staff_id_2
         const channel2 = supabase
             .channel('staff-chat-conversations-2')
             .on(
@@ -397,6 +480,28 @@ export default function StaffMessagesPage() {
         return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
     }
 
+    function renderMessageContent(text: string) {
+        if (!text) return null
+        const urlRegex = /(https?:\/\/[^\s]+)/g
+        const parts = text.split(urlRegex)
+        return parts.map((part, idx) => {
+            if (part.startsWith('http://') || part.startsWith('https://')) {
+                return (
+                    <a
+                        key={idx}
+                        href={part}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline text-blue-600"
+                    >
+                        {part}
+                    </a>
+                )
+            }
+            return <span key={idx}>{part}</span>
+        })
+    }
+
     const filteredConversations = conversations.filter(conv => {
         if (activeFilter === 'unread' && conv.unreadCount === 0) return false
         if (activeFilter === 'caregivers' && conv.conversationType !== 'caregiver_staff') return false
@@ -413,14 +518,12 @@ export default function StaffMessagesPage() {
         return true
     })
 
-    // Get conversation display name
     const getConversationName = (conv: Conversation) => {
         return conv.conversationType === 'staff_staff'
             ? conv.otherStaffName || 'Staff Member'
             : conv.caregiverName || 'Caregiver'
     }
 
-    // Get conversation icon/color based on type
     const getConversationStyle = (conv: Conversation) => {
         if (conv.conversationType === 'staff_staff' && conv.otherStaffType) {
             const staffInfo = STAFF_TYPE_MAP[conv.otherStaffType]
@@ -438,7 +541,7 @@ export default function StaffMessagesPage() {
     }
 
     // Loading state
-    if (loading) {
+    if (loading && !labOrderId) {
         return (
             <div className="space-y-4">
                 <div className="h-8 w-32 bg-slate-200 rounded-lg animate-pulse" />
@@ -524,7 +627,6 @@ export default function StaffMessagesPage() {
                         </div>
                     ) : (
                         messages.map((message) => {
-                            // In staff-to-staff conversations, determine if this is my message
                             const isMyMessage = message.senderId === currentUserId
 
                             return (
@@ -533,10 +635,10 @@ export default function StaffMessagesPage() {
                                     className={`flex ${isMyMessage ? 'justify-end' : 'justify-start'}`}
                                 >
                                     <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${isMyMessage
-                                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
-                                            : 'bg-slate-100 text-slate-900'
+                                        ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
+                                        : 'bg-slate-100 text-slate-900'
                                         }`}>
-                                        <p className="text-sm leading-relaxed">{message.content}</p>
+                                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderMessageContent(message.content)}</p>
                                         <div className={`flex items-center gap-1 mt-1 ${isMyMessage ? 'justify-end' : 'justify-start'
                                             }`}>
                                             <span className={`text-[10px] ${isMyMessage ? 'text-white/70' : 'text-slate-400'
@@ -606,6 +708,38 @@ export default function StaffMessagesPage() {
                 </Button>
             </div>
 
+            {/* Lab Result Sharing Banner */}
+            {labOrderId && labResult && (
+                <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-cyan-50 p-6">
+                    <div className="flex items-start gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 text-white shadow-lg">
+                            <FlaskConical className="h-6 w-6" />
+                        </div>
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-semibold text-blue-900 text-lg">
+                                    Sharing Lab Result
+                                </h3>
+                                {labResult.abnormal_findings && (
+                                    <Badge className="bg-amber-100 text-amber-700 border-0 font-medium">
+                                        ⚠️ Abnormal
+                                    </Badge>
+                                )}
+                            </div>
+                            <p className="text-blue-800 font-medium">
+                                {labResult.test_name || labResult.test_type}
+                            </p>
+                            <p className="text-sm text-blue-600 mt-1">
+                                Patient: {labResult.child.full_name} • Completed: {new Date(labResult.completed_at).toLocaleDateString()}
+                            </p>
+                            <p className="text-sm text-blue-700 mt-3">
+                                💬 Select a recipient below to share this lab result
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Search */}
             <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
@@ -630,8 +764,8 @@ export default function StaffMessagesPage() {
                         key={filter.key}
                         onClick={() => setActiveFilter(filter.key as typeof activeFilter)}
                         className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${activeFilter === filter.key
-                                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                             }`}
                     >
                         {filter.label}
@@ -721,13 +855,17 @@ export default function StaffMessagesPage() {
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden">
                         {/* Modal Header */}
                         <div className="flex items-center justify-between p-4 border-b border-slate-100">
-                            <h2 className="text-lg font-bold text-slate-900">New Message</h2>
+                            <h2 className="text-lg font-bold text-slate-900">
+                                {labOrderId ? 'Share Lab Result' : 'New Message'}
+                            </h2>
                             <button
                                 onClick={() => {
                                     setShowNewMessage(false)
                                     setSelectedRecipient(null)
-                                    setNewConversationMessage('')
-                                    setNewConversationSubject('')
+                                    if (!labOrderId) {
+                                        setNewConversationMessage('')
+                                        setNewConversationSubject('')
+                                    }
                                 }}
                                 className="h-8 w-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors"
                             >
@@ -737,6 +875,35 @@ export default function StaffMessagesPage() {
 
                         {/* Modal Content */}
                         <div className="p-4 space-y-4 overflow-y-auto max-h-[60vh]">
+                            {/* Lab Result Preview (if sharing) */}
+                            {labOrderId && labResult && (
+                                <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-4 mb-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
+                                            <FlaskConical className="h-5 w-5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="font-semibold text-blue-900 text-sm">
+                                                    {labResult.test_name || labResult.test_type}
+                                                </h3>
+                                                {labResult.abnormal_findings && (
+                                                    <Badge className="bg-amber-100 text-amber-700 border-0 text-xs">
+                                                        ⚠️
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-blue-700">
+                                                Patient: {labResult.child.full_name}
+                                            </p>
+                                            <p className="text-xs text-blue-600">
+                                                {new Date(labResult.completed_at).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Recipient Selection */}
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -773,8 +940,8 @@ export default function StaffMessagesPage() {
                                                                 key={staff.id}
                                                                 onClick={() => setSelectedRecipient(staff)}
                                                                 className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${selectedRecipient?.id === staff.id
-                                                                        ? 'bg-blue-50 border-2 border-blue-500'
-                                                                        : 'bg-slate-50 border-2 border-transparent hover:bg-slate-100'
+                                                                    ? 'bg-blue-50 border-2 border-blue-500'
+                                                                    : 'bg-slate-50 border-2 border-transparent hover:bg-slate-100'
                                                                     }`}
                                                             >
                                                                 <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${roleColors[role] || 'from-slate-500 to-slate-600'} flex items-center justify-center text-white`}>
@@ -799,10 +966,10 @@ export default function StaffMessagesPage() {
                                 )}
                             </div>
 
-                            {/* Subject (Optional) */}
+                            {/* Subject (Optional or Pre-filled) */}
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                                    Subject (Optional)
+                                    Subject {!labOrderId && '(Optional)'}
                                 </label>
                                 <input
                                     type="text"
@@ -822,7 +989,7 @@ export default function StaffMessagesPage() {
                                     value={newConversationMessage}
                                     onChange={(e) => setNewConversationMessage(e.target.value)}
                                     placeholder="Type your message..."
-                                    rows={4}
+                                    rows={labOrderId ? 6 : 4}
                                     className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all resize-none"
                                 />
                             </div>
@@ -834,8 +1001,10 @@ export default function StaffMessagesPage() {
                                 onClick={() => {
                                     setShowNewMessage(false)
                                     setSelectedRecipient(null)
-                                    setNewConversationMessage('')
-                                    setNewConversationSubject('')
+                                    if (!labOrderId) {
+                                        setNewConversationMessage('')
+                                        setNewConversationSubject('')
+                                    }
                                 }}
                                 className="flex-1 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200"
                             >
@@ -854,7 +1023,7 @@ export default function StaffMessagesPage() {
                                 ) : (
                                     <>
                                         <Send className="h-4 w-4 mr-2" />
-                                        Send Message
+                                        {labOrderId ? 'Share Result' : 'Send Message'}
                                     </>
                                 )}
                             </Button>

@@ -48,11 +48,6 @@ interface LabOrderDetails {
             full_name: string
         }
     } | null
-    consultation: {
-        id: string
-        chief_complaint: string
-        diagnosis: string
-    } | null
 }
 
 export default function LabResultDetailsPage() {
@@ -82,11 +77,6 @@ export default function LabResultDetailsPage() {
                         reviewed_by_doctor:doctors!lab_orders_reviewed_by_fkey(
                             id,
                             profiles(full_name)
-                        ),
-                        consultation:consultations(
-                            id,
-                            chief_complaint,
-                            diagnosis
                         )
                     `)
                     .eq('id', params.id)
@@ -195,6 +185,7 @@ export default function LabResultDetailsPage() {
                 <div className="flex items-start gap-4">
                     <Button
                         variant="ghost"
+                        size="sm"
                         onClick={() => router.push('/lab/completed')}
                         className="shrink-0"
                     >
@@ -208,7 +199,12 @@ export default function LabResultDetailsPage() {
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" className="gap-2">
+                    <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        className="gap-2"
+                        onClick={() => router.push(`/lab/messages?labOrderId=${order.id}&testName=${encodeURIComponent(order.test_name || order.test_type)}`)}
+                    >
                         <Share2 className="h-4 w-4" />
                         Share
                     </Button>
@@ -327,27 +323,6 @@ export default function LabResultDetailsPage() {
                         <div className="bg-white rounded-2xl p-6">
                             <h2 className="text-xl font-bold text-slate-900 mb-4">Special Instructions</h2>
                             <p className="text-slate-700 whitespace-pre-wrap">{order.special_instructions}</p>
-                        </div>
-                    )}
-
-                    {/* Consultation Context */}
-                    {order.consultation && (
-                        <div className="bg-white rounded-2xl p-6">
-                            <h2 className="text-xl font-bold text-slate-900 mb-4">Related Consultation</h2>
-                            <div className="space-y-3">
-                                {order.consultation.chief_complaint && (
-                                    <div>
-                                        <h3 className="text-sm font-medium text-slate-700 mb-1">Chief Complaint</h3>
-                                        <p className="text-slate-900">{order.consultation.chief_complaint}</p>
-                                    </div>
-                                )}
-                                {order.consultation.diagnosis && (
-                                    <div>
-                                        <h3 className="text-sm font-medium text-slate-700 mb-1">Diagnosis</h3>
-                                        <p className="text-slate-900">{order.consultation.diagnosis}</p>
-                                    </div>
-                                )}
-                            </div>
                         </div>
                     )}
                 </div>

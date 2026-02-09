@@ -197,7 +197,7 @@ export default function PharmacyLayout({
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <button className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors active:bg-slate-200">
+                        <button className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 text-white transition-all shadow-md">
                             <Bell className="h-5 w-5" />
                             {notifications > 0 && (
                                 <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
@@ -207,7 +207,7 @@ export default function PharmacyLayout({
                         </button>
                         <button
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                            className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors active:bg-slate-200"
+                            className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 text-white transition-all shadow-md"
                         >
                             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                         </button>
@@ -268,8 +268,8 @@ export default function PharmacyLayout({
                                                 : 'text-slate-600 hover:bg-teal-50'
                                                 }`}
                                         >
-                                            <Icon className="h-5 w-5" />
-                                            <span className="flex-1">{item.label}</span>
+                                            <Icon className={`${isActive ? 'h-5 w-5 text-white' : 'h-5 w-5 text-slate-600'}`} />
+                                            <span className={`flex-1 ${isActive ? 'text-white font-bold' : ''}`}>{item.label}</span>
                                             {item.label === 'Prescriptions' && notifications > 0 && (
                                                 <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${isActive ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-600'
                                                     }`}>

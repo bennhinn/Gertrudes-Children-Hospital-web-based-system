@@ -43,6 +43,11 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse
   }
 
+  // Allow shared lab result links (e.g., /lab/results/:id?shared=true) to be publicly accessible
+  if (request.nextUrl.pathname.startsWith('/lab/results') && request.nextUrl.searchParams.has('shared')) {
+    return supabaseResponse
+  }
+
   // Redirect unauthenticated users to login
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()

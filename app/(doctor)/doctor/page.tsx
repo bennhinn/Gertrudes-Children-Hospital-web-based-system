@@ -56,13 +56,6 @@ interface QueuePatient {
         date_of_birth: string
         gender: string
         medical_notes: string | null
-        caregiver?: {
-            id: string
-            profiles: {
-                full_name: string
-                phone: string
-            }
-        }
     } | null
 }
 
@@ -130,24 +123,31 @@ export default function DoctorDashboard() {
             const today = new Date()
             today.setHours(0, 0, 0, 0)
 
-            // Get waiting patients with full details
+            // Get waiting patients with full details - FIXED QUERY
             const { data: waitingPatients, error: queueError } = await supabase
                 .from('check_ins')
                 .select(`
-          *,
-          appointment:appointments(id, child_id, doctor_id),
-          child:children(
-            id, 
-            full_name, 
-            date_of_birth, 
-            gender, 
-            medical_notes,
-            caregiver:caregivers(
-              id,
-              profiles(full_name, phone)
-            )
-          )
-        `)
+                    *,
+                    appointment:appointments(
+                      id,
+                      child:children(
+                        id,
+                        full_name,
+                        date_of_birth,
+                        gender,
+                        medical_notes
+                      ),
+                      child_id,
+                      doctor_id
+                    ),
+                    child:children(
+                        id,
+                        full_name,
+                        date_of_birth,
+                        gender,
+                        medical_notes
+                    )
+                `)
                 .gte('checked_in_at', today.toISOString())
                 .in('status', ['waiting', 'in_consultation'])
                 .order('queue_number', { ascending: true })
@@ -155,6 +155,16 @@ export default function DoctorDashboard() {
             if (queueError) {
                 setError(`Queue error: ${queueError.message}`)
                 console.error('Queue error:', queueError)
+            }
+            
+            console.log('✅ Waiting patients:', waitingPatients?.length, waitingPatients)
+            if (waitingPatients && waitingPatients.length > 0) {
+                try {
+                    console.log('RAW first check-in JSON:', JSON.stringify(waitingPatients[0], null, 2))
+                    console.log('RAW first check-in preview: child=', waitingPatients[0].child, 'appointment.child=', waitingPatients[0].appointment?.child)
+                } catch (e) {
+                    console.log('Could not stringify waitingPatients[0]', e)
+                }
             }
 
             setDebugInfo(prev => prev + ` | Waiting/In consultation: ${waitingPatients?.length || 0}`)
@@ -164,13 +174,24 @@ export default function DoctorDashboard() {
                 !p.appointment?.doctor_id || p.appointment?.doctor_id === doctorData?.id
             )
 
+            console.log('✅ My queue:', myQueue.length, myQueue)
+            if (myQueue && myQueue.length > 0) {
+                try {
+                    console.log('NORMALIZED first queue JSON:', JSON.stringify(myQueue[0], null, 2))
+                    console.log('FIRST queue child full_name:', myQueue[0].child?.full_name)
+                    console.log('FIRST appointment child full_name:', myQueue[0].appointment?.child?.full_name)
+                    console.log('FIRST child_id:', myQueue[0].child_id, 'appointment.child_id:', myQueue[0].appointment?.child_id)
+                } catch (e) {
+                    console.log('Could not stringify myQueue[0]', e)
+                }
+            }
             setDebugInfo(prev => prev + ` | My queue: ${myQueue.length}`)
             setQueue(myQueue)
 
             // Get completed consultations today
             const { data: completedToday, error: consultError } = await supabase
                 .from('consultations')
-                .select('id, completed_at, diagnosis, child:children(full_name)')
+                .select('id, completed_at, diagnosis, child:children!inner(full_name)')
                 .eq('doctor_id', doctorData?.id || '')
                 .gte('completed_at', today.toISOString())
                 .order('completed_at', { ascending: false })
@@ -179,7 +200,7 @@ export default function DoctorDashboard() {
                 console.error('Consultations error:', consultError)
             }
 
-            const mappedConsultations: RecentConsultation[] = (completedToday || []).slice(0, 5).map(c => ({
+            const mappedConsultations: RecentConsultation[] = (completedToday || []).slice(0, 5).map((c: any) => ({
                 id: c.id,
                 completed_at: c.completed_at,
                 diagnosis: c.diagnosis,
@@ -187,7 +208,7 @@ export default function DoctorDashboard() {
             }))
             setRecentConsultations(mappedConsultations)
 
-            // FIX: Get pending lab results (completed tests not yet reviewed)
+            // Get pending lab results (completed tests not yet reviewed)
             const { data: pendingLabs, error: labError } = await supabase
                 .from('lab_orders')
                 .select('id, status, reviewed_at, doctor_id, test_type')
@@ -201,14 +222,13 @@ export default function DoctorDashboard() {
 
             console.log('🔬 Pending lab results for doctor:', doctorData?.id)
             console.log('🔬 Query returned:', pendingLabs?.length || 0, 'pending lab results')
-            console.log('🔬 Pending labs details:', pendingLabs)
 
             // Calculate stats
             setStats({
                 waitingForMe: myQueue.filter(p => p.status === 'waiting').length,
                 completedToday: (completedToday || []).length,
                 avgConsultTime: 15,
-                pendingLabResults: (pendingLabs || []).length, // FIX: Use the actual count
+                pendingLabResults: (pendingLabs || []).length,
             })
         } catch (error: any) {
             console.error('Error loading dashboard data:', error)
@@ -286,7 +306,7 @@ export default function DoctorDashboard() {
 
     if (loading) {
         return (
-            <div className="space-y-6">
+            <div className="space-y-6 pb-20 lg:pb-6">
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     {[1, 2, 3, 4].map((i) => (
                         <Card key={i} className="animate-pulse">
@@ -318,7 +338,6 @@ export default function DoctorDashboard() {
                     />
                 </>
             )}
-
 
             {error && (
                 <Card className="border-red-200 bg-red-50">

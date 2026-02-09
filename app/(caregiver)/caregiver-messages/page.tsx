@@ -437,6 +437,20 @@ export default function MessagesPage() {
         return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
     }
 
+    function renderMessageContent(text: string) {
+        if (!text) return null
+        const urlRegex = /(https?:\/\/[^\s]+)/g
+        const parts = text.split(urlRegex)
+        return parts.map((part, idx) => {
+            if (part.startsWith('http://') || part.startsWith('https://')) {
+                return (
+                    <a key={idx} href={part} target="_blank" rel="noopener noreferrer" className="underline text-blue-600">{part}</a>
+                )
+            }
+            return <span key={idx}>{part}</span>
+        })
+    }
+
     const filteredConversations = conversations.filter(conv => {
         if (activeFilter !== 'all') {
             const filterType = activeFilter === 'doctors' ? 'doctor' : activeFilter
@@ -688,7 +702,7 @@ export default function MessagesPage() {
                                     ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
                                     : 'bg-slate-100 text-slate-900'
                                     }`}>
-                                    <p className="text-sm leading-relaxed">{message.content}</p>
+                                    <p className="text-sm leading-relaxed">{renderMessageContent(message.content)}</p>
                                     <div className={`flex items-center gap-1 mt-1 ${message.senderType === 'caregiver' ? 'justify-end' : 'justify-start'
                                         }`}>
                                         <span className={`text-[10px] ${message.senderType === 'caregiver' ? 'text-white/70' : 'text-slate-400'

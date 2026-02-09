@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
+import { normalizeJoinedChild } from '@/lib/db/normalizeJoin'
 import Link from 'next/link'
 import {
     Search,
@@ -94,10 +95,10 @@ function PatientDetailsModal({
                 <div className="overflow-hidden rounded-t-3xl lg:rounded-3xl bg-white shadow-2xl max-h-[90vh] overflow-y-auto">
                     {/* Header */}
                     <div className={`px-6 py-6 text-white ${checkIn.status === 'waiting'
-                            ? 'bg-gradient-to-br from-amber-500 to-orange-500'
-                            : checkIn.status === 'in_consultation'
-                                ? 'bg-gradient-to-br from-blue-500 to-indigo-600'
-                                : 'bg-gradient-to-br from-green-500 to-emerald-600'
+                        ? 'bg-gradient-to-br from-amber-500 to-orange-500'
+                        : checkIn.status === 'in_consultation'
+                            ? 'bg-gradient-to-br from-blue-500 to-indigo-600'
+                            : 'bg-gradient-to-br from-green-500 to-emerald-600'
                         }`}>
                         <div className="flex items-start justify-between">
                             <div>
@@ -124,10 +125,10 @@ function PatientDetailsModal({
                     <div className="p-6 space-y-6">
                         {/* Status Banner */}
                         <div className={`rounded-xl p-4 flex items-center gap-3 ${checkIn.status === 'waiting'
-                                ? 'bg-amber-50 border border-amber-200'
-                                : checkIn.status === 'in_consultation'
-                                    ? 'bg-blue-50 border border-blue-200'
-                                    : 'bg-green-50 border border-green-200'
+                            ? 'bg-amber-50 border border-amber-200'
+                            : checkIn.status === 'in_consultation'
+                                ? 'bg-blue-50 border border-blue-200'
+                                : 'bg-green-50 border border-green-200'
                             }`}>
                             {checkIn.status === 'waiting' && (
                                 <>
@@ -283,7 +284,8 @@ export default function QueuePage() {
             }
 
             console.log('Loaded check-ins:', data?.length || 0, 'records')
-            setCheckIns(data || [])
+            const normalized = (data || []).map((r: any) => normalizeJoinedChild(r))
+            setCheckIns(normalized)
         } catch (err) {
             console.error('Error loading queue:', err)
             setError(err instanceof Error ? err.message : 'Failed to load queue. Please refresh the page.')
@@ -464,8 +466,8 @@ export default function QueuePage() {
                 <button
                     onClick={() => setFilter(filter === 'waiting' ? 'all' : 'waiting')}
                     className={`rounded-xl p-3 text-left transition-all lg:p-4 ${filter === 'waiting'
-                            ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/25'
-                            : 'bg-amber-50 border border-amber-200'
+                        ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/25'
+                        : 'bg-amber-50 border border-amber-200'
                         }`}
                 >
                     <p className={`text-xs font-medium ${filter === 'waiting' ? 'text-amber-100' : 'text-amber-600'}`}>Waiting</p>
@@ -474,8 +476,8 @@ export default function QueuePage() {
                 <button
                     onClick={() => setFilter(filter === 'in_consultation' ? 'all' : 'in_consultation')}
                     className={`rounded-xl p-3 text-left transition-all lg:p-4 ${filter === 'in_consultation'
-                            ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
-                            : 'bg-blue-50 border border-blue-200'
+                        ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
+                        : 'bg-blue-50 border border-blue-200'
                         }`}
                 >
                     <p className={`text-xs font-medium ${filter === 'in_consultation' ? 'text-blue-100' : 'text-blue-600'}`}>With Doctor</p>
@@ -484,8 +486,8 @@ export default function QueuePage() {
                 <button
                     onClick={() => setFilter(filter === 'completed' ? 'all' : 'completed')}
                     className={`rounded-xl p-3 text-left transition-all lg:p-4 ${filter === 'completed'
-                            ? 'bg-green-500 text-white shadow-lg shadow-green-500/25'
-                            : 'bg-green-50 border border-green-200'
+                        ? 'bg-green-500 text-white shadow-lg shadow-green-500/25'
+                        : 'bg-green-50 border border-green-200'
                         }`}
                 >
                     <p className={`text-xs font-medium ${filter === 'completed' ? 'text-green-100' : 'text-green-600'}`}>Done</p>
@@ -519,8 +521,8 @@ export default function QueuePage() {
                     {filter !== 'all' && (
                         <Badge
                             className={`cursor-pointer ${filter === 'waiting' ? 'bg-amber-100 text-amber-700' :
-                                    filter === 'in_consultation' ? 'bg-blue-100 text-blue-700' :
-                                        'bg-green-100 text-green-700'
+                                filter === 'in_consultation' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-green-100 text-green-700'
                                 }`}
                             onClick={() => setFilter('all')}
                         >
@@ -577,10 +579,10 @@ export default function QueuePage() {
                                 <div className="flex items-center gap-4">
                                     {/* Queue Number */}
                                     <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-xl font-bold lg:h-16 lg:w-16 lg:text-2xl ${checkIn.status === 'waiting'
-                                            ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/30'
-                                            : checkIn.status === 'in_consultation'
-                                                ? 'bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-lg shadow-blue-500/30'
-                                                : 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg shadow-green-500/30'
+                                        ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/30'
+                                        : checkIn.status === 'in_consultation'
+                                            ? 'bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-lg shadow-blue-500/30'
+                                            : 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg shadow-green-500/30'
                                         }`}>
                                         {checkIn.queue_number}
                                     </div>

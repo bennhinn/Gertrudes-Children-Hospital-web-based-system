@@ -54,14 +54,14 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
 
             const { data: doctorData } = await supabase
                 .from('doctors')
-                .select('specialization')
-                .eq('user_id', user.id)
+                .select('specialty')
+                .eq('id', user.id)
                 .single()
 
             setUser({
                 fullName: user.user_metadata?.full_name || 'Doctor',
                 email: user.email || '',
-                specialization: doctorData?.specialization || 'General Practice',
+                specialization: doctorData?.specialty || 'General Practice',
             })
             setLoading(false)
         }

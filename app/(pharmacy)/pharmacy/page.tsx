@@ -262,21 +262,21 @@ export default function PharmacyDashboardPage() {
             </div>
 
             {/* Quick Actions - Horizontal scroll on mobile */}
-            <div className="flex gap-3 overflow-x-auto pb-1 lg:grid lg:grid-cols-3 lg:overflow-visible">
-                <Link href="/pharmacy/prescriptions" className="flex-shrink-0">
-                    <Button className="h-auto flex-col gap-1.5 bg-gradient-to-r from-teal-500 to-cyan-600 px-6 py-3 shadow-md hover:from-teal-600 hover:to-cyan-700 lg:w-full lg:gap-2 lg:py-5">
+            <div className="grid grid-cols-3 gap-3 pb-1 lg:grid lg:grid-cols-3 lg:overflow-visible">
+                <Link href="/pharmacy/prescriptions" className="w-full lg:w-auto">
+                    <Button className="w-full min-h-[56px] h-auto flex-col gap-1.5 bg-gradient-to-r from-teal-500 to-cyan-600 px-6 py-3 shadow-md hover:from-teal-600 hover:to-cyan-700 lg:w-full lg:gap-2 lg:py-5">
                         <ClipboardList className="h-5 w-5 lg:h-6 lg:w-6" />
                         <span className="text-xs font-medium lg:text-sm">Prescriptions</span>
                     </Button>
                 </Link>
-                <Link href="/pharmacy/dispensed" className="flex-shrink-0">
-                    <Button className="h-auto flex-col gap-1.5 bg-gradient-to-r from-emerald-500 to-green-600 px-6 py-3 shadow-md hover:from-emerald-600 hover:to-green-700 lg:w-full lg:gap-2 lg:py-5">
+                <Link href="/pharmacy/dispensed" className="w-full lg:w-auto">
+                    <Button className="w-full min-h-[56px] h-auto flex-col gap-1.5 bg-gradient-to-r from-emerald-500 to-green-600 px-6 py-3 shadow-md hover:from-emerald-600 hover:to-green-700 lg:w-full lg:gap-2 lg:py-5">
                         <History className="h-5 w-5 lg:h-6 lg:w-6" />
                         <span className="text-xs font-medium lg:text-sm">History</span>
                     </Button>
                 </Link>
-                <Link href="/pharmacy/inventory" className="flex-shrink-0">
-                    <Button className="h-auto flex-col gap-1.5 bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-3 shadow-md hover:from-violet-600 hover:to-purple-700 lg:w-full lg:gap-2 lg:py-5">
+                <Link href="/pharmacy/inventory" className="w-full lg:w-auto">
+                    <Button className="w-full min-h-[56px] h-auto flex-col gap-1.5 bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-3 shadow-md hover:from-violet-600 hover:to-purple-700 lg:w-full lg:gap-2 lg:py-5">
                         <Boxes className="h-5 w-5 lg:h-6 lg:w-6" />
                         <span className="text-xs font-medium lg:text-sm">Inventory</span>
                     </Button>
