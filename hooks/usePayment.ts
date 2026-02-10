@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react';
 import type { 
   PaymentMethod,
@@ -25,6 +27,7 @@ interface UsePaymentReturn {
   generateReceipt: (paymentId: string) => Promise<void>;
   requestRefund: (paymentId: string, amount: number, reason: string) => Promise<any>;
   getPaymentHistory: (filters?: any) => Promise<any>;
+  getInvoices: (filters?: any) => Promise<any>; // NEW METHOD
   loading: boolean;
   error: string | null;
 }
@@ -76,7 +79,7 @@ export function usePayment(): UsePaymentReturn {
     setError(null);
 
     try {
-      const response = await fetch('/api/invoices/create', {
+      const response = await fetch('/api/invoices', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -212,12 +215,55 @@ export function usePayment(): UsePaymentReturn {
     }
   };
 
+  /**
+   * Get invoices with filters - NEW METHOD
+   */
+  const getInvoices = async (filters?: {
+    caregiver_id: string;
+    status?: string;
+    from_date?: string;
+    to_date?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<any> => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const params = new URLSearchParams();
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            params.append(key, value.toString());
+          }
+        });
+      }
+
+      const response = await fetch(`/api/invoices?${params.toString()}`);
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch invoices');
+      }
+
+      return data;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch invoices';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     processPayment,
     createInvoice,
     generateReceipt,
     requestRefund,
     getPaymentHistory,
+    getInvoices, // Added
     loading,
     error,
   };
@@ -258,20 +304,38 @@ export function formatPaymentMethod(method: string, details?: any): string {
 /**
  * Get status color for badges
  */
-export function getStatusColor(status: string): string {
-  switch (status) {
-    case 'completed':
-    case 'paid':
-      return 'green';
-    case 'pending':
-    case 'processing':
-      return 'yellow';
-    case 'failed':
-    case 'cancelled':
-      return 'red';
-    case 'refunded':
-      return 'blue';
-    default:
-      return 'gray';
+export function getStatusColor(
+  status?: string
+): "default" | "blue" | "gray" | "green" | "purple" | "red" | "yellow" | "secondary" | "destructive" | "outline" | undefined {
+  if (!status) return 'gray';
+  
+  const normalized = status.toLowerCase().trim();
+  
+  if (normalized.includes('complete') || 
+      normalized.includes('paid') || 
+      normalized.includes('success') ||
+      normalized.includes('approved')) {
+    return 'green';
   }
+  
+  if (normalized.includes('pending') || 
+      normalized.includes('processing') || 
+      normalized.includes('initiated') ||
+      normalized.includes('awaiting')) {
+    return 'yellow';
+  }
+  
+  if (normalized.includes('failed') || 
+      normalized.includes('cancelled') || 
+      normalized.includes('declined') ||
+      normalized.includes('rejected') ||
+      normalized.includes('error')) {
+    return 'red';
+  }
+  
+  if (normalized.includes('refunded')) {
+    return 'blue';
+  }
+  
+  return 'gray';
 }

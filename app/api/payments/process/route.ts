@@ -8,7 +8,7 @@ import { processPayment, PaymentRequest, PaymentResponse } from '@/lib/mock-paym
  */
 export async function POST(request: NextRequest) {
   let paymentId: string | null = null;
-  
+
   try {
     const supabase = await createClient();
 
@@ -50,9 +50,9 @@ export async function POST(request: NextRequest) {
 
     if (invoiceError) {
       console.error('Invoice fetch error:', invoiceError);
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Invoice not found',
-        details: invoiceError.message 
+        details: invoiceError.message
       }, { status: 404 });
     }
 
@@ -68,9 +68,9 @@ export async function POST(request: NextRequest) {
     // Validate payment amount doesn't exceed balance due
     const balanceDue = invoice.balance_due || invoice.total;
     if (body.amount > balanceDue) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Payment amount exceeds balance due',
-        balanceDue 
+        balanceDue
       }, { status: 400 });
     }
 
@@ -92,9 +92,9 @@ export async function POST(request: NextRequest) {
     if (paymentCreateError) {
       console.error('Payment creation error:', paymentCreateError);
       return NextResponse.json(
-        { 
+        {
           error: 'Failed to create payment record',
-          details: paymentCreateError.message 
+          details: paymentCreateError.message
         },
         { status: 500 }
       );
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
       // Map payment gateway status to database-valid status
       // Database only accepts: 'pending', 'paid', 'failed'
       const dbStatus = paymentResponse.success ? 'paid' : 'failed';
-      
+
       // Prepare payment update data
       const paymentUpdateData: Record<string, any> = {
         status: dbStatus,
@@ -146,14 +146,14 @@ export async function POST(request: NextRequest) {
         if (paymentResponse.cardLast4) {
           paymentUpdateData.card_last4 = paymentResponse.cardLast4;
         }
-        
+
         if (paymentResponse.cardBrand) {
           paymentUpdateData.card_brand = paymentResponse.cardBrand;
         }
 
         if (paymentResponse.mpesaTransactionId) {
           paymentUpdateData.mpesa_transaction_id = paymentResponse.mpesaTransactionId;
-          
+
           // Safely get phone number for M-Pesa payments
           if (body.paymentDetails && 'phoneNumber' in body.paymentDetails) {
             paymentUpdateData.mpesa_phone = body.paymentDetails.phoneNumber;
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
 
       if (updateError) {
         console.error('Failed to update payment:', updateError);
-        
+
         // Log payment update failure
         await supabase.from('transaction_logs').insert({
           payment_id: payment.id,
@@ -192,9 +192,9 @@ export async function POST(request: NextRequest) {
         });
 
         return NextResponse.json(
-          { 
+          {
             error: 'Failed to update payment',
-            details: updateError.message 
+            details: updateError.message
           },
           { status: 500 }
         );
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
 
         if (invoiceUpdateError) {
           console.error('Failed to update invoice:', invoiceUpdateError);
-          
+
           // Log invoice update failure
           await supabase.from('transaction_logs').insert({
             payment_id: payment.id,
@@ -287,7 +287,7 @@ export async function POST(request: NextRequest) {
         paymentId: payment.id,
         invoiceId: body.invoiceId,
       });
-      
+
     } catch (processingError) {
       console.error('Payment processing error details:', {
         error: processingError,
@@ -337,7 +337,7 @@ export async function POST(request: NextRequest) {
       stack: error instanceof Error ? error.stack : undefined,
       paymentId,
     });
-    
+
     return NextResponse.json(
       {
         success: false,
