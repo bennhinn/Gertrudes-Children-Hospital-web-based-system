@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Search, X } from 'lucide-react'
+import AppointmentPaymentLauncher from '@/components/appointments/AppointmentPaymentLauncher'
 
 type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled'
 
@@ -41,6 +42,9 @@ export default function AppointmentsPage() {
   const [cancellingId, setCancellingId] = useState<string | null>(null)
   const [qrModalData, setQrModalData] = useState<{ appointmentId: string; qrCode: string; childName: string } | null>(null)
   const [loadingQr, setLoadingQr] = useState<string | null>(null)
+  const BOOKING_FEE = 500 // KES
+  const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null)
+  const [loadingPayInvoice, setLoadingPayInvoice] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | AppointmentStatus>('all')
 
@@ -146,6 +150,47 @@ export default function AppointmentsPage() {
       setShowBookingForm(false)
       await loadData()
 
+      // Create booking fee invoice (Option A)
+      try {
+        const invoiceRes = await fetch('/api/invoices/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            child_id: childId,
+            caregiver_id: caregiverId,
+            items: [
+              {
+                item_type: 'registration',
+                description: 'Booking fee',
+                quantity: 1,
+                unit_price: BOOKING_FEE,
+                tax_percent: 0
+              }
+            ],
+            notes: `Booking fee for appointment ${newAppointment.id}`
+          })
+        })
+
+        const invoiceData = await invoiceRes.json()
+
+        if (!invoiceRes.ok) {
+          console.error('Invoice creation failed', invoiceData)
+        } else if (invoiceData?.invoice) {
+          // Link invoice to visit_id (appointment) if API didn't set it
+          try {
+            const sup = createClient()
+            await sup.from('invoices').update({ visit_id: newAppointment.id }).eq('id', invoiceData.invoice.id)
+          } catch (err) {
+            console.error('Failed to link invoice to visit', err)
+          }
+
+          // Open payment modal for booking fee
+          setSelectedInvoice(invoiceData.invoice)
+        }
+      } catch (err) {
+        console.error('Failed to create booking invoice', err)
+      }
+
       // Automatically show QR code after booking
       if (newAppointment) {
         const response = await fetch(`/api/qr/${newAppointment.id}`)
@@ -207,6 +252,52 @@ export default function AppointmentsPage() {
       alert('Failed to load QR code')
     } finally {
       setLoadingQr(null)
+    }
+  }
+
+  async function handlePayAtAppointment(appointmentId: string) {
+    setLoadingPayInvoice(appointmentId)
+    try {
+      const supabase = createClient()
+
+      // First try to find invoice by visit_id
+      const { data: invoiceByVisit } = await supabase
+        .from('invoices')
+        .select(`*, line_items:invoice_line_items(*)`)
+        .eq('visit_id', appointmentId)
+        .maybeSingle()
+
+      if (invoiceByVisit) {
+        setSelectedInvoice(invoiceByVisit)
+        return
+      }
+
+      // If not found, try to find consultation for appointment and use consultation_id
+      const { data: consultation } = await supabase
+        .from('consultations')
+        .select('id')
+        .eq('appointment_id', appointmentId)
+        .maybeSingle()
+
+      if (consultation?.id) {
+        const { data: invoiceByConsult } = await supabase
+          .from('invoices')
+          .select(`*, line_items:invoice_line_items(*)`)
+          .eq('consultation_id', consultation.id)
+          .maybeSingle()
+
+        if (invoiceByConsult) {
+          setSelectedInvoice(invoiceByConsult)
+          return
+        }
+      }
+
+      alert('No invoice found for this appointment. A clinician or receptionist must create one before payment.')
+    } catch (err: any) {
+      console.error('Failed to load invoice:', err)
+      alert('Failed to fetch invoice for payment')
+    } finally {
+      setLoadingPayInvoice(null)
     }
   }
 
@@ -588,6 +679,18 @@ export default function AppointmentsPage() {
                         </Button>
                       )}
 
+                      {/* Pay at appointment - show if unpaid invoice likely exists */}
+                      {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
+                        <Button
+                          size="sm"
+                          onClick={() => handlePayAtAppointment(appointment.id)}
+                          disabled={loadingPayInvoice === appointment.id}
+                          className="text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                        >
+                          {loadingPayInvoice === appointment.id ? '...' : 'Pay'}
+                        </Button>
+                      )}
+
                       {appointment.status === 'pending' && (
                         <Button
                           size="sm"
@@ -666,6 +769,24 @@ export default function AppointmentsPage() {
                   Tip: Save this image to your phone for easy access
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Appointment Payment Launcher (modal) */}
+      {selectedInvoice && (
+        <div>
+          <div className="fixed inset-0 z-[90] bg-black/40" onClick={() => setSelectedInvoice(null)} />
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="w-full max-w-2xl">
+              <AppointmentPaymentLauncher
+                invoice={selectedInvoice}
+                autoOpen={true}
+                onPaid={async () => {
+                  setSelectedInvoice(null)
+                  await loadData()
+                }}
+              />
             </div>
           </div>
         </div>

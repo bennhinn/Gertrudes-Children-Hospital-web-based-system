@@ -18,6 +18,7 @@ import {
   Ticket,
   ArrowRight
 } from 'lucide-react'
+import InvoicesClient from '@/components/caregiver/InvoicesClient'
 
 function statusVariant(status: string) {
   if (status === 'pending') return 'blue' as const
@@ -62,6 +63,17 @@ export default async function DashboardPage() {
     getUpcomingAppointments(user.id),
     getCompletedAppointmentsCount(user.id),
   ])
+
+  // Fetch invoices for caregiver (server-side)
+  const { data: invoices = [] } = await supabase
+    .from('invoices')
+    .select(`
+      *,
+      line_items:invoice_line_items(*),
+      child:children(*)
+    `)
+    .eq('caregiver_id', user.id)
+    .order('created_at', { ascending: false })
 
   const nextAppointment = getNextAppointment(appointments)
   const upcomingCount = appointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length
@@ -303,6 +315,18 @@ export default async function DashboardPage() {
             ))}
           </div>
         )}
+      </section>
+
+      {/* Payments Section */}
+      <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-900/5 lg:rounded-3xl lg:p-8">
+        <div className="mb-5 flex items-start justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 lg:text-2xl">Billing & Payments</h2>
+            <p className="mt-1 text-xs text-slate-600 lg:text-sm">Manage invoices, pay bills, and download receipts</p>
+          </div>
+        </div>
+
+        <InvoicesClient initialInvoices={invoices || []} caregiverId={user.id} />
       </section>
 
       {/* Tips Section */}
