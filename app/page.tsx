@@ -1,9 +1,31 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import AnimatedNumber from '@/components/animated-number'
 import StatCard from '@/components/stat-card'
 import AnimatedHero from '@/components/hero-animated'
 import WaveDivider from '@/components/wave-divider'
 import MobileMenu from '@/components/mobile-menu'
+import {
+  Hospital,
+  Shield,
+  Calendar,
+  MessageSquare,
+  Stethoscope,
+  FlaskConical,
+  Pill,
+  ClipboardList,
+  UserCheck,
+  Palette,
+  Award,
+  Phone,
+  Mail,
+  MapPin,
+  Clock,
+  ArrowRight,
+  Star,
+  Heart,
+  Sparkles
+} from 'lucide-react'
 
 export default function Home() {
   return (
@@ -13,7 +35,7 @@ export default function Home() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3 sm:py-5">
           <div className="flex items-center gap-2">
             <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-              <span className="text-lg">🏥</span>
+              <Hospital className="h-5 w-5 text-white" />
             </div>
             <span className="hidden sm:inline text-base sm:text-lg font-bold tracking-tight text-white">{"Gertrude's Children Hospital"}</span>
           </div>
@@ -38,9 +60,21 @@ export default function Home() {
       {/* Trust Indicators */}
       <section className="mx-auto max-w-7xl px-6 py-16 bg-[#F8FAFC]">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3 md:items-stretch">
-          <TrustCard icon="🔒" title="Safe & Secure" description="Your family's information is protected with bank-level encryption" />
-          <TrustCard icon="📅" title="Easy Scheduling" description="Book appointments in seconds, get reminders, never miss a visit" />
-          <TrustCard icon="💬" title="Stay Connected" description="Message your care team and access records anytime" />
+          <TrustCard
+            icon={<Shield className="h-7 w-7 text-blue-600" />}
+            title="Safe & Secure"
+            description="Your family's information is protected with bank-level encryption"
+          />
+          <TrustCard
+            icon={<Calendar className="h-7 w-7 text-blue-600" />}
+            title="Easy Scheduling"
+            description="Book appointments in seconds, get reminders, never miss a visit"
+          />
+          <TrustCard
+            icon={<MessageSquare className="h-7 w-7 text-blue-600" />}
+            title="Stay Connected"
+            description="Message your care team and access records anytime"
+          />
         </div>
       </section>
 
@@ -48,7 +82,6 @@ export default function Home() {
       <div className="-mt-2">
         <WaveDivider color="#ffffff" className="h-12 md:h-24" />
       </div>
-
 
       {/* About Section */}
       <section id="about" className="mx-auto max-w-6xl px-6 py-20">
@@ -60,21 +93,34 @@ export default function Home() {
             <p className="mb-6 leading-relaxed text-slate-600">Our mission is to deliver exceptional medical care in a child-friendly environment, ensuring every young patient feels safe, comfortable, and supported throughout their healthcare journey.</p>
             <div className="flex flex-wrap gap-4">
               <div className="flex items-center gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-100"><span className="text-lg">❤️</span></div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-100">
+                  <Heart className="h-5 w-5 text-pink-600" />
+                </div>
                 <span className="text-sm font-medium text-slate-700">Child-Centered Care</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100"><span className="text-lg">🌟</span></div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+                  <Sparkles className="h-5 w-5 text-blue-600" />
+                </div>
                 <span className="text-sm font-medium text-slate-700">Excellence in Medicine</span>
               </div>
             </div>
           </div>
           <div className="relative">
             <div className="overflow-hidden rounded-2xl bg-linear-to-br from-blue-100 to-pink-100 p-8">
-              <div className="aspect-square rounded-xl bg-white/60 backdrop-blur-sm flex items-center justify-center">
-                <div className="text-center">
-                  <span className="text-6xl">👨‍👩‍👧‍👦</span>
-                  <p className="mt-4 text-sm text-slate-600">Families trust us with their most precious ones</p>
+              <div className="aspect-square rounded-xl bg-white/60 backdrop-blur-sm flex items-center justify-center overflow-hidden">
+                <div className="relative w-full h-full">
+                  <Image
+                    src="/images/happy-family.jpg"
+                    alt="Happy family at Gertrude's Children Hospital"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                  />
+                  <div className="absolute inset-0 bg-linear-to-t from-blue-900/20 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
+                    <p className="text-sm font-medium text-white drop-shadow-lg">Families trust us with their most precious ones</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -91,43 +137,47 @@ export default function Home() {
         <WaveDivider color="#F8FAFC" className="h-12 md:h-24" />
       </div>
 
-
-      {/* Locations Section */}
+      {/* Locations Section - Improved Layout */}
       <section id="locations" className="bg-slate-50 px-6 py-20">
         <div className="mx-auto max-w-6xl">
-          {/* Move heading above the grid so both columns align */}
-          <h2 className="mb-4 text-3xl font-bold text-blue-900 md:text-4xl">Visit Gertrude's Children's Hospital today</h2>
-          <p className="mb-8 text-slate-600">Learn more about Gertrude's Children's Hospital locations or choose a specific location near you.</p>
+          <div className="mb-12 text-center">
+            <span className="mb-4 inline-block rounded-full bg-blue-100 px-4 py-1.5 text-sm font-medium text-blue-700">Our Locations</span>
+            <h2 className="mb-4 text-3xl font-bold text-blue-900 md:text-4xl">Visit Gertrude's Children's Hospital Today</h2>
+            <p className="mx-auto max-w-2xl text-slate-600">Choose a location near you and book your appointment with ease.</p>
+          </div>
 
-          <div className="grid gap-8 lg:grid-cols-5 lg:items-stretch">
-            <div className="lg:col-span-3">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <LocationCard image="/images/locations/Muthaiga.jpg" name="Muthaiga" mapUrl="https://maps.google.com/?q=Gertrude's+Children's+Hospital+Muthaiga+Nairobi+Kenya" />
-                <LocationCard image="/images/locations/Lavington.jpg" name="Lavington" mapUrl="https://maps.google.com/?q=Gertrude's+Children's+Hospital+Lavington+Nairobi+Kenya" />
-                <LocationCard image="/images/locations/Karen.jpg" name="Karen" mapUrl="https://maps.google.com/?q=Gertrude's+Children's+Hospital+Karen+Nairobi+Kenya" />
-                <LocationCard image="/images/locations/village-market.jpeg" name="Village Market" mapUrl="https://maps.google.com/?q=Gertrude's+Children's+Hospital+Village+Market+Nairobi+Kenya" />
-                <LocationCard image="/images/locations/Mlolongo.jpg" name="Mlolongo" mapUrl="https://maps.google.com/?q=Gertrude's+Children's+Hospital+Mlolongo+Kenya" />
-                <LocationCard image="/images/locations/Mimosa.jpg" name="Mimosa" mapUrl="https://maps.google.com/?q=Gertrude's+Children's+Hospital+Mimosa+Nairobi+Kenya" />
-              </div>
-            </div>
-
-            <div className="relative hidden lg:block lg:col-span-2">
-              <div className="h-full overflow-hidden rounded-3xl bg-linear-to-br from-teal-400 to-cyan-500">
-                <div
-                  className="relative h-full w-full bg-cover bg-center"
-                  style={{ backgroundImage: "url('/images/locations/featured-child.jpg')" }}
-                >
-                  <div className="flex h-full w-full flex-col justify-end bg-linear-to-t from-black/30 to-transparent p-6">
-                    <Link href="/register" className="inline-flex w-fit items-center justify-center gap-2 rounded-full bg-cyan-400 px-6 py-3 font-semibold text-white shadow-lg transition-all hover:bg-cyan-500 hover:shadow-xl">
-                      <span>Book Appointment</span>
-                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                      </svg>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <LocationCard
+              image="/images/locations/Muthaiga.jpg"
+              name="Muthaiga"
+              mapUrl="https://maps.google.com/?q=Gertrude's+Children's+Hospital+Muthaiga+Nairobi+Kenya"
+              featured={true}
+            />
+            <LocationCard
+              image="/images/locations/Lavington.jpg"
+              name="Lavington"
+              mapUrl="https://maps.google.com/?q=Gertrude's+Children's+Hospital+Lavington+Nairobi+Kenya"
+            />
+            <LocationCard
+              image="/images/locations/Karen.jpg"
+              name="Karen"
+              mapUrl="https://maps.google.com/?q=Gertrude's+Children's+Hospital+Karen+Nairobi+Kenya"
+            />
+            <LocationCard
+              image="/images/locations/village-market.jpeg"
+              name="Village Market"
+              mapUrl="https://maps.google.com/?q=Gertrude's+Children's+Hospital+Village+Market+Nairobi+Kenya"
+            />
+            <LocationCard
+              image="/images/locations/Mlolongo.jpg"
+              name="Mlolongo"
+              mapUrl="https://maps.google.com/?q=Gertrude's+Children's+Hospital+Mlolongo+Kenya"
+            />
+            <LocationCard
+              image="/images/locations/Mimosa.jpg"
+              name="Mimosa"
+              mapUrl="https://maps.google.com/?q=Gertrude's+Children's+Hospital+Mimosa+Nairobi+Kenya"
+            />
           </div>
         </div>
       </section>
@@ -141,10 +191,26 @@ export default function Home() {
             <p className="mx-auto max-w-2xl text-slate-600">From routine check-ups to specialized treatments, we offer a full range of services designed specifically for children's unique healthcare needs.</p>
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <ServiceCard icon="🩺" title="Pediatric Consultation" description="Expert consultations with experienced pediatricians for all child health concerns" />
-            <ServiceCard icon="🔬" title="Laboratory Services" description="State-of-the-art diagnostic testing with child-friendly sample collection" />
-            <ServiceCard icon="💊" title="Pharmacy Services" description="Pediatric-formulated medications and professional pharmaceutical guidance" />
-            <ServiceCard icon="🏥" title="Reception & Admissions" description="Streamlined registration and admission process for stress-free visits" />
+            <ServiceCard
+              icon={<Stethoscope className="h-7 w-7" />}
+              title="Pediatric Consultation"
+              description="Expert consultations with experienced pediatricians for all child health concerns"
+            />
+            <ServiceCard
+              icon={<FlaskConical className="h-7 w-7" />}
+              title="Laboratory Services"
+              description="State-of-the-art diagnostic testing with child-friendly sample collection"
+            />
+            <ServiceCard
+              icon={<Pill className="h-7 w-7" />}
+              title="Pharmacy Services"
+              description="Pediatric-formulated medications and professional pharmaceutical guidance"
+            />
+            <ServiceCard
+              icon={<ClipboardList className="h-7 w-7" />}
+              title="Reception & Admissions"
+              description="Streamlined registration and admission process for stress-free visits"
+            />
           </div>
         </div>
       </section>
@@ -157,9 +223,21 @@ export default function Home() {
             <h2 className="mb-4 text-3xl font-bold text-blue-900 md:text-4xl">Your Child Deserves the Best Care</h2>
           </div>
           <div className="grid gap-8 md:grid-cols-3">
-            <WhyChooseCard icon="👨‍⚕️" title="Experienced Specialists" description="Our team of board-certified pediatricians brings decades of combined experience in child healthcare." />
-            <WhyChooseCard icon="🎨" title="Child-Friendly Facilities" description="Colorful, welcoming spaces designed to make children feel comfortable and reduce anxiety." />
-            <WhyChooseCard icon="🛡️" title="Safe & Reliable Care" description="Rigorous safety protocols and quality standards ensure your child receives the best possible care." />
+            <WhyChooseCard
+              icon={<UserCheck className="h-8 w-8" />}
+              title="Experienced Specialists"
+              description="Our team of board-certified pediatricians brings decades of combined experience in child healthcare."
+            />
+            <WhyChooseCard
+              icon={<Palette className="h-8 w-8" />}
+              title="Child-Friendly Facilities"
+              description="Colorful, welcoming spaces designed to make children feel comfortable and reduce anxiety."
+            />
+            <WhyChooseCard
+              icon={<Award className="h-8 w-8" />}
+              title="Safe & Reliable Care"
+              description="Rigorous safety protocols and quality standards ensure your child receives the best possible care."
+            />
           </div>
         </div>
       </section>
@@ -195,11 +273,36 @@ export default function Home() {
           <div className="relative">
             <div className="absolute left-1/2 top-8 hidden h-0.5 w-3/4 -translate-x-1/2 bg-linear-to-r from-blue-200 via-pink-200 to-blue-200 lg:block"></div>
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
-              <StepCard step={1} icon="📝" title="Register" description="Create your caregiver account in minutes" />
-              <StepCard step={2} icon="📅" title="Book Appointment" description="Choose a convenient date and time" />
-              <StepCard step={3} icon="📱" title="Receive QR Code" description="Get your unique appointment QR code" />
-              <StepCard step={4} icon="🏥" title="Visit Hospital" description="Check in quickly with your QR code" />
-              <StepCard step={5} icon="💝" title="Get Care" description="Your child receives expert attention" />
+              <StepCard
+                step={1}
+                icon={<ClipboardList className="h-6 w-6" />}
+                title="Register"
+                description="Create your caregiver account in minutes"
+              />
+              <StepCard
+                step={2}
+                icon={<Calendar className="h-6 w-6" />}
+                title="Book Appointment"
+                description="Choose a convenient date and time"
+              />
+              <StepCard
+                step={3}
+                icon={<MessageSquare className="h-6 w-6" />}
+                title="Receive QR Code"
+                description="Get your unique appointment QR code"
+              />
+              <StepCard
+                step={4}
+                icon={<Hospital className="h-6 w-6" />}
+                title="Visit Hospital"
+                description="Check in quickly with your QR code"
+              />
+              <StepCard
+                step={5}
+                icon={<Heart className="h-6 w-6" />}
+                title="Get Care"
+                description="Your child receives expert attention"
+              />
             </div>
           </div>
         </div>
@@ -213,9 +316,24 @@ export default function Home() {
             <h2 className="mb-4 text-3xl font-bold text-blue-900 md:text-4xl">What Parents Say About Us</h2>
           </div>
           <div className="grid gap-6 md:grid-cols-3">
-            <TestimonialCard quote="The doctors were incredibly patient with my anxious toddler. We felt so cared for throughout our visit." name="Sarah M." role="Mother of 2" />
-            <TestimonialCard quote="The online booking system saved us so much time. No more long waits! Highly recommend this hospital." name="James K." role="Father of 3" />
-            <TestimonialCard quote="From reception to pharmacy, every staff member was friendly and professional. Best pediatric care in Nairobi!" name="Grace W." role="Mother of 1" />
+            <TestimonialCard
+              quote="The doctors were incredibly patient with my anxious toddler. We felt so cared for throughout our visit."
+              name="Sarah M."
+              role="Mother of 2"
+              rating={5}
+            />
+            <TestimonialCard
+              quote="The online booking system saved us so much time. No more long waits! Highly recommend this hospital."
+              name="James K."
+              role="Father of 3"
+              rating={5}
+            />
+            <TestimonialCard
+              quote="From reception to pharmacy, every staff member was friendly and professional. Best pediatric care in Nairobi!"
+              name="Grace W."
+              role="Mother of 1"
+              rating={5}
+            />
           </div>
         </div>
       </section>
@@ -229,15 +347,33 @@ export default function Home() {
                 <h2 className="mb-4 text-3xl font-bold text-white">Need Help or Have Questions?</h2>
                 <p className="mb-8 text-blue-100">Our support team is here to assist you. Reach out through any of our channels.</p>
                 <div className="space-y-4">
-                  <ContactItem icon="📞" label="Emergency Line" value="+254 700 123 456" />
-                  <ContactItem icon="📧" label="Email Support" value="support@gch.co.ke" />
-                  <ContactItem icon="📍" label="Location" value="Muthaiga, Nairobi, Kenya" />
-                  <ContactItem icon="🕐" label="Working Hours" value="24/7 Emergency Services" />
+                  <ContactItem
+                    icon={<Phone className="h-5 w-5" />}
+                    label="Emergency Line"
+                    value="+254 700 123 456"
+                  />
+                  <ContactItem
+                    icon={<Mail className="h-5 w-5" />}
+                    label="Email Support"
+                    value="support@gch.co.ke"
+                  />
+                  <ContactItem
+                    icon={<MapPin className="h-5 w-5" />}
+                    label="Location"
+                    value="Muthaiga, Nairobi, Kenya"
+                  />
+                  <ContactItem
+                    icon={<Clock className="h-5 w-5" />}
+                    label="Working Hours"
+                    value="24/7 Emergency Services"
+                  />
                 </div>
               </div>
               <div className="flex items-center justify-center bg-blue-500/30 p-8">
                 <div className="text-center">
-                  <div className="mb-4 text-6xl">🏥</div>
+                  <div className="mb-4 flex justify-center">
+                    <Hospital className="h-16 w-16 text-white" />
+                  </div>
                   <p className="text-lg font-semibold text-white">Gertrude's Children Hospital</p>
                   <p className="text-blue-100">Always here for your little ones</p>
                 </div>
@@ -247,23 +383,26 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Gentle CTA */}
+      {/* Enhanced CTA */}
       <section className="mx-auto max-w-2xl px-6 py-16 text-center">
         <div className="rounded-2xl bg-linear-to-r from-blue-50 to-pink-50 p-8 md:p-12">
           <h2 className="mb-4 text-2xl font-bold text-blue-900">New to our hospital?</h2>
           <p className="mb-6 text-slate-600">{"Creating an account takes less than 2 minutes. We'll guide you through every step."}</p>
-          <Link href="/register" className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-700">
+          <Link href="/register" className="group inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-8 py-4 font-semibold text-white transition-all duration-300 hover:bg-blue-700 hover:shadow-lg hover:scale-105">
             {"Get Started — It's Free"}
+            <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>
       </section>
 
       {/* Footer */}
-     {/* Footer - Optimized with Help Page Links */}
       <footer className="border-t border-slate-200 bg-slate-50 px-6 py-12">
         <div className="mx-auto max-w-6xl grid gap-8 md:grid-cols-4">
           <div>
-            <div className="mb-4 flex items-center gap-2 font-bold text-blue-900">🏥 GCH</div>
+            <div className="mb-4 flex items-center gap-2 font-bold text-blue-900">
+              <Hospital className="h-5 w-5" />
+              GCH
+            </div>
             <p className="text-sm text-slate-600">Leading pediatric care in East Africa since 1947.</p>
           </div>
           <div>
@@ -297,69 +436,89 @@ export default function Home() {
     </main>
   )
 }
-function TrustCard({ icon, title, description }: { icon: string; title: string; description: string }) {
+
+function TrustCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
-    <div className="rounded-xl border border-slate-100 bg-white p-8 shadow-sm transition-shadow hover:shadow-md min-h-37.5 flex flex-col">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-blue-50 text-3xl">{icon}</div>
+    <div className="group rounded-xl border border-slate-100 bg-white p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 min-h-37.5 flex flex-col">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-blue-50 transition-transform duration-300 group-hover:scale-110">
+        {icon}
+      </div>
       <h3 className="mb-3 text-lg font-semibold text-blue-900">{title}</h3>
       <p className="mt-auto text-sm leading-relaxed text-slate-600">{description}</p>
     </div>
   )
 }
 
-function ServiceCard({ icon, title, description }: { icon: string; title: string; description: string }) {
+function ServiceCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
-    <div className="group rounded-2xl bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-linear-to-br from-blue-100 to-pink-100 text-3xl transition-transform group-hover:scale-110">{icon}</div>
+    <div className="group rounded-2xl bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-linear-to-br from-blue-100 to-pink-100 text-blue-600 transition-all duration-300 group-hover:scale-110 group-hover:bg-linear-to-br group-hover:from-blue-600 group-hover:to-pink-600 group-hover:text-white">
+        {icon}
+      </div>
       <h3 className="mb-2 font-semibold text-blue-900">{title}</h3>
       <p className="text-sm leading-relaxed text-slate-600">{description}</p>
     </div>
   )
 }
 
-function WhyChooseCard({ icon, title, description }: { icon: string; title: string; description: string }) {
+function WhyChooseCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
-    <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
-      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-linear-to-br from-blue-50 to-pink-50 text-4xl">{icon}</div>
+    <div className="group rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-linear-to-br from-blue-50 to-pink-50 text-blue-600 transition-all duration-300 group-hover:scale-110 group-hover:bg-linear-to-br group-hover:from-blue-600 group-hover:to-pink-600 group-hover:text-white">
+        {icon}
+      </div>
       <h3 className="mb-3 text-xl font-semibold text-blue-900">{title}</h3>
       <p className="text-slate-600">{description}</p>
     </div>
   )
 }
 
-// `StatCard` is provided by the client component at `components/stat-card.tsx`
-
-function StepCard({ step, icon, title, description }: { step: number; icon: string; title: string; description: string }) {
+function StepCard({ step, icon, title, description }: { step: number; icon: React.ReactNode; title: string; description: string }) {
   return (
-    <div className="relative text-center">
-      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-blue-600 text-3xl shadow-lg">{icon}</div>
-      <div className="absolute -top-2 left-1/2 flex h-6 w-6 -translate-x-1/2 items-center justify-center rounded-full bg-pink-400 text-xs font-bold text-white">{step}</div>
+    <div className="relative text-center group">
+      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-blue-600 text-white shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl">
+        {icon}
+      </div>
+      <div className="absolute -top-2 left-1/2 flex h-6 w-6 -translate-x-1/2 items-center justify-center rounded-full bg-pink-400 text-xs font-bold text-white shadow-md">{step}</div>
       <h3 className="mb-2 font-semibold text-blue-900">{title}</h3>
       <p className="text-sm text-slate-600">{description}</p>
     </div>
   )
 }
 
-function TestimonialCard({ quote, name, role }: { quote: string; name: string; role: string }) {
+function TestimonialCard({ quote, name, role, rating }: { quote: string; name: string; role: string; rating: number }) {
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm">
+    <div className="rounded-2xl bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-md">
+      <div className="mb-4 flex items-center gap-1">
+        {[...Array(rating)].map((_, i) => (
+          <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+        ))}
+      </div>
       <div className="mb-4 text-3xl text-pink-300">"</div>
       <p className="mb-6 italic text-slate-600">{quote}</p>
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-blue-100 to-pink-100 text-lg">👤</div>
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-blue-100 to-pink-100">
+          <UserCheck className="h-5 w-5 text-blue-600" />
+        </div>
         <div>
           <p className="font-semibold text-blue-900">{name}</p>
           <p className="text-sm text-slate-500">{role}</p>
         </div>
       </div>
+      <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
+        <Award className="h-3 w-3" />
+        Verified Patient
+      </div>
     </div>
   )
 }
 
-function ContactItem({ icon, label, value }: { icon: string; label: string; value: string }) {
+function ContactItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 text-xl">{icon}</div>
+      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 text-white">
+        {icon}
+      </div>
       <div>
         <p className="text-sm text-blue-200">{label}</p>
         <p className="font-medium text-white">{value}</p>
@@ -368,17 +527,38 @@ function ContactItem({ icon, label, value }: { icon: string; label: string; valu
   )
 }
 
-function LocationCard({ image, name, mapUrl }: { image: string; name: string; mapUrl: string }) {
+function LocationCard({ image, name, mapUrl, featured = false }: { image: string; name: string; mapUrl: string; featured?: boolean }) {
   return (
-    <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="group relative block overflow-hidden rounded-xl">
-      <div className="aspect-4/5 bg-cover bg-center transition-transform duration-300 group-hover:scale-105" style={{ backgroundImage: `url('${image}')` }}>
+    <a
+      href={mapUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`group relative block overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 ${featured ? 'sm:col-span-2 sm:row-span-2' : ''}`}
+    >
+      <div className={`bg-cover bg-center transition-transform duration-500 group-hover:scale-110 ${featured ? 'aspect-[4/3]' : 'aspect-[3/4]'}`} style={{ backgroundImage: `url('${image}')` }}>
       </div>
-      <div className="absolute inset-0 flex items-end p-3 bg-linear-to-b from-transparent via-transparent to-black/20 pointer-events-none">
-        <div className="flex items-center gap-1.5">
-          <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-          </svg>
-          <span className="text-sm font-medium text-white">{name}</span>
+      <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-black/60 transition-all duration-300 group-hover:to-black/70" />
+
+      {/* Location Name */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 transform transition-all duration-300">
+        <div className="flex items-center gap-2 mb-3">
+          <MapPin className="h-5 w-5 text-white" />
+          <span className="text-lg font-semibold text-white">{name}</span>
+        </div>
+
+        {/* Hover CTA */}
+        <div className="transform translate-y-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+          <div className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-4 py-2 text-sm font-semibold text-white shadow-lg">
+            <span>View on Map</span>
+            <ArrowRight className="h-4 w-4" />
+          </div>
+        </div>
+      </div>
+
+      {/* Available Badge (optional - shows on hover) */}
+      <div className="absolute top-4 right-4 opacity-0 transform scale-90 transition-all duration-300 group-hover:opacity-100 group-hover:scale-100">
+        <div className="rounded-full bg-green-500 px-3 py-1 text-xs font-semibold text-white shadow-lg">
+          Available Today
         </div>
       </div>
     </a>
