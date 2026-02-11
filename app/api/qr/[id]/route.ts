@@ -16,7 +16,7 @@ export async function GET(
     const supabase = await createClient()
 
     // Verify appointment exists and get check-in code
-    const { data: appointment, error } = await supabase
+    let { data: appointment, error } = await supabase
       .from('appointments')
       .select('id, status, check_in_code')
       .eq('id', appointmentId)
@@ -26,10 +26,9 @@ export async function GET(
       return NextResponse.json({ error: 'Appointment not found' }, { status: 404 })
     }
 
-    // If no check-in code exists, generate one and save it
+    // If no check-in code exists (older records), generate one and save it
     let checkInCode = appointment.check_in_code
     if (!checkInCode) {
-      // Generate unique code
       let attempts = 0
       while (!checkInCode && attempts < 10) {
         const newCode = generateCheckInCode()
@@ -41,7 +40,6 @@ export async function GET(
 
         if (!existing) {
           checkInCode = newCode
-          // Save the code
           await supabase
             .from('appointments')
             .update({ check_in_code: newCode })
@@ -57,7 +55,7 @@ export async function GET(
     return NextResponse.json({
       qrCode: qrDataURL,
       appointmentId,
-      checkInCode, // Include the short code for display
+      checkInCode, // always included
       status: appointment.status,
     })
   } catch (err: any) {

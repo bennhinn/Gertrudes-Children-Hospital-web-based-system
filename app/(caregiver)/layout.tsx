@@ -13,6 +13,7 @@ import {
   Bell,
   Plus,
   LogOut,
+  Receipt,
   ChevronRight,
   Shield,
   FileText,
@@ -23,6 +24,7 @@ const navItems = [
   { href: '/dashboard', label: 'Home', icon: Home, description: 'Overview & quick actions' },
   { href: '/patients', label: 'Children', icon: Users, description: 'Manage profiles' },
   { href: '/caregiver-appointments', label: 'Appointments', icon: Calendar, description: 'Schedule & view' },
+  { href: '/billing', label: 'Billing', icon: Receipt },
   { href: '/caregiver-messages', label: 'Messages', icon: MessageSquare, description: 'Chat with staff' },
   { href: '/caregiver-settings', label: 'Settings', icon: Settings, description: 'Preferences' },
 ]

@@ -6,8 +6,27 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Search, X, CalendarPlus, Calendar, User, Clock, FileText, Download, ArrowLeft, AlertCircle, Stethoscope, CheckCircle, XCircle, ClockIcon } from 'lucide-react'
+import {
+  Search,
+  X,
+  CalendarPlus,
+  Calendar,
+  User,
+  Clock,
+  FileText,
+  Download,
+  ArrowLeft,
+  AlertCircle,
+  Stethoscope,
+  CheckCircle,
+  XCircle,
+  ClockIcon,
+} from 'lucide-react'
 import AppointmentPaymentLauncher from '@/components/appointments/AppointmentPaymentLauncher'
+import { generateCheckInCode, isValidCheckInCode } from '@/utils/qr' // <-- import generators
+
+// ----- Optional email sending function (if using Resend) -----
+// import { sendAppointmentConfirmation } from '@/lib/email'
 
 type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled'
 
@@ -40,7 +59,15 @@ export default function AppointmentsPage() {
   const [caregiverId, setCaregiverId] = useState<string | null>(null)
   const [showBookingForm, setShowBookingForm] = useState(false)
   const [cancellingId, setCancellingId] = useState<string | null>(null)
-  const [qrModalData, setQrModalData] = useState<{ appointmentId: string; qrCode: string; childName: string } | null>(null)
+
+  // ----- QR Modal state now includes checkInCode -----
+  const [qrModalData, setQrModalData] = useState<{
+    appointmentId: string
+    qrCode: string
+    childName: string
+    checkInCode: string
+  } | null>(null)
+
   const [loadingQr, setLoadingQr] = useState<string | null>(null)
   const BOOKING_FEE = 500 // KES
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null)
@@ -55,10 +82,9 @@ export default function AppointmentsPage() {
   // Auto-open QR modal when navigating from dashboard
   useEffect(() => {
     if (viewQRId && appointments.length > 0) {
-      const appointment = appointments.find(apt => apt.id === viewQRId)
+      const appointment = appointments.find((apt) => apt.id === viewQRId)
       if (appointment && (appointment.status === 'pending' || appointment.status === 'confirmed')) {
         handleViewQR(appointment)
-        // Clear the URL parameter after opening
         router.replace('/caregiver-appointments', { scroll: false })
       }
     }
@@ -66,7 +92,9 @@ export default function AppointmentsPage() {
 
   async function loadData() {
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
     if (!user) return
 
@@ -83,7 +111,8 @@ export default function AppointmentsPage() {
     // Load appointments
     const { data: appointmentsData } = await supabase
       .from('appointments')
-      .select(`
+      .select(
+        `
         id,
         scheduled_for,
         status,
@@ -97,7 +126,8 @@ export default function AppointmentsPage() {
             full_name
           )
         )
-      `)
+      `
+      )
       .eq('caregiver_id', user.id)
       .order('scheduled_for', { ascending: false })
 
@@ -122,16 +152,37 @@ export default function AppointmentsPage() {
     const scheduledFor = formData.get('scheduled_for') as string
     const notes = formData.get('notes') as string
 
-    // Get child name for QR modal
-    const selectedChild = children.find(c => c.id === childId)
+    const selectedChild = children.find((c) => c.id === childId)
 
     try {
       const supabase = createClient()
+
+      // ----- GENERATE UNIQUE CHECK-IN CODE -----
+      let checkInCode: string | null = null
+      let attempts = 0
+      while (!checkInCode && attempts < 10) {
+        const candidate = generateCheckInCode()
+        const { data: existing } = await supabase
+          .from('appointments')
+          .select('id')
+          .eq('check_in_code', candidate)
+          .single()
+
+        if (!existing) {
+          checkInCode = candidate
+        }
+        attempts++
+      }
+
+      if (!checkInCode) {
+        throw new Error('Unable to generate a unique check-in code. Please try again.')
+      }
 
       // Convert local datetime to UTC for database storage
       const localDate = new Date(scheduledFor)
       const utcDate = localDate.toISOString()
 
+      // ----- INSERT APPOINTMENT WITH CODE -----
       const { data: newAppointment, error: insertError } = await supabase
         .from('appointments')
         .insert({
@@ -141,8 +192,9 @@ export default function AppointmentsPage() {
           scheduled_for: utcDate,
           notes: notes || null,
           status: 'pending',
+          check_in_code: checkInCode, // <-- stored now
         })
-        .select('id')
+        .select('id, check_in_code')
         .single()
 
       if (insertError) throw insertError
@@ -150,7 +202,7 @@ export default function AppointmentsPage() {
       setShowBookingForm(false)
       await loadData()
 
-      // Create booking fee invoice (Option A)
+      // ----- CREATE BOOKING FEE INVOICE (unchanged) -----
       try {
         const invoiceRes = await fetch('/api/invoices/create', {
           method: 'POST',
@@ -164,11 +216,11 @@ export default function AppointmentsPage() {
                 description: 'Booking fee',
                 quantity: 1,
                 unit_price: BOOKING_FEE,
-                tax_percent: 0
-              }
+                tax_percent: 0,
+              },
             ],
-            notes: `Booking fee for appointment ${newAppointment.id}`
-          })
+            notes: `Booking fee for appointment ${newAppointment.id}`,
+          }),
         })
 
         const invoiceData = await invoiceRes.json()
@@ -176,32 +228,58 @@ export default function AppointmentsPage() {
         if (!invoiceRes.ok) {
           console.error('Invoice creation failed', invoiceData)
         } else if (invoiceData?.invoice) {
-          // Link invoice to visit_id (appointment) if API didn't set it
           try {
             const sup = createClient()
-            await sup.from('invoices').update({ visit_id: newAppointment.id }).eq('id', invoiceData.invoice.id)
+            await sup
+              .from('invoices')
+              .update({ visit_id: newAppointment.id })
+              .eq('id', invoiceData.invoice.id)
           } catch (err) {
             console.error('Failed to link invoice to visit', err)
           }
-
-          // Open payment modal for booking fee
           setSelectedInvoice(invoiceData.invoice)
         }
       } catch (err) {
         console.error('Failed to create booking invoice', err)
       }
 
-      // Automatically show QR code after booking
-      if (newAppointment) {
-        const response = await fetch(`/api/qr/${newAppointment.id}`)
-        const data = await response.json()
-        if (!data.error) {
-          setQrModalData({
-            appointmentId: newAppointment.id,
-            qrCode: data.qrCode,
-            childName: selectedChild?.full_name || 'Unknown',
+      // ----- FETCH QR CODE (includes checkInCode from response) -----
+      const response = await fetch(`/api/qr/${newAppointment.id}`)
+      const data = await response.json()
+      if (!data.error) {
+        setQrModalData({
+          appointmentId: newAppointment.id,
+          qrCode: data.qrCode,
+          childName: selectedChild?.full_name || 'Unknown',
+          checkInCode: data.checkInCode, // <-- store the code
+        })
+
+        // ----- OPTIONAL: SEND CONFIRMATION EMAIL -----
+        // (Uncomment after setting up Resend and creating the email function)
+        /*
+        const { data: caregiver } = await supabase
+          .from('caregivers')
+          .select('profiles(email)')
+          .eq('id', caregiverId)
+          .single()
+
+        if (caregiver?.profiles?.email) {
+          await sendAppointmentConfirmation({
+            email: caregiver.profiles.email,
+            patientName: selectedChild?.full_name || 'Patient',
+            appointmentDate: new Date(scheduledFor).toLocaleString('en-US', {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+            }),
+            checkInCode: data.checkInCode,
+            qrCodeUrl: data.qrCode, // data URL works in most email clients
           })
         }
+        */
       }
     } catch (err: any) {
       setError(err.message || 'Failed to create appointment')
@@ -216,14 +294,12 @@ export default function AppointmentsPage() {
     setCancellingId(appointmentId)
     try {
       const supabase = createClient()
-
       const { error: updateError } = await supabase
         .from('appointments')
         .update({ status: 'cancelled' })
         .eq('id', appointmentId)
 
       if (updateError) throw updateError
-
       await loadData()
     } catch (err: any) {
       alert('Failed to cancel appointment: ' + err.message)
@@ -247,6 +323,7 @@ export default function AppointmentsPage() {
         appointmentId: appointment.id,
         qrCode: data.qrCode,
         childName: appointment.child?.full_name || 'Unknown',
+        checkInCode: data.checkInCode, // <-- always present
       })
     } catch (err: any) {
       alert('Failed to load QR code')
@@ -260,7 +337,6 @@ export default function AppointmentsPage() {
     try {
       const supabase = createClient()
 
-      // First try to find invoice by visit_id
       const { data: invoiceByVisit } = await supabase
         .from('invoices')
         .select(`*, line_items:invoice_line_items(*)`)
@@ -272,7 +348,6 @@ export default function AppointmentsPage() {
         return
       }
 
-      // If not found, try to find consultation for appointment and use consultation_id
       const { data: consultation } = await supabase
         .from('consultations')
         .select('id')
@@ -292,7 +367,7 @@ export default function AppointmentsPage() {
         }
       }
 
-      alert('No invoice found for this appointment. A clinician or receptionist must create one before payment.')
+      alert('No invoice found for this appointment.')
     } catch (err: any) {
       console.error('Failed to load invoice:', err)
       alert('Failed to fetch invoice for payment')
@@ -313,15 +388,40 @@ export default function AppointmentsPage() {
   function getStatusColor(status: AppointmentStatus) {
     switch (status) {
       case 'pending':
-        return { bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-200', icon: <ClockIcon className="h-3 w-3" /> }
+        return {
+          bg: 'bg-amber-50',
+          text: 'text-amber-800',
+          border: 'border-amber-200',
+          icon: <ClockIcon className="h-3 w-3" />,
+        }
       case 'confirmed':
-        return { bg: 'bg-blue-50', text: 'text-blue-800', border: 'border-blue-200', icon: <CheckCircle className="h-3 w-3" /> }
+        return {
+          bg: 'bg-blue-50',
+          text: 'text-blue-800',
+          border: 'border-blue-200',
+          icon: <CheckCircle className="h-3 w-3" />,
+        }
       case 'completed':
-        return { bg: 'bg-emerald-50', text: 'text-emerald-800', border: 'border-emerald-200', icon: <CheckCircle className="h-3 w-3" /> }
+        return {
+          bg: 'bg-emerald-50',
+          text: 'text-emerald-800',
+          border: 'border-emerald-200',
+          icon: <CheckCircle className="h-3 w-3" />,
+        }
       case 'cancelled':
-        return { bg: 'bg-slate-100', text: 'text-slate-800', border: 'border-slate-200', icon: <XCircle className="h-3 w-3" /> }
+        return {
+          bg: 'bg-slate-100',
+          text: 'text-slate-800',
+          border: 'border-slate-200',
+          icon: <XCircle className="h-3 w-3" />,
+        }
       default:
-        return { bg: 'bg-slate-100', text: 'text-slate-800', border: 'border-slate-200', icon: <ClockIcon className="h-3 w-3" /> }
+        return {
+          bg: 'bg-slate-100',
+          text: 'text-slate-800',
+          border: 'border-slate-200',
+          icon: <ClockIcon className="h-3 w-3" />,
+        }
     }
   }
 
@@ -343,22 +443,18 @@ export default function AppointmentsPage() {
     const today = new Date()
     const birthDate = new Date(dateOfBirth)
 
-    // Check if the date is valid
     if (isNaN(birthDate.getTime())) return 'N/A'
 
     let years = today.getFullYear() - birthDate.getFullYear()
     let months = today.getMonth() - birthDate.getMonth()
 
-    // Adjust for cases where birthday hasn't occurred this year
     if (months < 0 || (months === 0 && today.getDate() < birthDate.getDate())) {
       years--
       months += 12
     }
 
-    // Ensure months is not negative
     if (months < 0) months = 0
 
-    // Format based on age
     if (years === 0) {
       return months === 1 ? '1 month' : `${months} months`
     } else if (years === 1) {
@@ -368,15 +464,12 @@ export default function AppointmentsPage() {
     }
   }
 
-  // Filter appointments based on search query and status filter
   const filteredAppointments = useMemo(() => {
     return appointments.filter((apt) => {
-      // Status filter
       if (statusFilter !== 'all' && apt.status !== statusFilter) {
         return false
       }
 
-      // Search filter
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase()
         const childName = apt.child?.full_name?.toLowerCase() || ''
@@ -404,8 +497,12 @@ export default function AppointmentsPage() {
             <div className="mx-auto mb-4 inline-flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-full bg-blue-50">
               <User className="h-10 w-10 sm:h-12 sm:w-12 text-blue-600" />
             </div>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-800">No Children Registered</h2>
-            <p className="mt-2 text-sm sm:text-base text-slate-600">Please add a child to your profile before booking appointments</p>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-800">
+              No Children Registered
+            </h2>
+            <p className="mt-2 text-sm sm:text-base text-slate-600">
+              Please add a child to your profile before booking appointments
+            </p>
             <Button
               onClick={() => router.push('/patients')}
               className="mt-4 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
@@ -427,7 +524,9 @@ export default function AppointmentsPage() {
             <Calendar className="h-7 w-7 text-blue-600" />
             My Appointments
           </h1>
-          <p className="mt-1 text-sm sm:text-base text-slate-600">Manage your children's medical appointments</p>
+          <p className="mt-1 text-sm sm:text-base text-slate-600">
+            Manage your children's medical appointments
+          </p>
         </div>
         {!showBookingForm && (
           <Button
@@ -453,7 +552,7 @@ export default function AppointmentsPage() {
             <CardContent className="p-3">
               <p className="text-xs text-slate-500">Pending</p>
               <p className="text-lg font-bold text-amber-600">
-                {appointments.filter(a => a.status === 'pending').length}
+                {appointments.filter((a) => a.status === 'pending').length}
               </p>
             </CardContent>
           </Card>
@@ -461,7 +560,7 @@ export default function AppointmentsPage() {
             <CardContent className="p-3">
               <p className="text-xs text-slate-500">Confirmed</p>
               <p className="text-lg font-bold text-blue-600">
-                {appointments.filter(a => a.status === 'confirmed').length}
+                {appointments.filter((a) => a.status === 'confirmed').length}
               </p>
             </CardContent>
           </Card>
@@ -469,7 +568,7 @@ export default function AppointmentsPage() {
             <CardContent className="p-3">
               <p className="text-xs text-slate-500">Completed</p>
               <p className="text-lg font-bold text-emerald-600">
-                {appointments.filter(a => a.status === 'completed').length}
+                {appointments.filter((a) => a.status === 'completed').length}
               </p>
             </CardContent>
           </Card>
@@ -516,7 +615,10 @@ export default function AppointmentsPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="child_id" className="mb-2 block text-sm font-medium text-slate-700">
+                  <label
+                    htmlFor="child_id"
+                    className="mb-2 block text-sm font-medium text-slate-700"
+                  >
                     Select Child *
                   </label>
                   <select
@@ -535,7 +637,10 @@ export default function AppointmentsPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="doctor_id" className="mb-2 block text-sm font-medium text-slate-700">
+                  <label
+                    htmlFor="doctor_id"
+                    className="mb-2 block text-sm font-medium text-slate-700"
+                  >
                     Select Doctor (Optional)
                   </label>
                   <select
@@ -553,7 +658,10 @@ export default function AppointmentsPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="scheduled_for" className="mb-2 block text-sm font-medium text-slate-700">
+                  <label
+                    htmlFor="scheduled_for"
+                    className="mb-2 block text-sm font-medium text-slate-700"
+                  >
                     Date & Time *
                   </label>
                   <div className="relative">
@@ -570,7 +678,10 @@ export default function AppointmentsPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="notes" className="mb-2 block text-sm font-medium text-slate-700">
+                  <label
+                    htmlFor="notes"
+                    className="mb-2 block text-sm font-medium text-slate-700"
+                  >
                     Reason for Visit / Notes
                   </label>
                   <textarea
@@ -584,9 +695,9 @@ export default function AppointmentsPage() {
               </div>
 
               <div className="flex gap-3 pt-4 border-t border-slate-200">
-                <Button 
-                  type="submit" 
-                  disabled={loading} 
+                <Button
+                  type="submit"
+                  disabled={loading}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md transition-all duration-300"
                 >
                   {loading ? (
@@ -623,7 +734,6 @@ export default function AppointmentsPage() {
         <Card className="border border-slate-200 shadow-sm bg-white">
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row gap-3">
-              {/* Search Input */}
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
@@ -643,10 +753,11 @@ export default function AppointmentsPage() {
                 )}
               </div>
 
-              {/* Status Filter */}
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as 'all' | AppointmentStatus)}
+                onChange={(e) =>
+                  setStatusFilter(e.target.value as 'all' | AppointmentStatus)
+                }
                 className="px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors bg-white"
               >
                 <option value="all">All Statuses</option>
@@ -657,7 +768,6 @@ export default function AppointmentsPage() {
               </select>
             </div>
 
-            {/* Results count */}
             {(searchQuery || statusFilter !== 'all') && (
               <p className="mt-3 text-sm text-slate-500">
                 Showing {filteredAppointments.length} of {appointments.length} appointments
@@ -676,8 +786,12 @@ export default function AppointmentsPage() {
             <div className="mx-auto mb-4 inline-flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-full bg-blue-50">
               <Calendar className="h-10 w-10 sm:h-12 sm:w-12 text-blue-600" />
             </div>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-800">No Appointments Yet</h2>
-            <p className="mt-2 text-sm sm:text-base text-slate-600">Book your first appointment to get started</p>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-800">
+              No Appointments Yet
+            </h2>
+            <p className="mt-2 text-sm sm:text-base text-slate-600">
+              Book your first appointment to get started
+            </p>
             <Button
               onClick={() => setShowBookingForm(true)}
               className="mt-4 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
@@ -693,8 +807,12 @@ export default function AppointmentsPage() {
             <div className="mx-auto mb-4 inline-flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-slate-100">
               <Search className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400" />
             </div>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-800">No Matching Appointments</h2>
-            <p className="mt-2 text-sm sm:text-base text-slate-600">Try adjusting your search or filter criteria</p>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-800">
+              No Matching Appointments
+            </h2>
+            <p className="mt-2 text-sm sm:text-base text-slate-600">
+              Try adjusting your search or filter criteria
+            </p>
             <Button
               onClick={() => {
                 setSearchQuery('')
@@ -706,112 +824,125 @@ export default function AppointmentsPage() {
             </Button>
           </CardContent>
         </Card>
-      ) : !showBookingForm && (
-        <div className="grid gap-4">
-          {filteredAppointments.map((appointment) => {
-            const statusColors = getStatusColor(appointment.status)
-            return (
-              <Card
-                key={appointment.id}
-                className="border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 bg-white"
-              >
-                <CardContent className="p-4 sm:p-6">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="flex-1">
-                      {/* Child Info */}
-                      <div className="mb-3 flex items-start justify-between gap-2">
-                        <div>
-                          <h3 className="text-base sm:text-lg font-bold text-slate-800">
-                            {appointment.child?.full_name || 'Unknown Child'}
-                          </h3>
-                          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                            Age: {formatAge(appointment.child?.date_of_birth || '')}
-                          </p>
-                        </div>
-                        <Badge className={`shrink-0 ${statusColors.bg} ${statusColors.text} ${statusColors.border} flex items-center gap-1`}>
-                          {statusColors.icon}
-                          {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                        </Badge>
-                      </div>
-
-                      {/* Appointment Details */}
-                      <div className="space-y-2 text-sm text-slate-600">
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-slate-400" />
-                          <span className="font-medium text-slate-800">
-                            {formatDate(appointment.scheduled_for)}
-                          </span>
+      ) : (
+        !showBookingForm && (
+          <div className="grid gap-4">
+            {filteredAppointments.map((appointment) => {
+              const statusColors = getStatusColor(appointment.status)
+              return (
+                <Card
+                  key={appointment.id}
+                  className="border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 bg-white"
+                >
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="flex-1">
+                        {/* Child Info */}
+                        <div className="mb-3 flex items-start justify-between gap-2">
+                          <div>
+                            <h3 className="text-base sm:text-lg font-bold text-slate-800">
+                              {appointment.child?.full_name || 'Unknown Child'}
+                            </h3>
+                            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                              Age: {formatAge(appointment.child?.date_of_birth || '')}
+                            </p>
+                          </div>
+                          <Badge
+                            className={`shrink-0 ${statusColors.bg} ${statusColors.text} ${statusColors.border} flex items-center gap-1`}
+                          >
+                            {statusColors.icon}
+                            {appointment.status.charAt(0).toUpperCase() +
+                              appointment.status.slice(1)}
+                          </Badge>
                         </div>
 
-                        {appointment.doctor && (
+                        {/* Appointment Details */}
+                        <div className="space-y-2 text-sm text-slate-600">
                           <div className="flex items-center gap-2">
-                            <Stethoscope className="h-4 w-4 text-slate-400" />
-                            <span className="text-slate-700">
-                              Dr. {appointment.doctor.profiles?.full_name}
+                            <Clock className="h-4 w-4 text-slate-400" />
+                            <span className="font-medium text-slate-800">
+                              {formatDate(appointment.scheduled_for)}
                             </span>
                           </div>
+
+                          {appointment.doctor && (
+                            <div className="flex items-center gap-2">
+                              <Stethoscope className="h-4 w-4 text-slate-400" />
+                              <span className="text-slate-700">
+                                Dr. {appointment.doctor.profiles?.full_name}
+                              </span>
+                            </div>
+                          )}
+
+                          {appointment.notes && (
+                            <div className="mt-3 rounded-lg bg-slate-50 p-3 border border-slate-200">
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <FileText className="h-3 w-3 text-slate-600" />
+                                <p className="text-xs font-medium text-slate-700">
+                                  Notes:
+                                </p>
+                              </div>
+                              <p className="text-sm text-slate-700">
+                                {appointment.notes}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex flex-wrap gap-2 pt-4 border-t border-slate-200 sm:border-0 sm:pt-0 sm:ml-4 sm:flex-col">
+                        {(appointment.status === 'pending' ||
+                          appointment.status === 'confirmed') && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleViewQR(appointment)}
+                            disabled={loadingQr === appointment.id}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            {loadingQr === appointment.id ? 'Loading...' : 'View QR'}
+                          </Button>
                         )}
 
-                        {appointment.notes && (
-                          <div className="mt-3 rounded-lg bg-slate-50 p-3 border border-slate-200">
-                            <div className="flex items-center gap-1.5 mb-1">
-                              <FileText className="h-3 w-3 text-slate-600" />
-                              <p className="text-xs font-medium text-slate-700">Notes:</p>
-                            </div>
-                            <p className="text-sm text-slate-700">{appointment.notes}</p>
-                          </div>
+                        {(appointment.status === 'pending' ||
+                          appointment.status === 'confirmed') && (
+                          <Button
+                            size="sm"
+                            onClick={() => handlePayAtAppointment(appointment.id)}
+                            disabled={loadingPayInvoice === appointment.id}
+                            variant="secondary"
+                            className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                          >
+                            {loadingPayInvoice === appointment.id
+                              ? '...'
+                              : 'Make Payment'}
+                          </Button>
+                        )}
+
+                        {appointment.status === 'pending' && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => handleCancelAppointment(appointment.id)}
+                            disabled={cancellingId === appointment.id}
+                            className="border-red-300 text-red-700 hover:bg-red-50"
+                          >
+                            {cancellingId === appointment.id
+                              ? 'Cancelling...'
+                              : 'Cancel'}
+                          </Button>
                         )}
                       </div>
                     </div>
-
-                    {/* Actions */}
-                    <div className="flex flex-wrap gap-2 pt-4 border-t border-slate-200 sm:border-0 sm:pt-0 sm:ml-4 sm:flex-col">
-                      {/* QR Code Button - show for pending and confirmed */}
-                      {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleViewQR(appointment)}
-                          disabled={loadingQr === appointment.id}
-                          className="bg-blue-600 hover:bg-blue-700 text-white"
-                        >
-                          {loadingQr === appointment.id ? 'Loading...' : 'View QR'}
-                        </Button>
-                      )}
-
-                      {/* Pay at appointment - show if unpaid invoice likely exists */}
-                      {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
-                        <Button
-                          size="sm"
-                          onClick={() => handlePayAtAppointment(appointment.id)}
-                          disabled={loadingPayInvoice === appointment.id}
-                          variant="secondary"
-                          className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                        >
-                          {loadingPayInvoice === appointment.id ? '...' : 'Make Payment'}
-                        </Button>
-                      )}
-
-                      {appointment.status === 'pending' && (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleCancelAppointment(appointment.id)}
-                          disabled={cancellingId === appointment.id}
-                          className="border-red-300 text-red-700 hover:bg-red-50"
-                        >
-                          {cancellingId === appointment.id ? 'Cancelling...' : 'Cancel'}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        )
       )}
 
-      {/* QR Code Modal */}
+      {/* ----- QR CODE MODAL (NOW WITH SHORT CODE) ----- */}
       {qrModalData && (
         <div
           className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
@@ -826,7 +957,9 @@ export default function AppointmentsPage() {
                 {/* Drag handle for mobile */}
                 <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-300 sm:hidden" />
 
-                <h3 className="text-xl font-bold text-slate-900 mb-1">Appointment QR Code</h3>
+                <h3 className="text-xl font-bold text-slate-900 mb-1">
+                  Appointment QR Code
+                </h3>
                 <p className="text-sm text-slate-500 mb-4">
                   Show this QR code at the hospital for check-in
                 </p>
@@ -834,7 +967,10 @@ export default function AppointmentsPage() {
                 {/* Child Name */}
                 <div className="mb-4 rounded-xl bg-blue-50 border border-blue-100 p-3">
                   <p className="text-sm font-medium text-slate-700">
-                    Patient: <span className="text-blue-600 font-semibold">{qrModalData.childName}</span>
+                    Patient:{' '}
+                    <span className="text-blue-600 font-semibold">
+                      {qrModalData.childName}
+                    </span>
                   </p>
                 </div>
 
@@ -847,6 +983,19 @@ export default function AppointmentsPage() {
                       className="w-52 h-52 sm:w-56 sm:h-56"
                     />
                   </div>
+                </div>
+
+                {/* ----- SHORT CHECK-IN CODE CARD ----- */}
+                <div className="mt-2 mb-5 bg-slate-50 border border-slate-200 rounded-xl p-4">
+                  <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">
+                    Short check‑in code
+                  </p>
+                  <p className="text-3xl font-mono font-bold tracking-wider text-slate-800">
+                    {qrModalData.checkInCode}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Can't scan? Enter this code at the reception kiosk.
+                  </p>
                 </div>
 
                 {/* Actions */}
@@ -875,10 +1024,14 @@ export default function AppointmentsPage() {
           </div>
         </div>
       )}
+
       {/* Appointment Payment Launcher (modal) */}
       {selectedInvoice && (
         <div>
-          <div className="fixed inset-0 z-[90] bg-black/40" onClick={() => setSelectedInvoice(null)} />
+          <div
+            className="fixed inset-0 z-[90] bg-black/40"
+            onClick={() => setSelectedInvoice(null)}
+          />
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div className="w-full max-w-2xl">
               <AppointmentPaymentLauncher
