@@ -34,13 +34,15 @@ interface QuickLabOrderModalProps {
   onClose: () => void
   doctorId: string
   preSelectedChildId?: string
+  consultationId?: string   // ← NEW
 }
 
 export default function QuickLabOrderModal({
   open,
   onClose,
   doctorId,
-  preSelectedChildId
+  preSelectedChildId,
+  consultationId,           // ← NEW
 }: QuickLabOrderModalProps) {
   const [loading, setLoading] = useState(false)
   const [children, setChildren] = useState<Child[]>([])
@@ -114,6 +116,7 @@ export default function QuickLabOrderModal({
         return {
           child_id: formData.child_id,
           doctor_id: doctorId,
+          consultation_id: consultationId,   // ← LINK TO CONSULTATION
           test_id: testId,
           test_name: test?.name || '',
           priority: formData.priority,
@@ -127,7 +130,7 @@ export default function QuickLabOrderModal({
 
       if (error) throw error
 
-      // Log the lab order creation activity
+      // Log activity
       const patientName = children.find(c => c.id === formData.child_id)?.full_name || 'Unknown'
       const testNames = selectedTests.map(testId => labTests.find(t => t.id === testId)?.name).filter(Boolean).join(', ')
       await logActivity({
@@ -138,6 +141,7 @@ export default function QuickLabOrderModal({
           patient_id: formData.child_id,
           patient_name: patientName,
           priority: formData.priority,
+          consultation_id: consultationId,
           tests: selectedTests.map(testId => labTests.find(t => t.id === testId)?.name),
           test_count: orders.length
         }

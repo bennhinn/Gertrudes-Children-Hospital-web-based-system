@@ -5,8 +5,32 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
-import { Search, X } from 'lucide-react'
+import {
+    Search,
+    X,
+    Clock,
+    Users,
+    User,
+    Activity,
+    Thermometer,
+    Scale,
+    Ruler,
+    Heart,
+    AlertCircle,
+    CheckCircle,
+    Play,
+    Stethoscope,
+    FlaskConical,
+    FileText,
+    Calendar
+} from 'lucide-react'
+import QuickPrescriptionModal from '@/components/QuickPrescriptionModal'
+import QuickLabOrderModal from '@/components/QuickLabOrderModal'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 
+// ---------- TYPES ----------
 interface QueuePatient {
     id: string
     child_id: string
@@ -26,6 +50,20 @@ interface QueuePatient {
         scheduled_for: string
         notes: string | null
         doctor_id: string | null
+        child: {
+            id: string
+            full_name: string
+            date_of_birth: string
+            gender: string
+            medical_notes: string | null
+            caregiver?: {
+                id: string
+                profiles: {
+                    full_name: string
+                    phone: string
+                }
+            }
+        } | null
     } | null
     child: {
         id: string
@@ -53,50 +91,75 @@ export default function DoctorQueuePage() {
     const [doctorId, setDoctorId] = useState<string | null>(null)
     const [searchQuery, setSearchQuery] = useState('')
 
+    // ---------- Active consultation state ----------
+    const [activeConsultation, setActiveConsultation] = useState<{ id: string } | null>(null)
+
+    // ---------- Modal states ----------
+    const [showPrescriptionModal, setShowPrescriptionModal] = useState(false)
+    const [showLabOrderModal, setShowLabOrderModal] = useState(false)
+
+    // ---------- Clinical notes for completion ----------
+    const [diagnosis, setDiagnosis] = useState('')
+    const [treatmentPlan, setTreatmentPlan] = useState('')
+    const [followUpDate, setFollowUpDate] = useState('')
+
+    // ---------- HELPER: get child from check-in or appointment ----------
+    const getPatientChild = (patient: QueuePatient) => {
+        return patient.child || patient.appointment?.child || null
+    }
+
+    // ---------- LOAD QUEUE ----------
     const loadQueue = useCallback(async () => {
         try {
             const supabase = createClient()
             const { data: { user } } = await supabase.auth.getUser()
-
             if (!user) return
 
             const today = new Date()
             today.setHours(0, 0, 0, 0)
 
-            // Get doctor ID - doctors.id references profiles.id directly
+            // Get doctor ID
             const { data: doctorData } = await supabase
                 .from('doctors')
                 .select('id')
                 .eq('id', user.id)
                 .single()
+            if (doctorData) setDoctorId(doctorData.id)
 
-            if (doctorData) {
-                setDoctorId(doctorData.id)
-            }
-
-            // Get today's queue with proper joins
+            // Fetch today's check-ins with full relations
             const { data, error } = await supabase
                 .from('check_ins')
                 .select(`
-          *,
-          appointment:appointments(
-            id,
-            scheduled_for,
-            notes,
-            doctor_id
-          ),
-          child:children(
-            id, 
-            full_name, 
-            date_of_birth, 
-            gender, 
-            medical_notes,
-            caregiver:caregivers(
-              id,
-              profiles(full_name, phone)
-            )
-          )
-        `)
+                    *,
+                    appointment:appointments(
+                        id,
+                        scheduled_for,
+                        notes,
+                        doctor_id,
+                        child:children(
+                            id,
+                            full_name,
+                            date_of_birth,
+                            gender,
+                            medical_notes,
+                            caregiver:caregivers(
+                                id,
+                                profiles(full_name, phone)
+                            )
+                        )
+                    ),
+                    child:children(
+                        id,
+                        full_name,
+                        date_of_birth,
+                        gender,
+                        medical_notes,
+                        caregiver:caregivers(
+                            id,
+                            profiles(full_name, phone)
+                        )
+                    )
+                `)
                 .gte('checked_in_at', today.toISOString())
                 .in('status', ['waiting', 'in_consultation'])
                 .order('queue_number', { ascending: true })
@@ -107,13 +170,56 @@ export default function DoctorQueuePage() {
             const myQueue = (data || []).filter(p =>
                 !p.appointment?.doctor_id || p.appointment?.doctor_id === doctorData?.id
             )
-
             setQueue(myQueue)
 
             // Set active patient if one is in consultation
             const inConsult = myQueue.find(p => p.status === 'in_consultation')
             if (inConsult) {
                 setActivePatient(inConsult)
+                const child = getPatientChild(inConsult)
+
+                // 🔥 FIXED: Find consultation by child_id OR appointment_id with better error handling
+                try {
+                    let consultQuery = supabase
+                        .from('consultations')
+                        .select('id')
+                        .is('completed_at', null)
+
+                    if (child?.id) {
+                        consultQuery = consultQuery.eq('child_id', child.id)
+                    } else if (inConsult.appointment?.id) {
+                        consultQuery = consultQuery.eq('appointment_id', inConsult.appointment.id)
+                    }
+
+                    const { data: consult, error: consultError } = await consultQuery.maybeSingle()
+                    
+                    if (consultError) {
+                        console.error('Error fetching consultation:', consultError)
+                    } else if (consult) {
+                        setActiveConsultation(consult)
+                    } else {
+                        // No consultation found - create one
+                        console.log('No active consultation found, creating new one...')
+                        const { data: newConsult, error: createError } = await supabase
+                            .from('consultations')
+                            .insert({
+                                doctor_id: doctorData?.id,
+                                child_id: child?.id,
+                                appointment_id: inConsult.appointment?.id,
+                                started_at: new Date().toISOString(),
+                            })
+                            .select()
+                            .single()
+
+                        if (createError) {
+                            console.error('Error creating consultation:', createError)
+                        } else if (newConsult) {
+                            setActiveConsultation(newConsult)
+                        }
+                    }
+                } catch (err) {
+                    console.error('Error in consultation lookup:', err)
+                }
             }
         } catch (error) {
             console.error('Error loading queue:', error)
@@ -124,36 +230,26 @@ export default function DoctorQueuePage() {
 
     useEffect(() => {
         loadQueue()
-
-        // Real-time subscription
         const supabase = createClient()
         const channel = supabase
             .channel('doctor-queue')
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'check_ins' },
-                () => loadQueue()
-            )
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'check_ins' }, () => loadQueue())
             .subscribe()
-
-        return () => {
-            supabase.removeChannel(channel)
-        }
+        return () => { supabase.removeChannel(channel) }
     }, [loadQueue])
 
+    // ---------- UTILITIES ----------
     function getAge(dateOfBirth: string) {
         const today = new Date()
         const birthDate = new Date(dateOfBirth)
         let age = today.getFullYear() - birthDate.getFullYear()
         const m = today.getMonth() - birthDate.getMonth()
-        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-            age--
-        }
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--
         if (age < 1) {
             const months = (today.getFullYear() - birthDate.getFullYear()) * 12 + (today.getMonth() - birthDate.getMonth())
-            return `${months} months`
+            return `${months} mo`
         }
-        return `${age} years old`
+        return `${age} yr`
     }
 
     function getWaitTime(checkedInAt: string) {
@@ -162,56 +258,93 @@ export default function DoctorQueuePage() {
         const diff = Math.round((now - checkIn) / 60000)
         if (diff < 1) return 'Just now'
         if (diff === 1) return '1 min'
-        if (diff < 60) return `${diff} mins`
+        if (diff < 60) return `${diff} min`
         const hours = Math.floor(diff / 60)
         const mins = diff % 60
         return `${hours}h ${mins}m`
     }
 
+    // ---------- START CONSULTATION ----------
     async function startConsultation(patient: QueuePatient) {
         try {
             const supabase = createClient()
+            const child = getPatientChild(patient)
 
+            // Create consultation record
+            const { data: consultation, error: consultError } = await supabase
+                .from('consultations')
+                .insert({
+                    doctor_id: doctorId,
+                    child_id: child?.id,
+                    appointment_id: patient.appointment?.id,
+                    started_at: new Date().toISOString(),
+                    // status: 'in_progress' // optional
+                })
+                .select()
+                .single()
+
+            if (consultError) throw consultError
+
+            // Update check-in status
             await supabase
                 .from('check_ins')
                 .update({ status: 'in_consultation' })
                 .eq('id', patient.id)
 
             setActivePatient(patient)
+            setActiveConsultation(consultation)
+            setDiagnosis('')
+            setTreatmentPlan('')
+            setFollowUpDate('')
+
             loadQueue()
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error starting consultation:', error)
+            alert(`Failed to start consultation: ${error.message}`)
         }
     }
 
+    // ---------- COMPLETE CONSULTATION ----------
     async function completeConsultation() {
-        if (!activePatient) return
+        if (!activePatient) {
+            alert('No active patient found.')
+            return
+        }
+
+        if (!activeConsultation) {
+            alert('No active consultation found. Please try refreshing the page.')
+            return
+        }
+
+        if (!diagnosis.trim()) {
+            alert('Please enter a diagnosis.')
+            return
+        }
 
         try {
             const supabase = createClient()
 
-            // Create consultation record
-            await supabase
+            // 1. Update consultation with clinical data
+            const { error: updateError } = await supabase
                 .from('consultations')
-                .insert({
-                    appointment_id: activePatient.appointment?.id,
-                    doctor_id: doctorId,
-                    child_id: activePatient.child?.id,
+                .update({
                     completed_at: new Date().toISOString(),
-                    diagnosis: 'General checkup completed', // TODO: Add proper form
-                    notes: '',
+                    diagnosis: diagnosis.trim(),
+                    treatment_plan: treatmentPlan.trim() || null,
+                    follow_up_date: followUpDate || null,
+                    notes: activePatient.notes,
                 })
+                .eq('id', activeConsultation.id)
 
-            // Update check-in status
+            if (updateError) throw updateError
+
+            // 2. Update check-in status
             await supabase
                 .from('check_ins')
-                .update({
-                    status: 'completed',
-                    completed_at: new Date().toISOString()
-                })
+                .update({ status: 'completed', completed_at: new Date().toISOString() })
                 .eq('id', activePatient.id)
 
-            // Update appointment status if exists
+            // 3. Update appointment status if exists
             if (activePatient.appointment?.id) {
                 await supabase
                     .from('appointments')
@@ -219,35 +352,33 @@ export default function DoctorQueuePage() {
                     .eq('id', activePatient.appointment.id)
             }
 
+            // 4. Clear active state
             setActivePatient(null)
+            setActiveConsultation(null)
+            setDiagnosis('')
+            setTreatmentPlan('')
+            setFollowUpDate('')
+
             loadQueue()
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error completing consultation:', error)
+            alert(`Failed to complete consultation: ${error.message}`)
         }
     }
 
-    const filteredQueue = filter === 'all'
-        ? queue
-        : queue.filter(p => p.status === filter)
-
-    // Search within the filtered queue
+    // ---------- FILTERING & SEARCH ----------
+    const filteredQueue = filter === 'all' ? queue : queue.filter(p => p.status === filter)
     const searchedQueue = useMemo(() => {
         if (!searchQuery.trim()) return filteredQueue
-
         const query = searchQuery.toLowerCase()
-        return filteredQueue.filter((patient) => {
-            const childName = patient.child?.full_name?.toLowerCase() || ''
-            const caregiverName = patient.child?.caregiver?.profiles?.full_name?.toLowerCase() || ''
-            const reason = patient.reason?.toLowerCase() || ''
-            const queueNumber = String(patient.queue_number)
-            const gender = patient.child?.gender?.toLowerCase() || ''
-
+        return filteredQueue.filter(patient => {
+            const child = getPatientChild(patient)
             return (
-                childName.includes(query) ||
-                caregiverName.includes(query) ||
-                reason.includes(query) ||
-                queueNumber.includes(query) ||
-                gender.includes(query)
+                child?.full_name?.toLowerCase().includes(query) ||
+                child?.caregiver?.profiles?.full_name?.toLowerCase().includes(query) ||
+                patient.reason?.toLowerCase().includes(query) ||
+                String(patient.queue_number).includes(query) ||
+                child?.gender?.toLowerCase().includes(query)
             )
         })
     }, [filteredQueue, searchQuery])
@@ -257,251 +388,421 @@ export default function DoctorQueuePage() {
 
     if (loading) {
         return (
-            <div className="space-y-6">
-                <div className="h-32 animate-pulse rounded-2xl bg-slate-200"></div>
-                <div className="h-64 animate-pulse rounded-2xl bg-slate-200"></div>
+            <div className="flex h-[50vh] items-center justify-center">
+                <div className="text-center">
+                    <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-purple-600 border-r-transparent" />
+                    <p className="mt-4 text-sm text-slate-500">Loading queue...</p>
+                </div>
             </div>
         )
     }
 
+    // ---------- RENDER ----------
     return (
         <div className="space-y-6 pb-20 lg:pb-6">
-            {/* Header */}
-            <div className="flex flex-wrap items-center justify-between gap-4">
+            {/* Modals with consultation ID */}
+            <QuickPrescriptionModal
+                open={showPrescriptionModal}
+                onClose={() => setShowPrescriptionModal(false)}
+                doctorId={doctorId || ''}
+                preSelectedChildId={activePatient ? getPatientChild(activePatient)?.id : undefined}
+                consultationId={activeConsultation?.id}
+            />
+            <QuickLabOrderModal
+                open={showLabOrderModal}
+                onClose={() => setShowLabOrderModal(false)}
+                doctorId={doctorId || ''}
+                preSelectedChildId={activePatient ? getPatientChild(activePatient)?.id : undefined}
+                consultationId={activeConsultation?.id}
+            />
+
+            {/* Page Header */}
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800">Patient Queue</h1>
-                    <p className="text-slate-500">Manage your patient consultations</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-slate-800 md:text-3xl">
+                        Patient Queue
+                    </h1>
+                    <p className="text-sm text-slate-500">
+                        Manage your patient consultations in real time
+                    </p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <span className="relative flex h-3 w-3">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
-                        <span className="relative inline-flex h-3 w-3 rounded-full bg-green-500"></span>
+                <div className="flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-700">
+                    <span className="relative flex h-2.5 w-2.5">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
                     </span>
-                    <span className="text-sm text-slate-500">Live updates</span>
+                    Live updates
                 </div>
             </div>
 
-            {/* Active Patient Card */}
-            {activePatient && (
-                <Card className="border-2 border-purple-500 shadow-xl">
-                    <CardHeader className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-                        <CardTitle className="flex items-center gap-2">
-                            <span className="text-2xl">🩺</span>
-                            Current Consultation
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-6">
-                        <div className="flex flex-wrap items-start justify-between gap-6">
-                            <div className="flex items-start gap-4">
-                                <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-purple-100 text-4xl">
-                                    {activePatient.child?.gender === 'male' ? '👦' : '👧'}
+            {/* Active Consultation Card */}
+            {activePatient && (() => {
+                const child = getPatientChild(activePatient)
+                return (
+                    <Card className="overflow-hidden border-0 bg-gradient-to-br from-slate-50 to-white shadow-xl ring-1 ring-slate-200/80">
+                        <div className="h-2 w-full bg-gradient-to-r from-purple-500 via-purple-600 to-indigo-600" />
+                        <CardHeader className="border-b border-slate-100 bg-white/80 px-6 py-4 backdrop-blur-sm">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100">
+                                    <Stethoscope className="h-5 w-5 text-purple-700" />
                                 </div>
                                 <div>
-                                    <h3 className="text-2xl font-bold text-slate-800">
-                                        {activePatient.child?.full_name || 'Unknown'}
-                                    </h3>
-                                    <p className="text-slate-600">
-                                        {activePatient.child?.date_of_birth ? getAge(activePatient.child.date_of_birth) : ''} •{' '}
-                                        {activePatient.child?.gender}
-                                    </p>
-                                    <p className="mt-2 text-sm text-slate-500">
-                                        Reason: {activePatient.reason}
-                                    </p>
-                                    <p className="text-sm text-slate-500">
-                                        Caregiver: {activePatient.child?.caregiver?.profiles?.full_name || 'Unknown'}
+                                    <CardTitle className="text-lg font-semibold text-slate-800">
+                                        Current Consultation
+                                    </CardTitle>
+                                    <p className="text-xs text-slate-500">
+                                        Started {getWaitTime(activePatient.checked_in_at)} ago
                                     </p>
                                 </div>
                             </div>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                            {/* Patient Header */}
+                            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                                <div className="flex gap-4">
+                                    <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-100 to-purple-200 text-4xl shadow-inner">
+                                        {child?.gender === 'male' ? '👦' : '👧'}
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <h2 className="text-2xl font-bold text-slate-800">
+                                            {child?.full_name || 'Unknown'}
+                                        </h2>
+                                        <div className="flex flex-wrap items-center gap-2 text-sm">
+                                            <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
+                                                {child?.date_of_birth ? getAge(child.date_of_birth) : ''}
+                                            </span>
+                                            <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700 capitalize">
+                                                {child?.gender || 'Not specified'}
+                                            </span>
+                                            <span className="flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-slate-700">
+                                                <User className="h-3.5 w-3.5" />
+                                                {child?.caregiver?.profiles?.full_name || 'No caregiver'}
+                                            </span>
+                                        </div>
+                                        <div className="mt-2 flex items-center gap-2 text-sm text-slate-600">
+                                            <Calendar className="h-4 w-4 text-slate-400" />
+                                            <span>Reason: {activePatient.reason}</span>
+                                        </div>
+                                    </div>
+                                </div>
 
-                            {/* Vitals */}
-                            {activePatient.vitals && Object.values(activePatient.vitals).some(v => v) && (
-                                <div className="rounded-xl bg-slate-50 p-4">
-                                    <p className="mb-2 text-sm font-medium text-slate-600">Vitals</p>
-                                    <div className="grid gap-2 sm:grid-cols-2">
-                                        {activePatient.vitals.temperature && (
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-lg">🌡️</span>
-                                                <span className="text-sm font-medium">{activePatient.vitals.temperature}°C</span>
-                                            </div>
-                                        )}
-                                        {activePatient.vitals.weight && (
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-lg">⚖️</span>
-                                                <span className="text-sm font-medium">{activePatient.vitals.weight} kg</span>
-                                            </div>
-                                        )}
-                                        {activePatient.vitals.height && (
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-lg">📏</span>
-                                                <span className="text-sm font-medium">{activePatient.vitals.height} cm</span>
-                                            </div>
-                                        )}
-                                        {activePatient.vitals.blood_pressure && (
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-lg">💓</span>
-                                                <span className="text-sm font-medium">{activePatient.vitals.blood_pressure}</span>
-                                            </div>
-                                        )}
+                                {/* Vitals Grid */}
+                                {activePatient.vitals && Object.values(activePatient.vitals).some(v => v) && (
+                                    <div className="rounded-2xl bg-slate-50 p-5 shadow-inner">
+                                        <p className="mb-3 text-xs font-medium uppercase tracking-wider text-slate-500">
+                                            Vitals
+                                        </p>
+                                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                                            {activePatient.vitals.temperature && (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100">
+                                                        <Thermometer className="h-4 w-4 text-red-600" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-slate-500">Temp</p>
+                                                        <p className="font-semibold text-slate-800">{activePatient.vitals.temperature}°C</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {activePatient.vitals.weight && (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
+                                                        <Scale className="h-4 w-4 text-blue-600" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-slate-500">Weight</p>
+                                                        <p className="font-semibold text-slate-800">{activePatient.vitals.weight} kg</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {activePatient.vitals.height && (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100">
+                                                        <Ruler className="h-4 w-4 text-emerald-600" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-slate-500">Height</p>
+                                                        <p className="font-semibold text-slate-800">{activePatient.vitals.height} cm</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {activePatient.vitals.blood_pressure && (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100">
+                                                        <Heart className="h-4 w-4 text-purple-600" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-slate-500">BP</p>
+                                                        <p className="font-semibold text-slate-800">{activePatient.vitals.blood_pressure}</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Medical Notes */}
+                            {child?.medical_notes && (
+                                <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-amber-200">
+                                            <AlertCircle className="h-4 w-4 text-amber-700" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-amber-800">Medical Notes</p>
+                                            <p className="mt-1 text-sm text-amber-700">{child.medical_notes}</p>
+                                        </div>
                                     </div>
                                 </div>
                             )}
-                        </div>
 
-                        {/* Medical Notes */}
-                        {activePatient.child?.medical_notes && (
-                            <div className="mt-4 rounded-xl bg-yellow-50 p-4">
-                                <p className="text-sm font-medium text-yellow-800">⚠️ Medical Notes</p>
-                                <p className="mt-1 text-sm text-yellow-700">{activePatient.child.medical_notes}</p>
+                            {/* Clinical Documentation - FIXED: required diagnosis */}
+                            <div className="mt-6 space-y-4 border-t pt-6">
+                                <h3 className="font-semibold text-slate-800">Clinical Documentation</h3>
+                                <div className="space-y-3">
+                                    <div>
+                                        <Label htmlFor="diagnosis" className="text-slate-700">
+                                            Diagnosis <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            id="diagnosis"
+                                            value={diagnosis}
+                                            onChange={(e) => setDiagnosis(e.target.value)}
+                                            placeholder="e.g., Acute otitis media"
+                                            className="border-slate-300 focus:border-purple-500 focus:ring-purple-500/20"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="treatmentPlan" className="text-slate-700">
+                                            Treatment Plan
+                                        </Label>
+                                        <Textarea
+                                            id="treatmentPlan"
+                                            value={treatmentPlan}
+                                            onChange={(e) => setTreatmentPlan(e.target.value)}
+                                            placeholder="e.g., Amoxicillin 500mg tid for 7 days"
+                                            rows={2}
+                                            className="border-slate-300 focus:border-purple-500 focus:ring-purple-500/20"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="followUp" className="text-slate-700">
+                                            Follow-up Date (optional)
+                                        </Label>
+                                        <Input
+                                            id="followUp"
+                                            type="date"
+                                            value={followUpDate}
+                                            onChange={(e) => setFollowUpDate(e.target.value)}
+                                            className="border-slate-300 focus:border-purple-500 focus:ring-purple-500/20"
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                        )}
 
-                        {/* Actions */}
-                        <div className="mt-6 flex flex-wrap gap-3">
-                            <Button disabled className="flex-1">
-                                📝 Write Prescription
-                            </Button>
-                            <Button disabled variant="secondary" className="flex-1">
-                                🧪 Order Lab Test
-                            </Button>
-                            <Button
-                                onClick={completeConsultation}
-                                className="flex-1 bg-green-600 hover:bg-green-700"
-                            >
-                                ✅ Complete Consultation
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+                            {/* Action Buttons */}
+                            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                                <Button
+                                    onClick={() => setShowPrescriptionModal(true)}
+                                    className="flex-1 gap-2 bg-teal-600 text-white hover:bg-teal-700"
+                                >
+                                    <FileText className="h-4 w-4" />
+                                    Prescription
+                                </Button>
+                                <Button
+                                    onClick={() => setShowLabOrderModal(true)}
+                                    variant="secondary"
+                                    className="flex-1 gap-2 border-amber-500 text-amber-700 hover:bg-amber-50"
+                                >
+                                    <FlaskConical className="h-4 w-4" />
+                                    Lab Order
+                                </Button>
+                                <Button
+                                    onClick={completeConsultation}
+                                    disabled={!diagnosis.trim() || !activeConsultation}
+                                    className="flex-1 gap-2 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-md hover:from-emerald-700 hover:to-emerald-600 disabled:opacity-50"
+                                >
+                                    <CheckCircle className="h-4 w-4" />
+                                    Complete
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )
+            })()}
 
             {/* Filter Tabs */}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
                 <button
                     onClick={() => setFilter('all')}
-                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${filter === 'all'
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-white text-slate-600 hover:bg-slate-100'
-                        }`}
+                    className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all ${
+                        filter === 'all'
+                            ? 'bg-purple-600 text-white shadow-md shadow-purple-200'
+                            : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'
+                    }`}
                 >
+                    <Users className="h-4 w-4" />
                     All ({queue.length})
                 </button>
                 <button
                     onClick={() => setFilter('waiting')}
-                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${filter === 'waiting'
-                        ? 'bg-yellow-500 text-white'
-                        : 'bg-white text-slate-600 hover:bg-slate-100'
-                        }`}
+                    className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all ${
+                        filter === 'waiting'
+                            ? 'bg-amber-500 text-white shadow-md shadow-amber-200'
+                            : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'
+                    }`}
                 >
+                    <Clock className="h-4 w-4" />
                     Waiting ({waitingCount})
                 </button>
                 <button
                     onClick={() => setFilter('in_consultation')}
-                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${filter === 'in_consultation'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white text-slate-600 hover:bg-slate-100'
-                        }`}
+                    className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all ${
+                        filter === 'in_consultation'
+                            ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
+                            : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'
+                    }`}
                 >
+                    <Activity className="h-4 w-4" />
                     In Consultation ({inConsultCount})
                 </button>
             </div>
 
-            {/* Search Input */}
+            {/* Search */}
             <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                     type="text"
-                    placeholder="Search by patient name, caregiver, reason, or queue #..."
+                    placeholder="Search by patient, caregiver, reason, or queue #..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 text-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-12 text-sm text-slate-800 placeholder:text-slate-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/30"
                 />
                 {searchQuery && (
                     <button
                         onClick={() => setSearchQuery('')}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
                     >
                         <X className="h-4 w-4" />
                     </button>
                 )}
             </div>
 
-            {/* Search Results Count */}
+            {/* Search Result Summary */}
             {searchQuery && (
-                <p className="text-sm text-slate-500">
-                    Found {searchedQueue.length} patient{searchedQueue.length !== 1 ? 's' : ''} matching &quot;{searchQuery}&quot;
+                <p className="text-sm text-slate-600">
+                    Found <span className="font-semibold text-purple-700">{searchedQueue.length}</span> patient{searchedQueue.length !== 1 ? 's' : ''} matching &quot;{searchQuery}&quot;
                 </p>
             )}
 
             {/* Queue List */}
-            <Card className="border-none shadow-lg">
-                <CardContent className="p-6">
+            <Card className="overflow-hidden border-0 bg-white shadow-xl ring-1 ring-slate-200/80">
+                <CardContent className="p-0">
                     {searchedQueue.length === 0 ? (
-                        <div className="py-12 text-center">
-                            <p className="text-4xl">{searchQuery ? '🔍' : '✨'}</p>
-                            <p className="mt-4 text-lg font-medium text-slate-600">
-                                {searchQuery ? 'No matching patients found' : 'No patients in queue'}
+                        <div className="py-16 text-center">
+                            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-slate-100">
+                                {searchQuery ? (
+                                    <Search className="h-8 w-8 text-slate-400" />
+                                ) : (
+                                    <Users className="h-8 w-8 text-slate-400" />
+                                )}
+                            </div>
+                            <p className="mt-4 text-lg font-medium text-slate-700">
+                                {searchQuery ? 'No matching patients' : 'No patients in queue'}
                             </p>
-                            <p className="text-slate-400">
-                                {searchQuery ? 'Try adjusting your search term' : 'New patients will appear here after check-in'}
+                            <p className="mt-1 text-sm text-slate-500">
+                                {searchQuery
+                                    ? 'Try adjusting your search term'
+                                    : 'New patients will appear here after check-in'}
                             </p>
                             {searchQuery && (
                                 <Button
                                     onClick={() => setSearchQuery('')}
-                                    className="mt-4 bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                    variant="secondary"
+                                    className="mt-6 border-slate-300 text-slate-700"
                                 >
                                     Clear Search
                                 </Button>
                             )}
                         </div>
                     ) : (
-                        <div className="space-y-4">
-                            {searchedQueue.map((patient) => (
-                                <div
-                                    key={patient.id}
-                                    className={`rounded-xl border p-4 transition-all ${patient.status === 'in_consultation'
-                                        ? 'border-purple-300 bg-purple-50'
-                                        : 'border-slate-200 bg-white hover:shadow-md'
+                        <div className="divide-y divide-slate-100">
+                            {searchedQueue.map((patient) => {
+                                const child = getPatientChild(patient)
+                                const isActive = activePatient?.id === patient.id
+                                return (
+                                    <div
+                                        key={patient.id}
+                                        className={`group relative transition-all hover:bg-slate-50/80 ${
+                                            isActive ? 'bg-purple-50/50' : ''
                                         }`}
-                                >
-                                    <div className="flex flex-wrap items-center justify-between gap-4">
-                                        <div className="flex items-center gap-4">
-                                            <div className={`flex h-14 w-14 items-center justify-center rounded-xl text-xl font-bold text-white ${patient.status === 'in_consultation'
-                                                ? 'bg-gradient-to-br from-purple-400 to-purple-600'
-                                                : 'bg-gradient-to-br from-yellow-400 to-orange-500'
-                                                }`}>
-                                                #{patient.queue_number}
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <h3 className="font-semibold text-slate-800">
-                                                        {patient.child?.full_name || 'Unknown'}
-                                                    </h3>
-                                                    {patient.status === 'in_consultation' && (
-                                                        <Badge variant="purple">In Session</Badge>
-                                                    )}
+                                    >
+                                        <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+                                            <div className="flex items-start gap-4 sm:items-center">
+                                                {/* Queue Number Badge */}
+                                                <div
+                                                    className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl text-xl font-bold shadow-sm ${
+                                                        patient.status === 'in_consultation'
+                                                            ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white'
+                                                            : 'bg-gradient-to-br from-amber-500 to-orange-500 text-white'
+                                                    }`}
+                                                >
+                                                    #{patient.queue_number}
                                                 </div>
-                                                <p className="text-sm text-slate-600">
-                                                    {patient.child?.gender === 'male' ? '👦' : '👧'}{' '}
-                                                    {patient.child?.date_of_birth ? getAge(patient.child.date_of_birth) : ''} •{' '}
-                                                    {patient.reason}
-                                                </p>
-                                                <p className="text-xs text-slate-500">
-                                                    ⏱️ Waiting: {getWaitTime(patient.checked_in_at)}
-                                                </p>
-                                            </div>
-                                        </div>
 
-                                        {patient.status === 'waiting' && !activePatient && (
-                                            <Button
-                                                onClick={() => startConsultation(patient)}
-                                                className="bg-purple-600 hover:bg-purple-700"
-                                            >
-                                                🩺 Start Consultation
-                                            </Button>
-                                        )}
+                                                {/* Patient Info */}
+                                                <div className="space-y-1">
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <h3 className="font-semibold text-slate-800">
+                                                            {child?.full_name || 'Unknown'}
+                                                        </h3>
+                                                        {patient.status === 'in_consultation' && (
+                                                            <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">
+                                                                In Session
+                                                            </Badge>
+                                                        )}
+                                                        {isActive && (
+                                                            <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100">
+                                                                Current
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                                                        <span className="flex items-center gap-1 text-slate-600">
+                                                            {child?.gender === 'male' ? '👦' : '👧'}
+                                                            {child?.date_of_birth ? getAge(child.date_of_birth) : ''}
+                                                        </span>
+                                                        <span className="flex items-center gap-1 text-slate-600">
+                                                            <User className="h-3.5 w-3.5 text-slate-400" />
+                                                            {child?.caregiver?.profiles?.full_name || 'No caregiver'}
+                                                        </span>
+                                                        <span className="flex items-center gap-1 text-slate-600">
+                                                            <Clock className="h-3.5 w-3.5 text-slate-400" />
+                                                            Wait: {getWaitTime(patient.checked_in_at)}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm text-slate-500">
+                                                        <span className="font-medium">Reason:</span> {patient.reason}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Action Button */}
+                                            {patient.status === 'waiting' && !activePatient && (
+                                                <Button
+                                                    onClick={() => startConsultation(patient)}
+                                                    className="ml-auto gap-2 bg-purple-600 text-white shadow-sm transition-all hover:bg-purple-700 hover:shadow-md"
+                                                >
+                                                    <Play className="h-4 w-4 fill-white" />
+                                                    Start
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                )
+                            })}
                         </div>
                     )}
                 </CardContent>

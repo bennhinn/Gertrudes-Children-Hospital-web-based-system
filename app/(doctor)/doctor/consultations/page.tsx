@@ -6,6 +6,19 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
+import {
+    ClipboardList,
+    CheckCircle2,
+    Calendar,
+    ArrowLeft,
+    RefreshCw,
+    AlertTriangle,
+    Mars,
+    Venus,
+    User,
+    Clipboard,
+    Loader2,
+} from 'lucide-react'
 
 interface ConsultationData {
     id: string
@@ -41,6 +54,7 @@ export default function ConsultationsPage() {
     const [error, setError] = useState<string | null>(null)
 
     const loadConsultations = useCallback(async () => {
+        // ... (business logic unchanged)
         setLoading(true)
         setError(null)
         try {
@@ -53,7 +67,6 @@ export default function ConsultationsPage() {
                 return
             }
 
-            // Get doctor ID
             const { data: doctorData } = await supabase
                 .from('doctors')
                 .select('id')
@@ -66,7 +79,6 @@ export default function ConsultationsPage() {
                 return
             }
 
-            // Calculate date range
             const now = new Date()
             let startDate = new Date()
 
@@ -85,7 +97,6 @@ export default function ConsultationsPage() {
                     break
             }
 
-            // Get consultations - use created_at OR completed_at
             const { data: consultData, error: consultError } = await supabase
                 .from('consultations')
                 .select(`
@@ -107,7 +118,7 @@ export default function ConsultationsPage() {
                     )
                 `)
                 .eq('doctor_id', doctorData.id)
-                .not('diagnosis', 'is', null) // Only get consultations with diagnosis
+                .not('diagnosis', 'is', null)
                 .order('completed_at', { ascending: false, nullsFirst: false })
                 .order('created_at', { ascending: false })
 
@@ -118,14 +129,12 @@ export default function ConsultationsPage() {
                 return
             }
 
-            // Get prescriptions separately for better control
             const consultIds = (consultData || []).map(c => c.id)
             const { data: prescriptionsData } = await supabase
                 .from('prescriptions')
                 .select('id, consultation_id, medication_name, dosage, frequency, duration')
                 .in('consultation_id', consultIds)
 
-            // Transform and filter data
             const transformed: ConsultationData[] = (consultData || [])
                 .map((consult: any) => {
                     const child = Array.isArray(consult.child) ? consult.child[0] : consult.child
@@ -134,15 +143,11 @@ export default function ConsultationsPage() {
                     const profile = caregiverData?.profiles
                     const profileData = Array.isArray(profile) ? profile[0] : profile
 
-                    // Use completed_at if available, otherwise created_at
                     const consultDate = consult.completed_at || consult.created_at
-                    
-                    // Filter by date
                     if (new Date(consultDate) < startDate) {
                         return null
                     }
 
-                    // Get prescriptions for this consultation
                     const consultPrescriptions = (prescriptionsData || [])
                         .filter(p => p.consultation_id === consult.id)
                         .map(p => ({
@@ -173,7 +178,6 @@ export default function ConsultationsPage() {
                 .filter(Boolean) as ConsultationData[]
 
             setConsultations(transformed)
-            
             console.log(`Loaded ${transformed.length} consultations`)
         } catch (error: any) {
             console.error('Error loading consultations:', error)
@@ -189,28 +193,23 @@ export default function ConsultationsPage() {
 
     function getAge(dateOfBirth: string | null): string {
         if (!dateOfBirth) return 'N/A'
-        
         const today = new Date()
         const birthDate = new Date(dateOfBirth)
         let age = today.getFullYear() - birthDate.getFullYear()
         const m = today.getMonth() - birthDate.getMonth()
-        
         if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
             age--
         }
-        
         if (age < 1) {
-            const months = (today.getFullYear() - birthDate.getFullYear()) * 12 + 
-                          (today.getMonth() - birthDate.getMonth())
+            const months = (today.getFullYear() - birthDate.getFullYear()) * 12 +
+                (today.getMonth() - birthDate.getMonth())
             return `${months} mo`
         }
-        
         return `${age} yrs`
     }
 
     function formatDateTime(dateString: string | null) {
         if (!dateString) return { date: 'N/A', time: 'N/A' }
-        
         const date = new Date(dateString)
         return {
             date: date.toLocaleDateString('en-US', {
@@ -225,7 +224,6 @@ export default function ConsultationsPage() {
         }
     }
 
-    // Filter by search query
     const filteredConsultations = consultations.filter(consult => {
         if (!searchQuery) return true
         const query = searchQuery.toLowerCase()
@@ -243,17 +241,23 @@ export default function ConsultationsPage() {
         return new Date(consultDate) >= weekAgo
     }).length
 
-    const followUpCount = consultations.filter(c => 
+    const followUpCount = consultations.filter(c =>
         c.follow_up_date && new Date(c.follow_up_date) > new Date()
     ).length
+
+    const getGenderIcon = (gender: string | null) => {
+        if (gender === 'male') return <Mars className="h-5 w-5 text-blue-600" />
+        if (gender === 'female') return <Venus className="h-5 w-5 text-pink-600" />
+        return <User className="h-5 w-5 text-slate-600" />
+    }
 
     if (loading) {
         return (
             <div className="space-y-6 pb-20 lg:pb-6">
-                <div className="h-32 animate-pulse rounded-2xl bg-slate-200"></div>
+                <div className="h-32 animate-pulse rounded-2xl bg-slate-200" />
                 <div className="grid gap-4 sm:grid-cols-3">
                     {[1, 2, 3].map(i => (
-                        <div key={i} className="h-24 animate-pulse rounded-xl bg-slate-200"></div>
+                        <div key={i} className="h-24 animate-pulse rounded-xl bg-slate-200" />
                     ))}
                 </div>
             </div>
@@ -264,119 +268,122 @@ export default function ConsultationsPage() {
         <div className="space-y-6 pb-20 lg:pb-6">
             {/* Error Display */}
             {error && (
-                <Card className="border-red-200 bg-red-50">
-                    <CardContent className="p-4">
-                        <p className="text-sm font-medium text-red-800">⚠️ {error}</p>
+                <Card className="border-red-200 bg-red-50/80 backdrop-blur-sm">
+                    <CardContent className="flex items-center gap-3 p-4">
+                        <AlertTriangle className="h-5 w-5 text-red-600" />
+                        <p className="text-sm font-medium text-red-800">{error}</p>
                     </CardContent>
                 </Card>
             )}
 
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-slate-800">Consultation History</h1>
-                <p className="text-slate-500">View and manage past consultations</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-800">Consultation History</h1>
+                    <p className="text-slate-500">View and manage past consultations</p>
+                </div>
             </div>
 
-            {/* Stats */}
+            {/* Stats Cards */}
             <div className="grid gap-4 sm:grid-cols-3">
-                <Card className="border-none shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 text-2xl">
-                                📋
-                            </div>
-                            <div>
-                                <p className="text-sm text-slate-500">Total Consultations</p>
-                                <p className="text-2xl font-bold text-blue-600">{consultations.length}</p>
-                            </div>
+                <Card className="border-none bg-gradient-to-br from-white to-slate-50 shadow-md transition-shadow hover:shadow-lg">
+                    <CardContent className="flex items-center gap-4 p-6">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 text-blue-700">
+                            <ClipboardList className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-slate-500">Total Consultations</p>
+                            <p className="text-2xl font-bold text-blue-600">{consultations.length}</p>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-green-100 to-green-200 text-2xl">
-                                ✅
-                            </div>
-                            <div>
-                                <p className="text-sm text-slate-500">This Week</p>
-                                <p className="text-2xl font-bold text-green-600">{thisWeekCount}</p>
-                            </div>
+                <Card className="border-none bg-gradient-to-br from-white to-slate-50 shadow-md transition-shadow hover:shadow-lg">
+                    <CardContent className="flex items-center gap-4 p-6">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-green-100 to-green-200 text-green-700">
+                            <CheckCircle2 className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-slate-500">This Week</p>
+                            <p className="text-2xl font-bold text-green-600">{thisWeekCount}</p>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 text-2xl">
-                                📅
-                            </div>
-                            <div>
-                                <p className="text-sm text-slate-500">Follow-ups Pending</p>
-                                <p className="text-2xl font-bold text-purple-600">{followUpCount}</p>
-                            </div>
+                <Card className="border-none bg-gradient-to-br from-white to-slate-50 shadow-md transition-shadow hover:shadow-lg">
+                    <CardContent className="flex items-center gap-4 p-6">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 text-purple-700">
+                            <Calendar className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-slate-500">Follow-ups Pending</p>
+                            <p className="text-2xl font-bold text-purple-600">{followUpCount}</p>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
             {/* Filters */}
-            <Card className="border-none shadow-lg">
+            <Card className="border-none bg-white/70 shadow-md backdrop-blur-sm">
                 <CardContent className="p-4">
-                    <div className="flex flex-wrap gap-4">
-                        {/* Search */}
+                    <div className="flex flex-wrap items-center gap-4">
                         <div className="flex-1 min-w-[200px]">
-                            <Input
-                                placeholder="Search by patient name or diagnosis..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
+                            <div className="relative">
+                                <Input
+                                    placeholder="Search by patient, diagnosis, caregiver..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="pl-10"
+                                />
+                                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            </div>
                         </div>
-
-                        {/* Date Filter */}
                         <select
                             value={dateFilter}
                             onChange={(e) => setDateFilter(e.target.value as DateFilter)}
-                            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="h-10 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm shadow-sm focus:border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-200"
                         >
                             <option value="today">Today</option>
                             <option value="week">This Week</option>
                             <option value="month">This Month</option>
                             <option value="all">All Time</option>
                         </select>
-
-                        <Button onClick={loadConsultations} variant="secondary" size="sm">
-                            ↻ Refresh
+                        <Button
+                            onClick={loadConsultations}
+                            variant="secondary"
+                            size="sm"
+                            className="gap-2 border-slate-200 bg-white hover:bg-slate-50"
+                        >
+                            <RefreshCw className="h-4 w-4" />
+                            Refresh
                         </Button>
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Consultations List */}
+            {/* Main Grid */}
             <div className="grid gap-6 lg:grid-cols-2">
-                {/* List */}
-                <Card className="border-none shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="text-lg">
+                {/* List Column */}
+                <Card className="border-none shadow-md">
+                    <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-white pb-3">
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                            <ClipboardList className="h-5 w-5 text-purple-600" />
                             {filteredConsultations.length} Consultation{filteredConsultations.length !== 1 ? 's' : ''}
                         </CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-4">
                         {filteredConsultations.length === 0 ? (
-                            <div className="py-12 text-center">
-                                <p className="text-4xl">📋</p>
+                            <div className="flex flex-col items-center justify-center py-12 text-center">
+                                <Clipboard className="h-16 w-16 text-slate-300" />
                                 <p className="mt-4 text-lg font-medium text-slate-600">No consultations found</p>
                                 <p className="text-slate-400">
-                                    {consultations.length === 0 
+                                    {consultations.length === 0
                                         ? 'Complete your first consultation to see it here'
-                                        : 'Try adjusting your filters'
-                                    }
+                                        : 'Try adjusting your filters'}
                                 </p>
                             </div>
                         ) : (
-                            <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
                                 {filteredConsultations.map((consult) => {
                                     const consultDate = consult.completed_at || consult.created_at
                                     const { date, time } = formatDateTime(consultDate)
@@ -384,29 +391,42 @@ export default function ConsultationsPage() {
                                         <button
                                             key={consult.id}
                                             onClick={() => setSelectedConsultation(consult)}
-                                            className={`w-full rounded-xl border p-4 text-left transition-all hover:shadow-md ${
+                                            className={`group relative w-full rounded-xl border p-4 text-left transition-all hover:shadow-md ${
                                                 selectedConsultation?.id === consult.id
-                                                    ? 'border-purple-500 bg-purple-50'
-                                                    : 'border-slate-200 bg-white'
+                                                    ? 'border-purple-400 bg-gradient-to-r from-purple-50 to-white'
+                                                    : 'border-slate-200 bg-white hover:border-purple-200 hover:bg-purple-50/30'
                                             }`}
                                         >
-                                            <div className="flex items-start gap-3">
-                                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-purple-100 to-purple-200 text-lg">
-                                                    {consult.child_gender === 'male' ? '👦' : consult.child_gender === 'female' ? '👧' : '👤'}
+                                            <div className="flex items-start gap-4">
+                                                <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                                                    consult.child_gender === 'male'
+                                                        ? 'bg-blue-100'
+                                                        : consult.child_gender === 'female'
+                                                        ? 'bg-pink-100'
+                                                        : 'bg-slate-100'
+                                                }`}>
+                                                    {getGenderIcon(consult.child_gender)}
                                                 </div>
                                                 <div className="flex-1">
-                                                    <p className="font-semibold text-slate-800">{consult.child_name}</p>
-                                                    <p className="text-sm text-slate-600">{consult.diagnosis}</p>
-                                                    <p className="mt-1 text-xs text-slate-400">
+                                                    <div className="flex items-start justify-between">
+                                                        <div>
+                                                            <p className="font-semibold text-slate-800">{consult.child_name}</p>
+                                                            <p className="text-sm text-slate-600 line-clamp-1">{consult.diagnosis}</p>
+                                                        </div>
+                                                        {consult.follow_up_date && new Date(consult.follow_up_date) > new Date() && (
+                                                            <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
+                                                                Follow-up
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
+                                                        <Calendar className="h-3 w-3" />
                                                         {date} at {time}
                                                         {!consult.completed_at && (
                                                             <span className="ml-2 text-amber-600">(Draft)</span>
                                                         )}
                                                     </p>
                                                 </div>
-                                                {consult.follow_up_date && new Date(consult.follow_up_date) > new Date() && (
-                                                    <Badge className="bg-blue-100 text-blue-800">Follow-up</Badge>
-                                                )}
                                             </div>
                                         </button>
                                     )
@@ -416,37 +436,54 @@ export default function ConsultationsPage() {
                     </CardContent>
                 </Card>
 
-                {/* Detail View */}
-                <Card className="border-none shadow-lg lg:sticky lg:top-24">
-                    <CardHeader className="border-b">
-                        <CardTitle className="text-lg">Consultation Details</CardTitle>
+                {/* Detail Column */}
+                <Card className="border-none shadow-md lg:sticky lg:top-24">
+                    <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-white pb-3">
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                            <Clipboard className="h-5 w-5 text-purple-600" />
+                            Consultation Details
+                        </CardTitle>
                     </CardHeader>
                     <CardContent className="p-6">
                         {!selectedConsultation ? (
-                            <div className="py-12 text-center">
-                                <p className="text-4xl">👈</p>
+                            <div className="flex flex-col items-center justify-center py-12 text-center">
+                                <ArrowLeft className="h-16 w-16 text-slate-300" />
                                 <p className="mt-4 text-slate-500">Select a consultation to view details</p>
                             </div>
                         ) : (
                             <div className="space-y-6">
-                                {/* Patient Info */}
-                                <div className="rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 p-4">
+                                {/* Patient Info Card */}
+                                <div className="rounded-xl bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 p-5 shadow-sm">
                                     <div className="flex items-center gap-4">
-                                        <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-white text-3xl shadow-sm">
-                                            {selectedConsultation.child_gender === 'male' ? '👦' : selectedConsultation.child_gender === 'female' ? '👧' : '👤'}
+                                        <div className={`flex h-16 w-16 items-center justify-center rounded-xl bg-white shadow-md ${
+                                            selectedConsultation.child_gender === 'male'
+                                                ? 'text-blue-600'
+                                                : selectedConsultation.child_gender === 'female'
+                                                ? 'text-pink-600'
+                                                : 'text-slate-600'
+                                        }`}>
+                                            {getGenderIcon(selectedConsultation.child_gender)}
                                         </div>
-                                        <div>
+                                        <div className="flex-1">
                                             <h3 className="text-xl font-bold text-slate-800">
                                                 {selectedConsultation.child_name}
                                             </h3>
-                                            <p className="text-sm text-slate-600">
-                                                {getAge(selectedConsultation.child_dob)}
-                                                {selectedConsultation.child_gender && ` • ${selectedConsultation.child_gender}`}
+                                            <p className="flex items-center gap-2 text-sm text-slate-600">
+                                                <span>{getAge(selectedConsultation.child_dob)}</span>
+                                                {selectedConsultation.child_gender && (
+                                                    <>
+                                                        <span className="text-slate-300">•</span>
+                                                        <span className="capitalize">{selectedConsultation.child_gender}</span>
+                                                    </>
+                                                )}
                                             </p>
                                             {selectedConsultation.caregiver_name && (
-                                                <p className="text-xs text-slate-500">
-                                                    Caregiver: {selectedConsultation.caregiver_name}
-                                                    {selectedConsultation.caregiver_phone && ` • ${selectedConsultation.caregiver_phone}`}
+                                                <p className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                                                    <User className="h-3 w-3" />
+                                                    {selectedConsultation.caregiver_name}
+                                                    {selectedConsultation.caregiver_phone && (
+                                                        <> • {selectedConsultation.caregiver_phone}</>
+                                                    )}
                                                 </p>
                                             )}
                                         </div>
@@ -454,9 +491,12 @@ export default function ConsultationsPage() {
                                 </div>
 
                                 {/* Consultation Date */}
-                                <div>
-                                    <p className="text-sm font-medium text-slate-500">Consultation Date</p>
-                                    <p className="text-lg text-slate-800">
+                                <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-4">
+                                    <p className="flex items-center gap-2 text-sm font-medium text-slate-500">
+                                        <Calendar className="h-4 w-4" />
+                                        Consultation Date
+                                    </p>
+                                    <p className="mt-1 text-slate-800">
                                         {(() => {
                                             const consultDate = selectedConsultation.completed_at || selectedConsultation.created_at
                                             const { date, time } = formatDateTime(consultDate)
@@ -471,24 +511,26 @@ export default function ConsultationsPage() {
                                 {/* Diagnosis */}
                                 <div>
                                     <p className="text-sm font-medium text-slate-500">Diagnosis</p>
-                                    <p className="text-slate-800">{selectedConsultation.diagnosis}</p>
+                                    <p className="mt-1 text-slate-800">{selectedConsultation.diagnosis}</p>
                                 </div>
 
                                 {/* Treatment Plan */}
                                 {selectedConsultation.treatment_plan && (
                                     <div>
                                         <p className="text-sm font-medium text-slate-500">Treatment Plan</p>
-                                        <p className="text-slate-800 whitespace-pre-wrap">{selectedConsultation.treatment_plan}</p>
+                                        <p className="mt-1 whitespace-pre-wrap text-slate-800">{selectedConsultation.treatment_plan}</p>
                                     </div>
                                 )}
 
                                 {/* Prescriptions */}
                                 {selectedConsultation.prescriptions.length > 0 && (
                                     <div>
-                                        <p className="text-sm font-medium text-slate-500 mb-2">Prescriptions ({selectedConsultation.prescriptions.length})</p>
+                                        <p className="mb-2 text-sm font-medium text-slate-500">
+                                            Prescriptions ({selectedConsultation.prescriptions.length})
+                                        </p>
                                         <div className="space-y-2">
                                             {selectedConsultation.prescriptions.map((rx) => (
-                                                <div key={rx.id} className="rounded-lg bg-blue-50 p-3">
+                                                <div key={rx.id} className="rounded-lg bg-blue-50/80 p-3 backdrop-blur-sm">
                                                     <p className="font-medium text-blue-900">{rx.medication_name}</p>
                                                     <p className="text-sm text-blue-700">
                                                         {rx.dosage} • {rx.frequency} • {rx.duration}
@@ -503,7 +545,7 @@ export default function ConsultationsPage() {
                                 {selectedConsultation.notes && (
                                     <div>
                                         <p className="text-sm font-medium text-slate-500">Notes</p>
-                                        <p className="text-slate-800 whitespace-pre-wrap">{selectedConsultation.notes}</p>
+                                        <p className="mt-1 whitespace-pre-wrap text-slate-800">{selectedConsultation.notes}</p>
                                     </div>
                                 )}
 
@@ -514,12 +556,13 @@ export default function ConsultationsPage() {
                                             ? 'bg-yellow-50'
                                             : 'bg-slate-100'
                                     }`}>
-                                        <p className={`text-sm font-medium ${
+                                        <p className={`flex items-center gap-2 text-sm font-medium ${
                                             new Date(selectedConsultation.follow_up_date) > new Date()
                                                 ? 'text-yellow-800'
                                                 : 'text-slate-600'
                                         }`}>
-                                            📅 Follow-up {new Date(selectedConsultation.follow_up_date) > new Date() ? 'Scheduled' : 'Date Passed'}
+                                            <Calendar className="h-4 w-4" />
+                                            Follow-up {new Date(selectedConsultation.follow_up_date) > new Date() ? 'Scheduled' : 'Date Passed'}
                                         </p>
                                         <p className={
                                             new Date(selectedConsultation.follow_up_date) > new Date()
@@ -531,11 +574,16 @@ export default function ConsultationsPage() {
                                     </div>
                                 )}
 
-                                {/* Medical Notes */}
+                                {/* Medical History */}
                                 {selectedConsultation.child_medical_notes && (
-                                    <div className="rounded-xl bg-red-50 p-4">
-                                        <p className="text-sm font-medium text-red-800">⚠️ Patient Medical History</p>
-                                        <p className="text-sm text-red-700 whitespace-pre-wrap">{selectedConsultation.child_medical_notes}</p>
+                                    <div className="rounded-xl bg-red-50/80 p-4 backdrop-blur-sm">
+                                        <p className="flex items-center gap-2 text-sm font-medium text-red-800">
+                                            <AlertTriangle className="h-4 w-4" />
+                                            Patient Medical History
+                                        </p>
+                                        <p className="mt-1 whitespace-pre-wrap text-sm text-red-700">
+                                            {selectedConsultation.child_medical_notes}
+                                        </p>
                                     </div>
                                 )}
                             </div>

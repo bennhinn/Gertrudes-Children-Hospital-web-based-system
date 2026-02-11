@@ -44,13 +44,15 @@ interface QuickPrescriptionModalProps {
   onClose: () => void
   doctorId: string
   preSelectedChildId?: string
+  consultationId?: string   // ← NEW
 }
 
 export default function QuickPrescriptionModal({
   open,
   onClose,
   doctorId,
-  preSelectedChildId
+  preSelectedChildId,
+  consultationId,           // ← NEW
 }: QuickPrescriptionModalProps) {
   const [loading, setLoading] = useState(false)
   const [children, setChildren] = useState<Child[]>([])
@@ -101,7 +103,7 @@ export default function QuickPrescriptionModal({
     const { data } = await supabase
       .from('medications')
       .select('id, name, description, stock')
-      .gt('stock', 0) // Only show medications with stock
+      .gt('stock', 0)
       .order('name')
 
     if (data) setMedications(data)
@@ -125,8 +127,6 @@ export default function QuickPrescriptionModal({
     }
 
     setPrescriptionItems([...prescriptionItems, { ...currentItem }])
-
-    // Reset current item
     setCurrentItem({
       medication_id: '',
       medication_name: '',
@@ -164,6 +164,7 @@ export default function QuickPrescriptionModal({
         .insert([{
           child_id: formData.child_id,
           doctor_id: doctorId,
+          consultation_id: consultationId,   // ← LINK TO CONSULTATION
           urgency: formData.urgency,
           notes: formData.notes || null,
           status: 'pending',
@@ -191,7 +192,7 @@ export default function QuickPrescriptionModal({
 
       if (itemsError) throw itemsError
 
-      // Log the prescription creation activity
+      // Log activity
       const patientName = children.find(c => c.id === formData.child_id)?.full_name || 'Unknown'
       const medicationNames = prescriptionItems.map(item => item.medication_name).join(', ')
       await logActivity({
@@ -203,6 +204,7 @@ export default function QuickPrescriptionModal({
           patient_id: formData.child_id,
           patient_name: patientName,
           urgency: formData.urgency,
+          consultation_id: consultationId,
           medications: prescriptionItems.map(item => ({
             name: item.medication_name,
             dosage: item.dosage,

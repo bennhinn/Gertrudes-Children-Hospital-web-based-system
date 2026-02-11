@@ -24,10 +24,10 @@ export interface ProcessPaymentRequest {
 interface UsePaymentReturn {
   processPayment: (request: ProcessPaymentRequest) => Promise<PaymentResponse>;
   createInvoice: (invoiceData: any) => Promise<any>;
-  generateReceipt: (paymentId: string) => Promise<void>;
+  generateReceipt: (paymentOrInvoiceId: string, isInvoiceId?: boolean) => Promise<void>;
   requestRefund: (paymentId: string, amount: number, reason: string) => Promise<any>;
   getPaymentHistory: (filters?: any) => Promise<any>;
-  getInvoices: (filters?: any) => Promise<any>; // NEW METHOD
+  getInvoices: (filters?: any) => Promise<any>;
   loading: boolean;
   error: string | null;
 }
@@ -106,28 +106,85 @@ export function usePayment(): UsePaymentReturn {
   /**
    * Generate and download receipt
    */
-  const generateReceipt = async (paymentId: string): Promise<void> => {
+  const generateReceipt = async (paymentOrInvoiceId: string, isInvoiceId: boolean = false): Promise<void> => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(`/api/payments/${paymentId}/receipt`);
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Receipt generation failed');
+      let url: string;
+      let fileName: string;
+      
+      if (isInvoiceId) {
+        // If it's an invoice ID, try to get the payment ID first
+        try {
+          const invoiceResponse = await fetch(`/api/invoices/${paymentOrInvoiceId}/payment`);
+          
+          if (!invoiceResponse.ok) {
+            const errorData = await invoiceResponse.json();
+            throw new Error(errorData.error || 'No payment found for this invoice');
+          }
+          
+          const invoiceData = await invoiceResponse.json();
+          if (!invoiceData.paymentId) {
+            throw new Error('This invoice has no associated payment');
+          }
+          
+          url = `/api/payments/${invoiceData.paymentId}/receipt`;
+          fileName = `Invoice-${paymentOrInvoiceId}-Receipt.pdf`;
+        } catch (invoiceError) {
+          // If invoice endpoint fails, try direct receipt generation with invoice ID
+          console.log('Invoice payment endpoint failed, trying direct...', invoiceError);
+          url = `/api/invoices/${paymentOrInvoiceId}/receipt`;
+          fileName = `Invoice-${paymentOrInvoiceId}-Receipt.pdf`;
+        }
+      } else {
+        // It's already a payment ID
+        url = `/api/payments/${paymentOrInvoiceId}/receipt`;
+        fileName = `Receipt-${paymentOrInvoiceId}.pdf`;
       }
 
-      // Download the PDF
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Receipt-${paymentId}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/pdf, application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const contentType = response.headers.get('content-type');
+        
+        // Check if it's a JSON error response
+        if (contentType?.includes('application/json')) {
+          const data = await response.json();
+          throw new Error(data.error || 'Receipt generation failed');
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+      }
+
+      // Check if response is PDF
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('application/pdf')) {
+        // Download the PDF
+        const blob = await response.blob();
+        const urlObject = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = urlObject;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(urlObject);
+      } else {
+        // If not PDF, might be JSON (for mock receipts)
+        const data = await response.json();
+        if (data.receiptUrl) {
+          // Redirect to receipt URL
+          window.open(data.receiptUrl, '_blank');
+        } else {
+          throw new Error('Invalid receipt format received');
+        }
+      }
+      
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Receipt generation failed';
       setError(errorMessage);
@@ -216,7 +273,7 @@ export function usePayment(): UsePaymentReturn {
   };
 
   /**
-   * Get invoices with filters - NEW METHOD
+   * Get invoices with filters
    */
   const getInvoices = async (filters?: {
     caregiver_id: string;
@@ -263,7 +320,7 @@ export function usePayment(): UsePaymentReturn {
     generateReceipt,
     requestRefund,
     getPaymentHistory,
-    getInvoices, // Added
+    getInvoices,
     loading,
     error,
   };
@@ -276,6 +333,8 @@ export function formatCurrency(amount: number, currency: string = 'KES'): string
   return new Intl.NumberFormat('en-KE', {
     style: 'currency',
     currency: currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(amount);
 }
 

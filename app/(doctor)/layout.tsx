@@ -169,32 +169,47 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
             </aside>
 
             {/* Mobile Header */}
-            <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200 bg-white shadow-sm lg:hidden">
-                <div className="flex h-14 items-center justify-between px-4">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 shadow-md">
+            {/* Mobile Header – Refined */}
+            <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200/80 bg-white/80 shadow-sm backdrop-blur-lg supports-backdrop-blur:bg-white/60 lg:hidden">
+                <div className="flex h-14 items-center justify-between px-3">
+                    {/* Left: Logo + Text */}
+                    <div className="flex items-center gap-2.5">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 shadow-md shadow-purple-200/50">
                             <Stethoscope className="h-5 w-5 text-white" />
                         </div>
-                        <div>
-                            <p className="text-base font-bold text-slate-800">Doctor Portal</p>
-                            <p className="text-[11px] text-slate-500">GCH System</p>
+                        <div className="-space-y-0.5">
+                            <p className="text-base font-bold leading-tight text-slate-800">
+                                Doctor Portal
+                            </p>
+                            <p className="text-[10px] font-medium text-slate-500">
+                                Gertrude's Children
+                            </p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <button className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors active:bg-slate-200">
+                    {/* Right: Notifications + Menu */}
+                    <div className="flex items-center gap-2">
+                        <button
+                            className="relative flex h-10 min-w-[44px] items-center justify-center rounded-xl text-slate-600 transition-all active:scale-95 active:bg-slate-100"
+                            aria-label="Notifications"
+                        >
                             <Bell className="h-5 w-5" />
                             {notifications > 0 && (
-                                <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
-                                    {notifications}
+                                <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 animate-pulse items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white/80">
+                                    {notifications > 9 ? '9+' : notifications}
                                 </span>
                             )}
                         </button>
                         <button
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                            className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors active:bg-slate-200"
+                            className="flex h-10 min-w-[44px] items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/10 to-violet-500/10 text-purple-700 transition-all active:scale-95 active:from-purple-500/20 active:to-violet-500/20"
+                            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
                         >
-                            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                            {mobileMenuOpen ? (
+                                <X className="h-5 w-5" />
+                            ) : (
+                                <Menu className="h-5 w-5" />
+                            )}
                         </button>
                     </div>
                 </div>

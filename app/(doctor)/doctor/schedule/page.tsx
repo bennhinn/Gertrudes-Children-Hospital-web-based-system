@@ -209,13 +209,13 @@ export default function DoctorSchedulePage() {
     ).length
 
     return (
-        <div className="space-y-6 pb-36 lg:pb-6">
+        <div className="space-y-6 px-4 pb-36 sm:px-6 lg:pb-6">
             {/* Header */}
-            <div className="rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 p-6 text-white shadow-xl">
+            <div className="rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 p-4 text-white shadow-xl sm:p-6">
                 <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold">My Schedule</h1>
-                        <p className="mt-1 text-blue-100">
+                    <div className="min-w-0">
+                        <h1 className="text-xl font-bold sm:text-2xl">My Schedule</h1>
+                        <p className="mt-1 text-sm text-blue-100 sm:text-base">
                             {viewMode === 'day'
                                 ? selectedDate.toLocaleDateString('en-US', {
                                     weekday: 'long',
@@ -230,51 +230,51 @@ export default function DoctorSchedulePage() {
                             }
                         </p>
                     </div>
-                    <Button onClick={goToToday} className="bg-white text-blue-600 hover:bg-blue-50">
+                    <Button onClick={goToToday} size="sm" className="bg-white text-blue-600 hover:bg-blue-50 sm:size-default">
                         📅 Today
                     </Button>
                 </div>
             </div>
 
             {/* Stats */}
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
                 <Card className="border-none shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-100 to-blue-200 text-2xl">
+                    <CardContent className="p-4 sm:p-6">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-100 to-blue-200 text-xl sm:h-14 sm:w-14 sm:text-2xl">
                                 📅
                             </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-500">Today's Appointments</p>
-                                <p className="text-3xl font-bold text-blue-600">{todayCount}</p>
+                            <div className="min-w-0">
+                                <p className="text-xs font-medium text-slate-500 sm:text-sm">Today's Appointments</p>
+                                <p className="text-2xl font-bold text-blue-600 sm:text-3xl">{todayCount}</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
                 <Card className="border-none shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-green-100 to-green-200 text-2xl">
+                    <CardContent className="p-4 sm:p-6">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-green-100 to-green-200 text-xl sm:h-14 sm:w-14 sm:text-2xl">
                                 ✓
                             </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-500">Upcoming</p>
-                                <p className="text-3xl font-bold text-green-600">{upcomingCount}</p>
+                            <div className="min-w-0">
+                                <p className="text-xs font-medium text-slate-500 sm:text-sm">Upcoming</p>
+                                <p className="text-2xl font-bold text-green-600 sm:text-3xl">{upcomingCount}</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
                 <Card className="border-none shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-100 to-purple-200 text-2xl">
+                    <CardContent className="p-4 sm:p-6">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-100 to-purple-200 text-xl sm:h-14 sm:w-14 sm:text-2xl">
                                 📊
                             </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-500">Total in Period</p>
-                                <p className="text-3xl font-bold text-purple-600">{appointments.length}</p>
+                            <div className="min-w-0">
+                                <p className="text-xs font-medium text-slate-500 sm:text-sm">Total in Period</p>
+                                <p className="text-2xl font-bold text-purple-600 sm:text-3xl">{appointments.length}</p>
                             </div>
                         </div>
                     </CardContent>
@@ -283,10 +283,11 @@ export default function DoctorSchedulePage() {
 
             {/* View Controls */}
             <Card className="border-none shadow-lg">
-                <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex gap-2">
+                <CardContent className="p-3 sm:p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex gap-1 sm:gap-2">
                             <Button
+                                size="sm"
                                 variant={viewMode === 'day' ? 'primary' : 'secondary'}
                                 onClick={() => setViewMode('day')}
                                 className={viewMode === 'day' ? 'bg-blue-600 hover:bg-blue-700' : ''}
@@ -294,6 +295,7 @@ export default function DoctorSchedulePage() {
                                 Day
                             </Button>
                             <Button
+                                size="sm"
                                 variant={viewMode === 'week' ? 'primary' : 'secondary'}
                                 onClick={() => setViewMode('week')}
                                 className={viewMode === 'week' ? 'bg-blue-600 hover:bg-blue-700' : ''}
@@ -302,11 +304,11 @@ export default function DoctorSchedulePage() {
                             </Button>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                            <Button variant="secondary" onClick={goToPrevious}>
+                        <div className="flex items-center gap-1 sm:gap-2">
+                            <Button variant="secondary" size="sm" onClick={goToPrevious}>
                                 <ChevronLeft className="h-4 w-4" />
                             </Button>
-                            <Button variant="secondary" onClick={goToNext}>
+                            <Button variant="secondary" size="sm" onClick={goToNext}>
                                 <ChevronRight className="h-4 w-4" />
                             </Button>
                         </div>
@@ -316,13 +318,13 @@ export default function DoctorSchedulePage() {
 
             {/* Appointments */}
             <Card className="border-none shadow-lg">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
+                <CardHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
+                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                         <Calendar className="h-5 w-5" />
                         Appointments
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6">
                     {loading ? (
                         <div className="space-y-4">
                             {[1, 2, 3].map(i => (
@@ -344,7 +346,7 @@ export default function DoctorSchedulePage() {
                         <div className="space-y-6">
                             {Object.entries(groupedAppointments).map(([date, dayAppts]) => (
                                 <div key={date}>
-                                    <h3 className="mb-3 text-sm font-semibold text-slate-600">
+                                    <h3 className="mb-3 text-sm font-semibold text-slate-600 sm:text-base">
                                         {new Date(date).toLocaleDateString('en-US', {
                                             weekday: 'long',
                                             month: 'long',
@@ -355,79 +357,77 @@ export default function DoctorSchedulePage() {
                                         {dayAppts.map((apt) => (
                                             <div
                                                 key={apt.id}
-                                                className="rounded-xl border border-slate-200 bg-white p-4 transition-shadow hover:shadow-md overflow-hidden"
+                                                className="rounded-xl border border-slate-200 bg-white p-4 transition-shadow hover:shadow-md"
                                             >
-                                                <div className="flex items-start justify-between gap-4">
-                                                    <div className="flex items-start gap-4">
-                                                        {/* Time */}
-                                                        <div className="flex flex-col items-center rounded-lg bg-blue-50 px-3 py-2">
-                                                            <Clock className="h-4 w-4 text-blue-600" />
-                                                            <span className="mt-1 text-sm font-bold text-blue-900">
-                                                                {new Date(apt.scheduled_for).toLocaleTimeString('en-US', {
-                                                                    hour: '2-digit',
-                                                                    minute: '2-digit',
-                                                                })}
-                                                            </span>
-                                                        </div>
-
-                                                        {/* Info */}
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center gap-2">
-                                                                <User className="h-4 w-4 text-slate-400" />
-                                                                <h4 className="font-semibold text-slate-900">{apt.child_name}</h4>
-                                                                <span className="text-xs text-slate-500">
-                                                                    ({getAge(apt.child_dob)})
-                                                                </span>
-                                                            </div>
-
-                                                            {apt.caregiver_name && (
-                                                                <div className="mt-2 flex items-center gap-2 text-sm text-slate-600">
-                                                                    <Phone className="h-3 w-3" />
-                                                                    <span>{apt.caregiver_name}</span>
-                                                                    {apt.caregiver_phone && (
-                                                                        <>
-                                                                            <span className="text-slate-400">•</span>
-                                                                            <span>{apt.caregiver_phone}</span>
-                                                                        </>
-                                                                    )}
-                                                                </div>
-                                                            )}
-
-                                                            {apt.notes && (
-                                                                <div className="mt-2 flex items-start gap-2 text-sm text-slate-600">
-                                                                    <FileText className="mt-0.5 h-3 w-3 flex-shrink-0" />
-                                                                    <span className="italic">{apt.notes}</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                                {/* Top row: time + status + action button */}
+                                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <Clock className="h-4 w-4 text-blue-600" />
+                                                        <span className="text-sm font-bold text-blue-900">
+                                                            {new Date(apt.scheduled_for).toLocaleTimeString('en-US', {
+                                                                hour: '2-digit',
+                                                                minute: '2-digit',
+                                                            })}
+                                                        </span>
                                                     </div>
-
-                                                    {/* Actions */}
-                                                    <div className="flex flex-col items-end gap-2">
-                                                        <Badge className={`${getStatusColor(apt.status)} border`}>
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge className={`${getStatusColor(apt.status)} border px-2 py-0.5 text-xs`}>
                                                             {apt.status.charAt(0).toUpperCase() + apt.status.slice(1)}
                                                         </Badge>
-
                                                         {apt.status === 'pending' && (
                                                             <Button
                                                                 size="sm"
                                                                 onClick={() => updateStatus(apt.id, 'confirmed')}
-                                                                className="bg-green-600 hover:bg-green-700"
+                                                                className="h-7 bg-green-600 px-2 text-xs hover:bg-green-700 sm:h-8 sm:px-3 sm:text-sm"
                                                             >
                                                                 Confirm
                                                             </Button>
                                                         )}
-
                                                         {apt.status === 'confirmed' && (
                                                             <Button
                                                                 size="sm"
                                                                 onClick={() => updateStatus(apt.id, 'completed')}
-                                                                className="bg-blue-600 hover:bg-blue-700"
+                                                                className="h-7 bg-blue-600 px-2 text-xs hover:bg-blue-700 sm:h-8 sm:px-3 sm:text-sm"
                                                             >
                                                                 Complete
                                                             </Button>
                                                         )}
                                                     </div>
+                                                </div>
+
+                                                {/* Child & caregiver details */}
+                                                <div className="mt-3 space-y-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <User className="h-4 w-4 flex-shrink-0 text-slate-400" />
+                                                        <h4 className="truncate font-semibold text-slate-900">
+                                                            {apt.child_name}
+                                                        </h4>
+                                                        <span className="flex-shrink-0 text-xs text-slate-500">
+                                                            ({getAge(apt.child_dob)})
+                                                        </span>
+                                                    </div>
+
+                                                    {apt.caregiver_name && (
+                                                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                                                            <Phone className="h-3 w-3 flex-shrink-0" />
+                                                            <span className="truncate">{apt.caregiver_name}</span>
+                                                            {apt.caregiver_phone && (
+                                                                <>
+                                                                    <span className="hidden text-slate-400 sm:inline">•</span>
+                                                                    <span className="truncate text-xs sm:text-sm">
+                                                                        {apt.caregiver_phone}
+                                                                    </span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {apt.notes && (
+                                                        <div className="flex items-start gap-2 text-sm text-slate-600">
+                                                            <FileText className="mt-0.5 h-3 w-3 flex-shrink-0" />
+                                                            <span className="line-clamp-2 italic">{apt.notes}</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
@@ -440,7 +440,6 @@ export default function DoctorSchedulePage() {
             </Card>
             {/* mobile spacer to clear fixed bottom nav */}
             <div className="h-20 lg:hidden" />
-
         </div>
     )
 }

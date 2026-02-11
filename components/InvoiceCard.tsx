@@ -1,8 +1,6 @@
 "use client"
 
-import React from 'react'
-import { Button } from '@/components/ui/button'
-import { formatCurrency } from '@/hooks/usePayment'
+import React, { useState } from 'react'
 import { Receipt, Calendar, AlertCircle, CheckCircle, Clock, Download, ArrowRight } from 'lucide-react'
 
 export interface InvoiceLineItem {
@@ -28,9 +26,12 @@ export interface InvoiceProps {
   }
   onPay?: (invoice: any) => void
   onDownloadReceipt?: (paymentId: string) => void
+  isLoading?: boolean
 }
 
-export default function InvoiceCard({ invoice, onPay, onDownloadReceipt }: InvoiceProps) {
+export default function InvoiceCard({ invoice, onPay, onDownloadReceipt, isLoading = false }: InvoiceProps) {
+  const [localLoading, setLocalLoading] = useState(false)
+  
   const status = invoice.status || 'pending'
   
   const getStatusConfig = (status: string) => {
@@ -66,8 +67,27 @@ export default function InvoiceCard({ invoice, onPay, onDownloadReceipt }: Invoi
   const isPaid = status === 'paid'
   const balance = Number(invoice.balance_due || invoice.total || 0)
 
+  const handleDownloadClick = async () => {
+    if (!onDownloadReceipt) return;
+    
+    setLocalLoading(true);
+    try {
+      await onDownloadReceipt(invoice.id);
+    } catch (error) {
+      console.error('Download failed:', error);
+    } finally {
+      setLocalLoading(false);
+    }
+  };
+
+  const handlePayClick = () => {
+    if (onPay) {
+      onPay(invoice);
+    }
+  };
+
   return (
-    <div className="rounded-xl bg-white p-3.5 shadow-sm ring-1 ring-slate-200 hover:ring-slate-300 transition-all active:scale-[0.995]">
+    <div className="rounded-xl bg-white p-3.5 shadow-sm ring-1 ring-slate-200 hover:ring-slate-300 transition-all">
       {/* Header - Mobile Optimized */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -139,15 +159,28 @@ export default function InvoiceCard({ invoice, onPay, onDownloadReceipt }: Invoi
       <div className="pt-3 border-t border-slate-100">
         {isPaid ? (
           <button
-            onClick={() => onDownloadReceipt && onDownloadReceipt(invoice.id)}
-            className="w-full h-9 flex items-center justify-center gap-2 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 border border-blue-200 rounded-lg transition-all active:scale-[0.98]"
+            onClick={handleDownloadClick}
+            disabled={localLoading || isLoading}
+            className="w-full h-9 flex items-center justify-center gap-2 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 border border-blue-200 rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Download className="h-3.5 w-3.5" />
-            Download Receipt
+            {localLoading || isLoading ? (
+              <>
+                <svg className="animate-spin h-3.5 w-3.5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Generating...
+              </>
+            ) : (
+              <>
+                <Download className="h-3.5 w-3.5" />
+                Download Receipt
+              </>
+            )}
           </button>
         ) : (
           <button
-            onClick={() => onPay && onPay(invoice)}
+            onClick={handlePayClick}
             className="w-full h-10 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold text-sm shadow-md hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
           >
             <span>Pay {formatCurrency(balance)}</span>
@@ -157,4 +190,14 @@ export default function InvoiceCard({ invoice, onPay, onDownloadReceipt }: Invoi
       </div>
     </div>
   )
+}
+
+// Helper function (should be imported from usePayment)
+function formatCurrency(amount: number, currency: string = 'KES'): string {
+  return new Intl.NumberFormat('en-KE', {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount);
 }

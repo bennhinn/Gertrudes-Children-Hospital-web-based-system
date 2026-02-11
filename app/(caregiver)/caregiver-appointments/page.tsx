@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Search, X } from 'lucide-react'
+import { Search, X, CalendarPlus, Calendar, User, Clock, FileText, Download, ArrowLeft, AlertCircle, Stethoscope, CheckCircle, XCircle, ClockIcon } from 'lucide-react'
 import AppointmentPaymentLauncher from '@/components/appointments/AppointmentPaymentLauncher'
 
 type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled'
@@ -313,15 +313,15 @@ export default function AppointmentsPage() {
   function getStatusColor(status: AppointmentStatus) {
     switch (status) {
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+        return { bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-200', icon: <ClockIcon className="h-3 w-3" /> }
       case 'confirmed':
-        return 'bg-blue-100 text-blue-800 border-blue-200'
+        return { bg: 'bg-blue-50', text: 'text-blue-800', border: 'border-blue-200', icon: <CheckCircle className="h-3 w-3" /> }
       case 'completed':
-        return 'bg-green-100 text-green-800 border-green-200'
+        return { bg: 'bg-emerald-50', text: 'text-emerald-800', border: 'border-emerald-200', icon: <CheckCircle className="h-3 w-3" /> }
       case 'cancelled':
-        return 'bg-gray-100 text-gray-800 border-gray-200'
+        return { bg: 'bg-slate-100', text: 'text-slate-800', border: 'border-slate-200', icon: <XCircle className="h-3 w-3" /> }
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200'
+        return { bg: 'bg-slate-100', text: 'text-slate-800', border: 'border-slate-200', icon: <ClockIcon className="h-3 w-3" /> }
     }
   }
 
@@ -399,119 +399,207 @@ export default function AppointmentsPage() {
   if (children.length === 0) {
     return (
       <main className="space-y-6">
-        <div className="rounded-xl sm:rounded-2xl bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50 p-6 sm:p-8 text-center shadow-lg">
-          <div className="mx-auto mb-3 sm:mb-4 inline-flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-white shadow-md text-3xl sm:text-4xl">
-            👶
-          </div>
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-800">No Children Registered</h2>
-          <p className="mt-1 sm:mt-2 text-sm sm:text-base text-slate-600">Please add a child to your profile before booking appointments</p>
-          <Button className="mt-4 sm:mt-6" onClick={() => router.push('/patients')}>
-            Add Child
-          </Button>
-        </div>
+        <Card className="border border-slate-200 shadow-lg bg-white">
+          <CardContent className="py-12 sm:py-16 text-center">
+            <div className="mx-auto mb-4 inline-flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-full bg-blue-50">
+              <User className="h-10 w-10 sm:h-12 sm:w-12 text-blue-600" />
+            </div>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-800">No Children Registered</h2>
+            <p className="mt-2 text-sm sm:text-base text-slate-600">Please add a child to your profile before booking appointments</p>
+            <Button
+              onClick={() => router.push('/patients')}
+              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
+            >
+              Add Child
+            </Button>
+          </CardContent>
+        </Card>
       </main>
     )
   }
 
   return (
-    <main className="space-y-5 sm:space-y-6">
+    <main className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">My Appointments</h1>
-          <p className="mt-0.5 sm:mt-1 text-sm sm:text-base text-slate-600">Manage your children's medical appointments</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 flex items-center gap-2">
+            <Calendar className="h-7 w-7 text-blue-600" />
+            My Appointments
+          </h1>
+          <p className="mt-1 text-sm sm:text-base text-slate-600">Manage your children's medical appointments</p>
         </div>
         {!showBookingForm && (
           <Button
             onClick={() => setShowBookingForm(true)}
-            className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl"
+            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg"
           >
-            + New Appointment
+            <CalendarPlus className="h-4 w-4 mr-1.5" />
+            New Appointment
           </Button>
         )}
       </div>
 
+      {/* Quick Stats */}
+      {appointments.length > 0 && !showBookingForm && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Card className="border border-slate-200 shadow-sm bg-white">
+            <CardContent className="p-3">
+              <p className="text-xs text-slate-500">Total</p>
+              <p className="text-lg font-bold text-slate-800">{appointments.length}</p>
+            </CardContent>
+          </Card>
+          <Card className="border border-slate-200 shadow-sm bg-white">
+            <CardContent className="p-3">
+              <p className="text-xs text-slate-500">Pending</p>
+              <p className="text-lg font-bold text-amber-600">
+                {appointments.filter(a => a.status === 'pending').length}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border border-slate-200 shadow-sm bg-white">
+            <CardContent className="p-3">
+              <p className="text-xs text-slate-500">Confirmed</p>
+              <p className="text-lg font-bold text-blue-600">
+                {appointments.filter(a => a.status === 'confirmed').length}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border border-slate-200 shadow-sm bg-white">
+            <CardContent className="p-3">
+              <p className="text-xs text-slate-500">Completed</p>
+              <p className="text-lg font-bold text-emerald-600">
+                {appointments.filter(a => a.status === 'completed').length}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Booking Form */}
       {showBookingForm && (
-        <Card className="border-none shadow-xl bg-gradient-to-br from-white to-blue-50">
-          <CardHeader className="border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-            <CardTitle className="text-lg sm:text-xl">Book New Appointment</CardTitle>
+        <Card className="border border-slate-200 shadow-lg bg-white">
+          <CardHeader className="border-b border-slate-200 bg-white pb-4">
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowBookingForm(false)
+                  setError(null)
+                }}
+                className="h-8 w-8 p-0 text-slate-600 hover:text-slate-800 hover:bg-slate-100"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <CardTitle className="text-xl font-semibold text-slate-800">
+                  Book New Appointment
+                </CardTitle>
+                <p className="text-sm text-slate-500 mt-1">
+                  Complete all required fields (*)
+                </p>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="pt-5 sm:pt-6">
+          <CardContent className="pt-6">
             {error && (
-              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {error}
+              <div className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <div>{error}</div>
+                </div>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-              <div>
-                <label htmlFor="child_id" className="mb-1 sm:mb-1.5 block text-sm font-medium text-slate-700">
-                  Select Child *
-                </label>
-                <select
-                  id="child_id"
-                  name="child_id"
-                  required
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="child_id" className="mb-2 block text-sm font-medium text-slate-700">
+                    Select Child *
+                  </label>
+                  <select
+                    id="child_id"
+                    name="child_id"
+                    required
+                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors appearance-none"
+                  >
+                    <option value="">Choose a child</option>
+                    {children.map((child) => (
+                      <option key={child.id} value={child.id}>
+                        {child.full_name} ({formatAge(child.date_of_birth)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="doctor_id" className="mb-2 block text-sm font-medium text-slate-700">
+                    Select Doctor (Optional)
+                  </label>
+                  <select
+                    id="doctor_id"
+                    name="doctor_id"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors appearance-none"
+                  >
+                    <option value="">Any available doctor</option>
+                    {doctors.map((doctor) => (
+                      <option key={doctor.id} value={doctor.id}>
+                        {doctor.profiles?.full_name || 'Unknown Doctor'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="scheduled_for" className="mb-2 block text-sm font-medium text-slate-700">
+                    Date & Time *
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="scheduled_for"
+                      name="scheduled_for"
+                      type="datetime-local"
+                      required
+                      min={new Date().toISOString().slice(0, 16)}
+                      className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors"
+                    />
+                    <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="notes" className="mb-2 block text-sm font-medium text-slate-700">
+                    Reason for Visit / Notes
+                  </label>
+                  <textarea
+                    id="notes"
+                    name="notes"
+                    rows={3}
+                    placeholder="Describe the reason for this appointment..."
+                    className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-slate-200">
+                <Button 
+                  type="submit" 
+                  disabled={loading} 
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md transition-all duration-300"
                 >
-                  <option value="">Choose a child</option>
-                  {children.map((child) => (
-                    <option key={child.id} value={child.id}>
-                      {child.full_name} ({formatAge(child.date_of_birth)})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="doctor_id" className="mb-1 sm:mb-1.5 block text-sm font-medium text-slate-700">
-                  Select Doctor (Optional)
-                </label>
-                <select
-                  id="doctor_id"
-                  name="doctor_id"
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
-                >
-                  <option value="">Any available doctor</option>
-                  {doctors.map((doctor) => (
-                    <option key={doctor.id} value={doctor.id}>
-                      {doctor.profiles?.full_name || 'Unknown Doctor'}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="scheduled_for" className="mb-1 sm:mb-1.5 block text-sm font-medium text-slate-700">
-                  Date & Time *
-                </label>
-                <input
-                  id="scheduled_for"
-                  name="scheduled_for"
-                  type="datetime-local"
-                  required
-                  min={new Date().toISOString().slice(0, 16)}
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="notes" className="mb-1 sm:mb-1.5 block text-sm font-medium text-slate-700">
-                  Reason for Visit / Notes
-                </label>
-                <textarea
-                  id="notes"
-                  name="notes"
-                  rows={3}
-                  placeholder="Describe the reason for this appointment..."
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
-
-              <div className="flex gap-2 sm:gap-3 pt-2">
-                <Button type="submit" disabled={loading} className="flex-1">
-                  {loading ? 'Booking...' : 'Book Appointment'}
+                  {loading ? (
+                    <>
+                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      Booking Appointment...
+                    </>
+                  ) : (
+                    <>
+                      <CalendarPlus className="h-4 w-4 mr-1.5" />
+                      Book Appointment
+                    </>
+                  )}
                 </Button>
                 <Button
                   type="button"
@@ -519,7 +607,8 @@ export default function AppointmentsPage() {
                     setShowBookingForm(false)
                     setError(null)
                   }}
-                  className="flex-1 bg-slate-200 text-slate-700 hover:bg-slate-300"
+                  variant="secondary"
+                  className="flex-1 border-slate-300 text-slate-700 hover:bg-slate-50"
                 >
                   Cancel
                 </Button>
@@ -530,8 +619,8 @@ export default function AppointmentsPage() {
       )}
 
       {/* Search and Filter Section */}
-      {appointments.length > 0 && (
-        <Card className="border-none shadow-md mb-4">
+      {appointments.length > 0 && !showBookingForm && (
+        <Card className="border border-slate-200 shadow-sm bg-white">
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row gap-3">
               {/* Search Input */}
@@ -542,12 +631,12 @@ export default function AppointmentsPage() {
                   placeholder="Search by child name, doctor, notes..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-slate-300 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -558,7 +647,7 @@ export default function AppointmentsPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as 'all' | AppointmentStatus)}
-                className="px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                className="px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors bg-white"
               >
                 <option value="all">All Statuses</option>
                 <option value="pending">Pending</option>
@@ -581,24 +670,31 @@ export default function AppointmentsPage() {
       )}
 
       {/* Appointments List */}
-      {appointments.length === 0 ? (
-        <Card className="border-none shadow-lg">
-          <CardContent className="py-10 sm:py-12 text-center">
-            <div className="mx-auto mb-3 sm:mb-4 inline-flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-slate-100 text-2xl sm:text-3xl">
-              📅
+      {appointments.length === 0 && !showBookingForm ? (
+        <Card className="border border-slate-200 shadow-lg bg-white">
+          <CardContent className="py-12 sm:py-16 text-center">
+            <div className="mx-auto mb-4 inline-flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-full bg-blue-50">
+              <Calendar className="h-10 w-10 sm:h-12 sm:w-12 text-blue-600" />
             </div>
-            <p className="text-base sm:text-lg font-medium text-slate-700">No appointments yet</p>
-            <p className="mt-1 text-xs sm:text-sm text-slate-500">Book your first appointment to get started</p>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-800">No Appointments Yet</h2>
+            <p className="mt-2 text-sm sm:text-base text-slate-600">Book your first appointment to get started</p>
+            <Button
+              onClick={() => setShowBookingForm(true)}
+              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
+            >
+              <CalendarPlus className="h-4 w-4 mr-1.5" />
+              Book First Appointment
+            </Button>
           </CardContent>
         </Card>
-      ) : filteredAppointments.length === 0 ? (
-        <Card className="border-none shadow-lg">
-          <CardContent className="py-10 sm:py-12 text-center">
-            <div className="mx-auto mb-3 sm:mb-4 inline-flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-slate-100 text-2xl sm:text-3xl">
-              🔍
+      ) : filteredAppointments.length === 0 && !showBookingForm ? (
+        <Card className="border border-slate-200 shadow-lg bg-white">
+          <CardContent className="py-12 sm:py-16 text-center">
+            <div className="mx-auto mb-4 inline-flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-slate-100">
+              <Search className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400" />
             </div>
-            <p className="text-base sm:text-lg font-medium text-slate-700">No matching appointments</p>
-            <p className="mt-1 text-xs sm:text-sm text-slate-500">Try adjusting your search or filter criteria</p>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-800">No Matching Appointments</h2>
+            <p className="mt-2 text-sm sm:text-base text-slate-600">Try adjusting your search or filter criteria</p>
             <Button
               onClick={() => {
                 setSearchQuery('')
@@ -610,72 +706,75 @@ export default function AppointmentsPage() {
             </Button>
           </CardContent>
         </Card>
-      ) : (
-        <div className="grid gap-3 sm:gap-4">
-          {filteredAppointments.map((appointment) => (
-            <Card
-              key={appointment.id}
-              className="border-none shadow-md sm:shadow-lg hover:shadow-xl transition-shadow duration-200"
-            >
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex-1 min-w-0">
-                    {/* Child Info */}
-                    <div className="mb-2 sm:mb-3 flex items-start justify-between gap-2 sm:block">
-                      <h3 className="text-base sm:text-lg font-bold text-slate-800 truncate">
-                        {appointment.child?.full_name || 'Unknown Child'}
-                      </h3>
-                      <Badge className={`shrink-0 sm:hidden ${getStatusColor(appointment.status)}`}>
-                        {appointment.status.toUpperCase()}
-                      </Badge>
-                    </div>
-                    <p className="text-xs sm:text-sm text-slate-500 mb-2 sm:mb-0">
-                      Age: {formatAge(appointment.child?.date_of_birth || '')}
-                    </p>
-
-                    {/* Appointment Details */}
-                    <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm mt-2 sm:mt-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-slate-500">📅</span>
-                        <span className="font-medium text-slate-700">
-                          {formatDate(appointment.scheduled_for)}
-                        </span>
+      ) : !showBookingForm && (
+        <div className="grid gap-4">
+          {filteredAppointments.map((appointment) => {
+            const statusColors = getStatusColor(appointment.status)
+            return (
+              <Card
+                key={appointment.id}
+                className="border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 bg-white"
+              >
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex-1">
+                      {/* Child Info */}
+                      <div className="mb-3 flex items-start justify-between gap-2">
+                        <div>
+                          <h3 className="text-base sm:text-lg font-bold text-slate-800">
+                            {appointment.child?.full_name || 'Unknown Child'}
+                          </h3>
+                          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                            Age: {formatAge(appointment.child?.date_of_birth || '')}
+                          </p>
+                        </div>
+                        <Badge className={`shrink-0 ${statusColors.bg} ${statusColors.text} ${statusColors.border} flex items-center gap-1`}>
+                          {statusColors.icon}
+                          {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                        </Badge>
                       </div>
 
-                      {appointment.doctor && (
+                      {/* Appointment Details */}
+                      <div className="space-y-2 text-sm text-slate-600">
                         <div className="flex items-center gap-2">
-                          <span className="text-slate-500">👨‍⚕️</span>
-                          <span className="text-slate-700">
-                            Dr. {appointment.doctor.profiles?.full_name}
+                          <Clock className="h-4 w-4 text-slate-400" />
+                          <span className="font-medium text-slate-800">
+                            {formatDate(appointment.scheduled_for)}
                           </span>
                         </div>
-                      )}
 
-                      {appointment.notes && (
-                        <div className="mt-2 rounded-lg bg-slate-50 p-2.5 sm:p-3">
-                          <p className="text-[10px] sm:text-xs font-medium text-slate-600 mb-0.5 sm:mb-1">Notes:</p>
-                          <p className="text-xs sm:text-sm text-slate-700 line-clamp-2">{appointment.notes}</p>
-                        </div>
-                      )}
+                        {appointment.doctor && (
+                          <div className="flex items-center gap-2">
+                            <Stethoscope className="h-4 w-4 text-slate-400" />
+                            <span className="text-slate-700">
+                              Dr. {appointment.doctor.profiles?.full_name}
+                            </span>
+                          </div>
+                        )}
+
+                        {appointment.notes && (
+                          <div className="mt-3 rounded-lg bg-slate-50 p-3 border border-slate-200">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <FileText className="h-3 w-3 text-slate-600" />
+                              <p className="text-xs font-medium text-slate-700">Notes:</p>
+                            </div>
+                            <p className="text-sm text-slate-700">{appointment.notes}</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Status & Actions */}
-                  <div className="flex items-center justify-between gap-2 border-t pt-3 sm:border-0 sm:pt-0 sm:ml-4 sm:flex-col sm:items-end sm:gap-3">
-                    <Badge className={`hidden sm:inline-flex ${getStatusColor(appointment.status)}`}>
-                      {appointment.status.toUpperCase()}
-                    </Badge>
-
-                    <div className="flex gap-2">
+                    {/* Actions */}
+                    <div className="flex flex-wrap gap-2 pt-4 border-t border-slate-200 sm:border-0 sm:pt-0 sm:ml-4 sm:flex-col">
                       {/* QR Code Button - show for pending and confirmed */}
                       {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
                         <Button
                           size="sm"
                           onClick={() => handleViewQR(appointment)}
                           disabled={loadingQr === appointment.id}
-                          className="text-xs bg-gradient-to-r from-blue-600 to-purple-600 text-white"
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
                         >
-                          {loadingQr === appointment.id ? '...' : '📱 QR'}
+                          {loadingQr === appointment.id ? 'Loading...' : 'View QR'}
                         </Button>
                       )}
 
@@ -685,9 +784,10 @@ export default function AppointmentsPage() {
                           size="sm"
                           onClick={() => handlePayAtAppointment(appointment.id)}
                           disabled={loadingPayInvoice === appointment.id}
-                          className="text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                          variant="secondary"
+                          className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
                         >
-                          {loadingPayInvoice === appointment.id ? '...' : 'Pay'}
+                          {loadingPayInvoice === appointment.id ? '...' : 'Make Payment'}
                         </Button>
                       )}
 
@@ -697,17 +797,17 @@ export default function AppointmentsPage() {
                           variant="secondary"
                           onClick={() => handleCancelAppointment(appointment.id)}
                           disabled={cancellingId === appointment.id}
-                          className="text-xs bg-red-50 text-red-700 hover:bg-red-100 border-red-200"
+                          className="border-red-300 text-red-700 hover:bg-red-50"
                         >
-                          {cancellingId === appointment.id ? '...' : 'Cancel'}
+                          {cancellingId === appointment.id ? 'Cancelling...' : 'Cancel'}
                         </Button>
                       )}
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
 
@@ -753,13 +853,15 @@ export default function AppointmentsPage() {
                 <div className="flex gap-3">
                   <Button
                     onClick={downloadQR}
-                    className="flex-1 py-5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white font-semibold"
+                    className="flex-1 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold"
                   >
+                    <Download className="h-4 w-4 mr-1.5" />
                     Download QR
                   </Button>
                   <Button
                     onClick={() => setQrModalData(null)}
-                    className="flex-1 py-5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold"
+                    variant="secondary"
+                    className="flex-1 py-3 rounded-lg border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold"
                   >
                     Close
                   </Button>
