@@ -20,6 +20,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/qrcode": "^1.5.6",
+    "@yudiel/react-qr-scanner": "^2.5.1",
     "class-variance-authority": "^0.7.1",
     "framer-motion": "^12.26.2",
     "html2canvas": "^1.4.1",

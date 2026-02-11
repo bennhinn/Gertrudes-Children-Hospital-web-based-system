@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import {
   X,
   Ticket,
@@ -24,6 +25,13 @@ import {
   CalendarCheck,
   XCircle,
 } from 'lucide-react'
+import { isValidCheckInCode } from '@/utils/qr'
+
+// Dynamically import the QR scanner (client only)
+const QRScannerModal = dynamic(
+  () => import('./components/QRScannerModal').then((mod) => mod.QRScannerModal),
+  { ssr: false }
+)
 
 interface Appointment {
   id: string
@@ -43,7 +51,7 @@ interface Appointment {
   }
 }
 
-// Queue Ticket Modal Component
+// Queue Ticket Modal Component (unchanged)
 function QueueTicketModal({
   isOpen,
   onClose,
@@ -133,7 +141,7 @@ function QueueTicketModal({
   )
 }
 
-// Skeleton loader component
+// Skeleton loader component (unchanged)
 function AppointmentSkeleton() {
   return (
     <Card className="border-0 shadow-sm rounded-2xl">
@@ -165,6 +173,12 @@ export default function CheckInPage() {
     patientName: string
     time: string
   }>({ isOpen: false, queueNumber: 0, patientName: '', time: '' })
+
+  // New state for QR & manual code
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [manualCode, setManualCode] = useState('')
+  const [checkingInByCode, setCheckingInByCode] = useState(false)
+
   const searchTimeout = useRef<NodeJS.Timeout | undefined>(undefined)
 
   // Load all today's appointments on mount
@@ -194,10 +208,7 @@ export default function CheckInPage() {
         .order('scheduled_for', { ascending: true })
         .limit(50)
 
-      if (fetchError) {
-        console.error('Fetch error:', fetchError)
-        throw fetchError
-      }
+      if (fetchError) throw fetchError
 
       setAllAppointments(data || [])
       setAppointments(data || [])
@@ -209,11 +220,9 @@ export default function CheckInPage() {
     }
   }
 
-  // Filter appointments when search query changes
+  // Filter appointments when search query changes (unchanged)
   useEffect(() => {
-    if (searchTimeout.current) {
-      clearTimeout(searchTimeout.current)
-    }
+    if (searchTimeout.current) clearTimeout(searchTimeout.current)
 
     if (searchQuery.length === 0) {
       setAppointments(allAppointments)
@@ -238,13 +247,12 @@ export default function CheckInPage() {
     }
 
     return () => {
-      if (searchTimeout.current) {
-        clearTimeout(searchTimeout.current)
-      }
+      if (searchTimeout.current) clearTimeout(searchTimeout.current)
     }
   }, [searchQuery, allAppointments])
 
-  async function handleCheckIn(appointment: Appointment) {
+  // ---------- CENTRAL CHECK-IN LOGIC ----------
+  async function performCheckIn(appointment: Appointment) {
     setCheckingIn(appointment.id)
     setError(null)
 
@@ -255,16 +263,12 @@ export default function CheckInPage() {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
 
-      const { data: existingCheckIns, error: queueError } = await supabase
+      const { data: existingCheckIns } = await supabase
         .from('check_ins')
         .select('queue_number')
         .gte('checked_in_at', today.toISOString())
         .order('queue_number', { ascending: false })
         .limit(1)
-
-      if (queueError) {
-        console.error('Queue number fetch error:', queueError)
-      }
 
       const nextQueueNumber = (existingCheckIns?.[0]?.queue_number || 0) + 1
 
@@ -279,21 +283,13 @@ export default function CheckInPage() {
           checked_in_at: new Date().toISOString(),
         })
 
-      if (checkInError) {
-        console.error('Check-in insert error:', checkInError)
-        throw new Error(checkInError.message || 'Failed to create check-in record')
-      }
+      if (checkInError) throw new Error(checkInError.message)
 
       // Update appointment status
-      const { error: updateError } = await supabase
+      await supabase
         .from('appointments')
         .update({ status: 'checked_in' })
         .eq('id', appointment.id)
-
-      if (updateError) {
-        console.error('Appointment update error:', updateError)
-        // Don't throw here - check-in was successful
-      }
 
       const childName = appointment.child?.full_name || 'Patient'
       const checkInTime = new Date().toLocaleTimeString('en-US', {
@@ -301,7 +297,7 @@ export default function CheckInPage() {
         minute: '2-digit',
       })
 
-      // Show queue ticket modal
+      // Show queue ticket
       setTicketModal({
         isOpen: true,
         queueNumber: nextQueueNumber,
@@ -320,6 +316,88 @@ export default function CheckInPage() {
     }
   }
 
+  // ---------- CHECK-IN BY APPOINTMENT ID (used by QR scanner) ----------
+  async function checkInByAppointmentId(appointmentId: string) {
+    // Try to find in current list
+    let appointment = appointments.find((a) => a.id === appointmentId)
+
+    if (!appointment) {
+      // Not in list, fetch from DB
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('appointments')
+          .select(
+            `
+            *,
+            child:children(id, full_name, date_of_birth),
+            caregiver:caregivers(id, profiles(full_name, phone))
+          `
+          )
+          .eq('id', appointmentId)
+          .single()
+
+        if (error || !data) throw new Error('Appointment not found')
+        appointment = data as Appointment
+      } catch (err) {
+        setError('Appointment not found. Please try again.')
+        return
+      }
+    }
+
+    // Prevent double check-in
+    if (appointment.status === 'checked_in') {
+      setError('This patient has already been checked in.')
+      return
+    }
+
+    await performCheckIn(appointment)
+  }
+
+  // ---------- CHECK-IN BY MANUAL CODE (GCH-XXXXX) ----------
+  async function handleCheckInByCode(code: string) {
+    if (!isValidCheckInCode(code)) return
+
+    setCheckingInByCode(true)
+    setError(null)
+
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('appointments')
+        .select(
+          `
+          *,
+          child:children(id, full_name, date_of_birth),
+          caregiver:caregivers(id, profiles(full_name, phone))
+        `
+        )
+        .eq('check_in_code', code)   // full "GCH-XXXXX"
+        .single()
+
+      if (error || !data) throw new Error('Invalid check-in code')
+
+      const appointment = data as Appointment
+
+      if (appointment.status === 'checked_in') {
+        setError('This patient has already been checked in.')
+        return
+      }
+
+      await performCheckIn(appointment)
+      setManualCode('') // clear input on success
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Invalid check-in code')
+    } finally {
+      setCheckingInByCode(false)
+    }
+  }
+
+  // ---------- ORIGINAL CHECK-IN (from appointment card) ----------
+  async function handleCheckIn(appointment: Appointment) {
+    await performCheckIn(appointment)
+  }
+
   function formatTime(dateString: string) {
     return new Date(dateString).toLocaleTimeString('en-US', {
       hour: '2-digit',
@@ -332,9 +410,7 @@ export default function CheckInPage() {
     const birthDate = new Date(dateOfBirth)
     let age = today.getFullYear() - birthDate.getFullYear()
     const monthDiff = today.getMonth() - birthDate.getMonth()
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--
-    }
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--
     if (age < 1) {
       const months = (today.getFullYear() - birthDate.getFullYear()) * 12 + monthDiff
       return `${months} months`
@@ -344,7 +420,7 @@ export default function CheckInPage() {
 
   return (
     <div className="space-y-4 pb-20 lg:space-y-6 lg:pb-6">
-      {/* Sticky header with larger touch targets */}
+      {/* Sticky header */}
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm -mx-4 px-4 py-3 border-b border-slate-100 lg:static lg:bg-transparent lg:backdrop-blur-none lg:border-0 lg:-mx-0 lg:px-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -356,8 +432,7 @@ export default function CheckInPage() {
             <div>
               <h1 className="text-xl font-bold text-slate-800 lg:text-2xl">Patient Check-In</h1>
               <p className="text-sm text-slate-500">
-                {allAppointments.length} appointment
-                {allAppointments.length !== 1 ? 's' : ''} today
+                {allAppointments.length} appointment{allAppointments.length !== 1 ? 's' : ''} today
               </p>
             </div>
           </div>
@@ -383,6 +458,45 @@ export default function CheckInPage() {
           </button>
         </div>
       )}
+
+      {/* ----- SCAN & MANUAL CHECK-IN CARD ----- */}
+      <Card className="border-none shadow-lg rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50/50">
+        <CardContent className="p-4 lg:p-5">
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch">
+            <Button
+              onClick={() => setIsScannerOpen(true)}
+              className="h-14 flex-1 gap-3 text-base rounded-xl bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-sm"
+              variant="secondary"
+            >
+              <span className="text-2xl">📷</span> Scan QR Code
+            </Button>
+            <div className="flex-1 flex gap-2">
+              <Input
+                placeholder="GCH-A2B3C"
+                value={manualCode}
+                onChange={(e) => setManualCode(e.target.value.toUpperCase())}
+                className="h-14 flex-1 text-base rounded-xl bg-white font-mono"
+                maxLength={9}
+              />
+              <Button
+                onClick={() => handleCheckInByCode(manualCode)}
+                disabled={!isValidCheckInCode(manualCode) || checkingInByCode}
+                className="h-14 px-6 text-base rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+              >
+                {checkingInByCode ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  'Go'
+                )}
+              </Button>
+            </div>
+          </div>
+          <p className="text-xs text-slate-500 mt-3 flex items-center gap-1.5">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500" />
+            Scan the QR code from the appointment confirmation or enter the 9‑character code (e.g. GCH-A2B3C)
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Search section */}
       <Card className="border-none shadow-lg rounded-2xl">
@@ -412,10 +526,7 @@ export default function CheckInPage() {
             </div>
           </div>
           {searchQuery && (
-            <div
-              role="status"
-              className="mt-3 text-sm text-slate-500 flex items-center gap-1"
-            >
+            <div role="status" className="mt-3 text-sm text-slate-500 flex items-center gap-1">
               <span className="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
               Showing {appointments.length} of {allAppointments.length} appointments
             </div>
@@ -435,7 +546,11 @@ export default function CheckInPage() {
           <CardContent className="py-12 px-6">
             <div className="flex flex-col items-center text-center max-w-xs mx-auto">
               <div className="text-6xl mb-4">
-                {searchQuery ? <Search className="h-16 w-16 text-slate-300" /> : <CalendarCheck className="h-16 w-16 text-slate-300" />}
+                {searchQuery ? (
+                  <Search className="h-16 w-16 text-slate-300" />
+                ) : (
+                  <CalendarCheck className="h-16 w-16 text-slate-300" />
+                )}
               </div>
               <h3 className="text-lg font-semibold text-slate-700 mb-1">
                 {searchQuery ? 'No matching patients' : 'All checked in!'}
@@ -555,6 +670,13 @@ export default function CheckInPage() {
           ))}
         </div>
       )}
+
+      {/* QR Scanner Modal */}
+      <QRScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScan={checkInByAppointmentId}
+      />
 
       {/* Queue Ticket Modal */}
       <QueueTicketModal
