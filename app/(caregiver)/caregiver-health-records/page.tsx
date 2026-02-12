@@ -29,27 +29,20 @@ import {
   X
 } from 'lucide-react'
 
+// ------------------------------------------------------------
+// Interfaces that match the actual API response
+// ------------------------------------------------------------
 interface LabResult {
   id: string
   testName: string
-  testCode: string
-  category: string
-  orderedBy: string
-  orderedDate: string
-  resultDate: string
-  status: 'pending' | 'processing' | 'completed'
-  isAbnormal: boolean
-  childName: string
+  description: string
+  status: string          // 'pending' | 'processing' | 'completed' | etc.
+  orderedAt: string
+  completedAt?: string
+  results?: any           // raw JSON or structured results
   childId: string
-  measurements?: {
-    name: string
-    value: string
-    unit: string
-    referenceRange: string
-    isAbnormal: boolean
-    flag?: 'low' | 'high'
-  }[]
-  interpretation?: string
+  childName: string
+  orderedBy: string
 }
 
 interface Prescription {
@@ -74,11 +67,16 @@ interface Prescription {
 
 interface Child {
   id: string
-  full_name: string
+  fullName: string        // camelCase, as returned by API
+  dateOfBirth?: string
+  gender?: string
+  bloodType?: string
+  allergies?: string[]
 }
 
 export default function HealthRecordsPage() {
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [activeTab, setActiveTab] = useState<'lab' | 'prescriptions'>('lab')
   const [labResults, setLabResults] = useState<LabResult[]>([])
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([])
@@ -89,10 +87,9 @@ export default function HealthRecordsPage() {
   const [childFilter, setChildFilter] = useState<string>('all')
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchHealthRecords()
-  }, [])
-
+  // ------------------------------------------------------------
+  // Fetch all health records from our fixed API
+  // ------------------------------------------------------------
   async function fetchHealthRecords() {
     try {
       setLoading(true)
@@ -104,7 +101,19 @@ export default function HealthRecordsPage() {
       }
 
       const data = await response.json()
-      setChildren(data.children || [])
+
+      // Map API fields to our interfaces
+      setChildren(
+        (data.children || []).map((c: any) => ({
+          id: c.id,
+          fullName: c.fullName,
+          dateOfBirth: c.dateOfBirth,
+          gender: c.gender,
+          bloodType: c.bloodType,
+          allergies: c.allergies || []
+        }))
+      )
+
       setLabResults(data.labResults || [])
       setPrescriptions(data.prescriptions || [])
     } catch (err) {
@@ -112,9 +121,46 @@ export default function HealthRecordsPage() {
       setError('Failed to load health records. Please try again.')
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
+  useEffect(() => {
+    fetchHealthRecords()
+  }, [])
+
+  // ------------------------------------------------------------
+  // Toggle reminder preference (example – replace with real API)
+  // ------------------------------------------------------------
+  async function toggleReminder(prescriptionId: string, currentState: boolean) {
+    try {
+      // TODO: Replace with actual API call
+      // await fetch(`/api/prescriptions/${prescriptionId}/reminder`, {
+      //   method: 'PATCH',
+      //   body: JSON.stringify({ enabled: !currentState })
+      // })
+
+      // Optimistic update
+      setPrescriptions(prev =>
+        prev.map(rx =>
+          rx.id === prescriptionId
+            ? { ...rx, reminderEnabled: !currentState }
+            : rx
+        )
+      )
+      if (selectedPrescription?.id === prescriptionId) {
+        setSelectedPrescription(prev =>
+          prev ? { ...prev, reminderEnabled: !currentState } : null
+        )
+      }
+    } catch (err) {
+      console.error('Failed to update reminder:', err)
+    }
+  }
+
+  // ------------------------------------------------------------
+  // Filtering
+  // ------------------------------------------------------------
   const filteredLabResults = labResults.filter(result => {
     if (childFilter !== 'all' && result.childId !== childFilter) return false
     if (searchQuery) {
@@ -133,21 +179,32 @@ export default function HealthRecordsPage() {
     return true
   })
 
+  // ------------------------------------------------------------
+  // Status badge styling
+  // ------------------------------------------------------------
   const getStatusColor = (status: string, isAbnormal?: boolean) => {
     if (isAbnormal) return 'bg-red-50 text-red-700 border-red-200'
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'completed':
+      case 'collected':
+      case 'dispensed':
         return 'bg-emerald-50 text-emerald-700 border-emerald-200'
       case 'active':
         return 'bg-blue-50 text-blue-700 border-blue-200'
       case 'pending':
       case 'processing':
         return 'bg-amber-50 text-amber-700 border-amber-200'
+      case 'discontinued':
+      case 'cancelled':
+        return 'bg-slate-50 text-slate-700 border-slate-200'
       default:
         return 'bg-slate-50 text-slate-700 border-slate-200'
     }
   }
 
+  // ------------------------------------------------------------
+  // Loading skeleton
+  // ------------------------------------------------------------
   if (loading) {
     return (
       <div className="space-y-6 pb-20 lg:pb-6">
@@ -161,7 +218,9 @@ export default function HealthRecordsPage() {
     )
   }
 
+  // ------------------------------------------------------------
   // Error state
+  // ------------------------------------------------------------
   if (error) {
     return (
       <div className="space-y-6 pb-20 lg:pb-6">
@@ -171,7 +230,10 @@ export default function HealthRecordsPage() {
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
             <p className="text-red-800 font-medium mb-4">{error}</p>
             <Button
-              onClick={fetchHealthRecords}
+              onClick={() => {
+                setError(null)
+                fetchHealthRecords()
+              }}
               className="rounded-xl"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
@@ -183,7 +245,9 @@ export default function HealthRecordsPage() {
     )
   }
 
+  // ------------------------------------------------------------
   // Lab Result Detail View
+  // ------------------------------------------------------------
   if (selectedLabResult) {
     return (
       <div className="space-y-6 pb-20 lg:pb-6">
@@ -199,78 +263,58 @@ export default function HealthRecordsPage() {
           <div>
             <h1 className="text-xl font-bold text-slate-900">{selectedLabResult.testName}</h1>
             <p className="text-slate-500 mt-1">{selectedLabResult.childName}</p>
+            {selectedLabResult.description && (
+              <p className="text-sm text-slate-600 mt-2">{selectedLabResult.description}</p>
+            )}
           </div>
-          <Badge className={getStatusColor(selectedLabResult.status, selectedLabResult.isAbnormal)}>
-            {selectedLabResult.isAbnormal ? 'Abnormal' : selectedLabResult.status}
+          <Badge className={getStatusColor(selectedLabResult.status)}>
+            {selectedLabResult.status}
           </Badge>
         </div>
 
         <Card className="border-slate-100">
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">Date</span>
+              <span className="text-slate-500">Ordered on</span>
               <span className="font-medium text-slate-900">
-                {new Date(selectedLabResult.resultDate || selectedLabResult.orderedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                {new Date(selectedLabResult.orderedAt).toLocaleDateString('en-US', {
+                  month: 'short', day: 'numeric', year: 'numeric'
+                })}
               </span>
             </div>
+            {selectedLabResult.completedAt && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-500">Completed on</span>
+                <span className="font-medium text-slate-900">
+                  {new Date(selectedLabResult.completedAt).toLocaleDateString('en-US', {
+                    month: 'short', day: 'numeric', year: 'numeric'
+                  })}
+                </span>
+              </div>
+            )}
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-500">Ordered by</span>
               <span className="font-medium text-slate-900">{selectedLabResult.orderedBy}</span>
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">Category</span>
-              <span className="font-medium text-slate-900">{selectedLabResult.category}</span>
-            </div>
           </CardContent>
         </Card>
 
-        {selectedLabResult.status === 'completed' && selectedLabResult.measurements && (
+        {/* Display results if available */}
+        {selectedLabResult.results && (
           <Card className="border-slate-100">
             <CardHeader className="border-b border-slate-100 pb-4">
-              <CardTitle className="text-base">Test Results</CardTitle>
+              <CardTitle className="text-base">Results</CardTitle>
             </CardHeader>
-            <CardContent className="p-0 divide-y divide-slate-100">
-              {selectedLabResult.measurements.map((measurement, idx) => (
-                <div key={idx} className="p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium text-slate-900">{measurement.name}</span>
-                    {measurement.isAbnormal ? (
-                      <AlertCircle className="h-5 w-5 text-red-500" />
-                    ) : (
-                      <CheckCircle className="h-5 w-5 text-emerald-500" />
-                    )}
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className={`text-lg font-bold ${measurement.isAbnormal ? 'text-red-600' : 'text-slate-900'}`}>
-                      {measurement.value}
-                    </span>
-                    <span className="text-sm text-slate-500">{measurement.unit}</span>
-                    {measurement.flag && (
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${measurement.flag === 'low' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
-                        }`}>
-                        {measurement.flag.toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-400 mt-1">Reference: {measurement.referenceRange}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
-        {selectedLabResult.interpretation && (
-          <Card className="border-slate-100 bg-blue-50/50">
             <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
-                  <Stethoscope className="h-4 w-4 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-900 mb-1">Doctor&apos;s Interpretation</p>
-                  <p className="text-sm text-slate-600">{selectedLabResult.interpretation}</p>
-                </div>
-              </div>
+              {typeof selectedLabResult.results === 'string' ? (
+                <p className="text-sm whitespace-pre-wrap text-slate-700">
+                  {selectedLabResult.results}
+                </p>
+              ) : (
+                <pre className="text-xs bg-slate-50 p-3 rounded-lg overflow-x-auto">
+                  {JSON.stringify(selectedLabResult.results, null, 2)}
+                </pre>
+              )}
             </CardContent>
           </Card>
         )}
@@ -289,7 +333,9 @@ export default function HealthRecordsPage() {
     )
   }
 
+  // ------------------------------------------------------------
   // Prescription Detail View
+  // ------------------------------------------------------------
   if (selectedPrescription) {
     return (
       <div className="space-y-6 pb-20 lg:pb-6">
@@ -304,7 +350,9 @@ export default function HealthRecordsPage() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold text-slate-900">{selectedPrescription.medicationName}</h1>
-            <p className="text-slate-500 mt-1">{selectedPrescription.genericName}</p>
+            {selectedPrescription.genericName && (
+              <p className="text-slate-500 mt-1">{selectedPrescription.genericName}</p>
+            )}
           </div>
           <Badge className={getStatusColor(selectedPrescription.status)}>
             {selectedPrescription.status}
@@ -319,7 +367,9 @@ export default function HealthRecordsPage() {
                 <Pill className="h-7 w-7 text-white" />
               </div>
               <div>
-                <p className="text-lg font-bold text-slate-900">{selectedPrescription.dosage} {selectedPrescription.form}</p>
+                <p className="text-lg font-bold text-slate-900">
+                  {selectedPrescription.dosage} {selectedPrescription.form}
+                </p>
                 <p className="text-slate-500">{selectedPrescription.frequency}</p>
               </div>
             </div>
@@ -328,14 +378,16 @@ export default function HealthRecordsPage() {
               <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-amber-600" />
-                  <span className="text-sm font-medium text-amber-800">{selectedPrescription.daysLeft} days remaining</span>
+                  <span className="text-sm font-medium text-amber-800">
+                    {selectedPrescription.daysLeft} days remaining
+                  </span>
                 </div>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Dosage Instructions */}
+        {/* Instructions */}
         <Card className="border-slate-100">
           <CardHeader className="border-b border-slate-100 pb-4">
             <CardTitle className="text-base">Instructions</CardTitle>
@@ -359,14 +411,18 @@ export default function HealthRecordsPage() {
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-500">Start Date</span>
               <span className="font-medium text-slate-900">
-                {new Date(selectedPrescription.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                {new Date(selectedPrescription.startDate).toLocaleDateString('en-US', {
+                  month: 'short', day: 'numeric', year: 'numeric'
+                })}
               </span>
             </div>
             {selectedPrescription.endDate && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-500">End Date</span>
                 <span className="font-medium text-slate-900">
-                  {new Date(selectedPrescription.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {new Date(selectedPrescription.endDate).toLocaleDateString('en-US', {
+                    month: 'short', day: 'numeric', year: 'numeric'
+                  })}
                 </span>
               </div>
             )}
@@ -390,16 +446,25 @@ export default function HealthRecordsPage() {
                   <p className="text-sm text-slate-500">Get notified when it&apos;s time to take</p>
                 </div>
               </div>
-              <button className={`relative w-12 h-6 rounded-full transition-colors ${selectedPrescription.reminderEnabled ? 'bg-blue-500' : 'bg-slate-200'
-                }`}>
-                <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${selectedPrescription.reminderEnabled ? 'translate-x-6' : 'translate-x-0'
-                  }`} />
+              <button
+                onClick={() => toggleReminder(selectedPrescription.id, selectedPrescription.reminderEnabled)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  selectedPrescription.reminderEnabled ? 'bg-blue-600' : 'bg-slate-200'
+                }`}
+                role="switch"
+                aria-checked={selectedPrescription.reminderEnabled}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                    selectedPrescription.reminderEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
               </button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Actions */}
+        {/* Refill Request */}
         {selectedPrescription.status === 'active' && selectedPrescription.refillsRemaining > 0 && (
           <Button className="w-full rounded-xl py-5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -410,7 +475,9 @@ export default function HealthRecordsPage() {
     )
   }
 
-  // Main View
+  // ------------------------------------------------------------
+  // Main List View
+  // ------------------------------------------------------------
   return (
     <div className="space-y-6 pb-20 lg:pb-6">
       {/* Header */}
@@ -420,13 +487,16 @@ export default function HealthRecordsPage() {
           <p className="text-slate-500 mt-1">Lab results, prescriptions & medical history</p>
         </div>
         <Button
-          onClick={fetchHealthRecords}
+          onClick={() => {
+            setRefreshing(true)
+            fetchHealthRecords()
+          }}
           variant="ghost"
           size="sm"
           className="rounded-xl"
-          disabled={loading}
+          disabled={refreshing}
         >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
         </Button>
       </div>
 
@@ -434,25 +504,27 @@ export default function HealthRecordsPage() {
       <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
         <button
           onClick={() => setActiveTab('lab')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'lab'
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'lab'
               ? 'bg-white text-slate-900 shadow-sm'
               : 'text-slate-600 hover:text-slate-900'
-            }`}
+          }`}
         >
           <TestTube className="h-4 w-4" />
           Lab Results
-          {labResults.filter(r => r.status !== 'completed').length > 0 && (
+          {labResults.filter(r => r.status.toLowerCase() !== 'completed').length > 0 && (
             <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center">
-              {labResults.filter(r => r.status !== 'completed').length}
+              {labResults.filter(r => r.status.toLowerCase() !== 'completed').length}
             </span>
           )}
         </button>
         <button
           onClick={() => setActiveTab('prescriptions')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'prescriptions'
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'prescriptions'
               ? 'bg-white text-slate-900 shadow-sm'
               : 'text-slate-600 hover:text-slate-900'
-            }`}
+          }`}
         >
           <Pill className="h-4 w-4" />
           Prescriptions
@@ -465,7 +537,7 @@ export default function HealthRecordsPage() {
       </div>
 
       {/* Search & Filter */}
-      <div className="flex gap-3">
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1 relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
           <input
@@ -484,7 +556,7 @@ export default function HealthRecordsPage() {
           <option value="all">All Children</option>
           {children.map(child => (
             <option key={child.id} value={child.id}>
-              {child.full_name}
+              {child.fullName}
             </option>
           ))}
         </select>
@@ -502,48 +574,60 @@ export default function HealthRecordsPage() {
               <p className="text-sm text-slate-400 mt-1">Results will appear here when available</p>
             </div>
           ) : (
-            filteredLabResults.map((result) => (
-              <button
-                key={result.id}
-                onClick={() => setSelectedLabResult(result)}
-                className="w-full flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all text-left"
-              >
-                <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${result.isAbnormal
-                    ? 'bg-red-50'
-                    : result.status === 'completed'
-                      ? 'bg-emerald-50'
-                      : 'bg-amber-50'
-                  }`}>
-                  {result.isAbnormal ? (
-                    <AlertCircle className="h-6 w-6 text-red-500" />
-                  ) : result.status === 'completed' ? (
-                    <CheckCircle className="h-6 w-6 text-emerald-500" />
-                  ) : (
-                    <Clock className="h-6 w-6 text-amber-500" />
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <p className="font-semibold text-slate-900 truncate">{result.testName}</p>
-                    {result.isAbnormal && (
-                      <Badge className="bg-red-100 text-red-700 border-red-200 text-[10px]">Abnormal</Badge>
+            filteredLabResults.map((result) => {
+              // Determine if abnormal – you may need to derive this from `results`
+              const isAbnormal = false // TODO: implement logic based on your data
+              return (
+                <button
+                  key={result.id}
+                  onClick={() => setSelectedLabResult(result)}
+                  className="w-full flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all text-left"
+                >
+                  <div
+                    className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${
+                      isAbnormal
+                        ? 'bg-red-50'
+                        : result.status.toLowerCase() === 'completed'
+                        ? 'bg-emerald-50'
+                        : 'bg-amber-50'
+                    }`}
+                  >
+                    {isAbnormal ? (
+                      <AlertCircle className="h-6 w-6 text-red-500" />
+                    ) : result.status.toLowerCase() === 'completed' ? (
+                      <CheckCircle className="h-6 w-6 text-emerald-500" />
+                    ) : (
+                      <Clock className="h-6 w-6 text-amber-500" />
                     )}
                   </div>
-                  <p className="text-sm text-slate-500">{result.childName}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    {new Date(result.orderedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} • {result.orderedBy}
-                  </p>
-                </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                  <Badge className={getStatusColor(result.status)}>
-                    {result.status}
-                  </Badge>
-                  <ChevronRight className="h-5 w-5 text-slate-300" />
-                </div>
-              </button>
-            ))
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <p className="font-semibold text-slate-900 truncate">{result.testName}</p>
+                      {isAbnormal && (
+                        <Badge className="bg-red-100 text-red-700 border-red-200 text-[10px]">
+                          Abnormal
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-slate-500">{result.childName}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {new Date(result.orderedAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric'
+                      })} • {result.orderedBy}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge className={getStatusColor(result.status)}>
+                      {result.status}
+                    </Badge>
+                    <ChevronRight className="h-5 w-5 text-slate-300" />
+                  </div>
+                </button>
+              )
+            })
           )}
         </div>
       )}
@@ -551,73 +635,81 @@ export default function HealthRecordsPage() {
       {/* Prescriptions Tab */}
       {activeTab === 'prescriptions' && (
         <div className="space-y-3">
-          {/* Active Medications Section */}
+          {/* Active Medications */}
           {filteredPrescriptions.filter(p => p.status === 'active').length > 0 && (
             <div className="mb-6">
-              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Active Medications</h3>
+              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                Active Medications
+              </h3>
               <div className="space-y-3">
-                {filteredPrescriptions.filter(p => p.status === 'active').map((rx) => (
-                  <button
-                    key={rx.id}
-                    onClick={() => setSelectedPrescription(rx)}
-                    className="w-full flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all text-left"
-                  >
-                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center shrink-0">
-                      <Pill className="h-6 w-6 text-purple-600" />
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-900">{rx.medicationName}</p>
-                      <p className="text-sm text-slate-500">{rx.dosage} • {rx.frequency}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">{rx.childName}</p>
-                    </div>
-
-                    <div className="text-right shrink-0">
-                      {rx.daysLeft && (
-                        <p className="text-sm font-medium text-amber-600">{rx.daysLeft} days left</p>
-                      )}
-                      <div className="flex items-center gap-1 mt-1">
-                        {rx.reminderEnabled && (
-                          <Bell className="h-4 w-4 text-blue-500" />
-                        )}
-                        <ChevronRight className="h-5 w-5 text-slate-300" />
+                {filteredPrescriptions
+                  .filter(p => p.status === 'active')
+                  .map((rx) => (
+                    <button
+                      key={rx.id}
+                      onClick={() => setSelectedPrescription(rx)}
+                      className="w-full flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all text-left"
+                    >
+                      <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center shrink-0">
+                        <Pill className="h-6 w-6 text-purple-600" />
                       </div>
-                    </div>
-                  </button>
-                ))}
+
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-slate-900">{rx.medicationName}</p>
+                        <p className="text-sm text-slate-500">
+                          {rx.dosage} • {rx.frequency}
+                        </p>
+                        <p className="text-xs text-slate-400 mt-0.5">{rx.childName}</p>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        {rx.daysLeft && (
+                          <p className="text-sm font-medium text-amber-600">{rx.daysLeft} days left</p>
+                        )}
+                        <div className="flex items-center gap-1 mt-1">
+                          {rx.reminderEnabled && <Bell className="h-4 w-4 text-blue-500" />}
+                          <ChevronRight className="h-5 w-5 text-slate-300" />
+                        </div>
+                      </div>
+                    </button>
+                  ))}
               </div>
             </div>
           )}
 
-          {/* Past Medications Section */}
+          {/* Past Medications */}
           {filteredPrescriptions.filter(p => p.status !== 'active').length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Past Medications</h3>
+              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                Past Medications
+              </h3>
               <div className="space-y-3">
-                {filteredPrescriptions.filter(p => p.status !== 'active').map((rx) => (
-                  <button
-                    key={rx.id}
-                    onClick={() => setSelectedPrescription(rx)}
-                    className="w-full flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-sm transition-all text-left opacity-75 hover:opacity-100"
-                  >
-                    <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-                      <Pill className="h-6 w-6 text-slate-400" />
-                    </div>
+                {filteredPrescriptions
+                  .filter(p => p.status !== 'active')
+                  .map((rx) => (
+                    <button
+                      key={rx.id}
+                      onClick={() => setSelectedPrescription(rx)}
+                      className="w-full flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-sm transition-all text-left opacity-75 hover:opacity-100"
+                    >
+                      <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                        <Pill className="h-6 w-6 text-slate-400" />
+                      </div>
 
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-700">{rx.medicationName}</p>
-                      <p className="text-sm text-slate-500">{rx.dosage} • {rx.frequency}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">{rx.childName}</p>
-                    </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-slate-700">{rx.medicationName}</p>
+                        <p className="text-sm text-slate-500">
+                          {rx.dosage} • {rx.frequency}
+                        </p>
+                        <p className="text-xs text-slate-400 mt-0.5">{rx.childName}</p>
+                      </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge className={getStatusColor(rx.status)}>
-                        {rx.status}
-                      </Badge>
-                      <ChevronRight className="h-5 w-5 text-slate-300" />
-                    </div>
-                  </button>
-                ))}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge className={getStatusColor(rx.status)}>{rx.status}</Badge>
+                        <ChevronRight className="h-5 w-5 text-slate-300" />
+                      </div>
+                    </button>
+                  ))}
               </div>
             </div>
           )}
