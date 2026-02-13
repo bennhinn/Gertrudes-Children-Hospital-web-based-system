@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
+import { logActivity, ActivityActions } from '@/lib/activity-logger'
 import {
     MessageSquare,
     Send,
@@ -125,6 +126,17 @@ export default function StaffMessagesPage() {
         fetchConversations()
     }, [fetchConversations])
 
+    // Log messages/inbox view after load
+    useEffect(() => {
+        if (!loading) {
+            logActivity({
+                action: ActivityActions.MESSAGE_READ,
+                description: 'Viewed messages inbox',
+                metadata: {},
+            }).catch(() => {})
+        }
+    }, [loading])
+
     // Fetch staff members for new message
     const fetchStaffMembers = useCallback(async () => {
         try {
@@ -155,6 +167,11 @@ export default function StaffMessagesPage() {
     const handleOpenNewMessage = () => {
         setShowNewMessage(true)
         fetchStaffMembers()
+        // Log opening new message modal
+        logActivity({
+            action: ActivityActions.CONVERSATION_CREATE,
+            description: 'Opened new message modal',
+        }).catch(() => {})
     }
 
     // Create new staff-to-staff conversation
@@ -213,6 +230,13 @@ export default function StaffMessagesPage() {
                 conversationType: 'staff_staff',
             }
             handleSelectConversation(newConv)
+            // Log conversation creation
+            logActivity({
+                action: ActivityActions.CONVERSATION_CREATE,
+                description: `Created conversation with ${selectedRecipient?.full_name}`,
+                target_id: data.conversation?.id || null,
+                metadata: { recipientId: selectedRecipient?.id },
+            }).catch(() => {})
 
         } catch (err) {
             console.error('Error creating conversation:', err)
@@ -355,6 +379,13 @@ export default function StaffMessagesPage() {
     const handleSelectConversation = (conversation: Conversation) => {
         setSelectedConversation(conversation)
         fetchMessages(conversation.id)
+        // Log conversation opened / messages viewed
+        logActivity({
+            action: ActivityActions.MESSAGE_READ,
+            description: `Opened conversation ${conversation.id}`,
+            target_id: conversation.id,
+            metadata: { conversationType: conversation.conversationType },
+        }).catch(() => {})
     }
 
     // Send a message
@@ -374,6 +405,13 @@ export default function StaffMessagesPage() {
             }
 
             setNewMessage('')
+            // Log message send
+            logActivity({
+                action: ActivityActions.MESSAGE_SEND,
+                description: `Sent message in conversation ${selectedConversation?.id}`,
+                target_id: selectedConversation?.id || null,
+                metadata: { snippet: newMessage.trim().slice(0, 120) },
+            }).catch(() => {})
         } catch (err) {
             console.error('Error sending message:', err)
             alert('Failed to send message. Please try again.')

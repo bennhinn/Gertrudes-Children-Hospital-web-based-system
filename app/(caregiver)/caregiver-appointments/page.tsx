@@ -1,6 +1,7 @@
-'use client'
+ 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { logActivity, ActivityActions } from '@/lib/activity-logger'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -202,6 +203,20 @@ export default function AppointmentsPage() {
       setShowBookingForm(false)
       await loadData()
 
+      // Log appointment creation
+      try {
+        logActivity({
+          action: ActivityActions.APPOINTMENT_CREATE,
+          action_category: 'appointment',
+          target_table: 'appointments',
+          target_id: newAppointment?.id,
+          description: `Created appointment for child ${childId}`,
+          metadata: { check_in_code: checkInCode }
+        }).catch(() => {})
+      } catch (e) {
+        /* swallow */
+      }
+
       // ----- CREATE BOOKING FEE INVOICE (unchanged) -----
       try {
         const invoiceRes = await fetch('/api/invoices/create', {
@@ -325,6 +340,15 @@ export default function AppointmentsPage() {
         childName: appointment.child?.full_name || 'Unknown',
         checkInCode: data.checkInCode, // <-- always present
       })
+
+      // Log viewing QR for appointment
+      logActivity({
+        action: ActivityActions.APPOINTMENT_VIEW,
+        action_category: 'appointment',
+        target_table: 'appointments',
+        target_id: appointment.id,
+        description: `Viewed QR for appointment ${appointment.id}`
+      }).catch(() => {})
     } catch (err: any) {
       alert('Failed to load QR code')
     } finally {

@@ -1,6 +1,7 @@
-'use client'
+ 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { logActivity, ActivityActions } from '@/lib/activity-logger'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -94,6 +95,14 @@ export default function PatientsPage() {
       setShowAddForm(false)
       await loadChildren()
 
+      // Log patient/child creation
+      logActivity({
+        action: ActivityActions.PATIENT_CREATE,
+        action_category: 'patient',
+        target_table: 'children',
+        description: `Added child ${fullName}`
+      }).catch(() => {})
+
       // Reset form
       e.currentTarget.reset()
     } catch (err: any) {
@@ -179,7 +188,7 @@ export default function PatientsPage() {
         <div className="flex gap-3">
           {!showAddForm && (
             <Button
-              onClick={() => setShowAddForm(true)}
+              onClick={() => { logActivity({ action: 'opened_add_child_form', action_category: 'patient', description: 'Opened add child form' }).catch(() => {}); setShowAddForm(true) }}
               className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg text-sm sm:text-base transition-all duration-300"
             >
               <UserPlus className="h-4 w-4 mr-1.5" />

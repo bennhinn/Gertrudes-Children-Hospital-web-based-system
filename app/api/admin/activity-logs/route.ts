@@ -1,27 +1,34 @@
+// app/api/activity/route.ts
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import {
+    logActivityServer,
+    getRequestMetadata,
+    ActivityActions,   // optional, for typed actions
+} from '@/lib/activity-logger';
 
-// GET - Fetch activity logs with pagination and filters
+// ----------------------------------------------------------------------
+// GET – Admin fetch (unchanged, but improved transform)
+// ----------------------------------------------------------------------
 export async function GET(request: NextRequest) {
     try {
         const supabase = await createClient();
 
-        // Check if user is admin
+        // Admin check
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
-
-        const { data: userData } = await supabase
+        const { data: profile } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single();
-
-        if (userData?.role !== 'admin') {
+        if (profile?.role !== 'admin') {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
+        // Parse query params
         const searchParams = request.nextUrl.searchParams;
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '50');
@@ -34,27 +41,18 @@ export async function GET(request: NextRequest) {
 
         const offset = (page - 1) * limit;
 
+        // Build query
         let query = supabase
             .from('audit_logs')
             .select('*', { count: 'exact' })
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
 
-        if (action) {
-            query = query.eq('action', action);
-        }
-        if (targetTable) {
-            query = query.eq('target_table', targetTable);
-        }
-        if (userId) {
-            query = query.eq('user_id', userId);
-        }
-        if (startDate) {
-            query = query.gte('created_at', startDate);
-        }
-        if (endDate) {
-            query = query.lte('created_at', endDate);
-        }
+        if (action) query = query.eq('action', action);
+        if (targetTable) query = query.eq('target_table', targetTable);
+        if (userId) query = query.eq('user_id', userId);
+        if (startDate) query = query.gte('created_at', startDate);
+        if (endDate) query = query.lte('created_at', endDate);
         if (search) {
             query = query.or(`description.ilike.%${search}%,action.ilike.%${search}%`);
         }
@@ -66,11 +64,13 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Failed to fetch activity logs' }, { status: 500 });
         }
 
-        // Transform logs to include action_type and resource_type for UI compatibility
+        // No need to derive action_type/resource_type – they are already in the table.
+        // But keep a lightweight transform for UI convenience if needed.
         const transformedLogs = logs?.map(log => ({
             ...log,
-            action_type: log.action?.split('_').pop() || 'other',
-            resource_type: log.target_table || 'system',
+            // UI-friendly aliases (already present, but fallback)
+            action_type_display: log.action_type || log.action?.split('_').pop() || 'other',
+            resource_type_display: log.target_table || 'system',
         }));
 
         return NextResponse.json({
@@ -82,60 +82,66 @@ export async function GET(request: NextRequest) {
                 totalPages: Math.ceil((count || 0) / limit)
             }
         });
+
     } catch (error) {
         console.error('Error in activity logs API:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
 
-// POST - Create a new activity log
+// ----------------------------------------------------------------------
+// POST – Client log intake – now uses logActivityServer
+// ----------------------------------------------------------------------
 export async function POST(request: NextRequest) {
     try {
         const supabase = await createClient();
         const body = await request.json();
 
-        const { data: { user } } = await supabase.auth.getUser();
+        // Extract IP, User-Agent, device info from the request
+        const metadata = getRequestMetadata(request);
 
-        // Get user details if logged in
-        let userEmail = body.user_email || null;
-        let userRole = body.user_role || null;
-
-        if (user) {
-            const { data: profileData } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', user.id)
-                .single();
-
-            userEmail = user.email;
-            userRole = profileData?.role || null;
-        }
-
-        const logEntry = {
-            user_id: user?.id || null,
+        // Use the central server logger – it will:
+        // - auto‑fetch the current user (if any)
+        // - derive action_type / action_category if not provided
+        // - set status = 'success' as default
+        // - handle all schema fields
+        await logActivityServer(supabase, {
+            // Client sends these fields (omit user, we let auto‑user handle it)
             action: body.action,
             target_table: body.target_table,
-            target_id: body.target_id || null,
-            description: body.description || null,
+            target_id: body.target_id,
+            resource_name: body.resource_name,      // new – add to client logger
+            description: body.description,
             metadata: body.metadata || {},
-            user_email: userEmail,
-            user_role: userRole,
-        };
+            status: body.status || 'success',       // optional, default success
+            error_message: body.error_message,
+            changes: body.changes,
+            action_type: body.action_type,          // optional, will derive if missing
+            action_category: body.action_category,  // optional, will derive if missing
 
-        const { data, error } = await supabase
-            .from('audit_logs')
-            .insert(logEntry)
-            .select()
-            .single();
+            // Request metadata (IP, user-agent, device, browser, OS)
+            ...metadata,
+        }, { autoUser: true }); // autoUser: true is default, but explicit is fine
 
-        if (error) {
-            console.error('Error creating activity log:', error);
-            return NextResponse.json({ error: 'Failed to create activity log' }, { status: 500 });
-        }
+        return NextResponse.json({ success: true });
 
-        return NextResponse.json(data);
     } catch (error) {
         console.error('Error in activity logs API:', error);
+
+        // Attempt to log the failure itself (if supabase client is available)
+        try {
+            const supabase = await createClient();
+            const metadata = getRequestMetadata(request);
+            await logActivityServer(supabase, {
+                action: 'activity_log_failed',
+                action_category: 'system',
+                status: 'failure',
+                error_message: error instanceof Error ? error.message : 'Unknown error',
+                metadata: { body: await request.clone().json().catch(() => ({})) },
+                ...metadata,
+            }, { autoUser: true });
+        } catch { /* ignore secondary failure */ }
+
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

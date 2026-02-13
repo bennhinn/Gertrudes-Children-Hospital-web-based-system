@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import { Search, X } from 'lucide-react'
+import { logActivity, ActivityActions } from '@/lib/activity-logger'
 
 interface Prescription {
     id: string
@@ -109,6 +110,28 @@ export default function PharmacyPrescriptionsPage() {
         }
     }, [loadPrescriptions])
 
+    // Log prescriptions list view
+    useEffect(() => {
+        if (!loading) {
+            logActivity({
+                action: ActivityActions.REPORT_VIEW,
+                description: 'Viewed prescriptions list',
+                metadata: {},
+            }).catch(() => {})
+        }
+    }, [loading])
+
+    function handleSelectPrescription(prescription: Prescription) {
+        setSelectedPrescription(prescription)
+        // non-blocking log
+        logActivity({
+            action: ActivityActions.PRESCRIPTION_VIEW || 'prescription_view',
+            description: `Opened prescription ${prescription.id}`,
+            target_table: 'prescriptions',
+            target_id: prescription.id,
+        }).catch(() => {})
+    }
+
     async function updatePrescriptionStatus(id: string, newStatus: string) {
         setUpdating(id)
         try {
@@ -201,6 +224,22 @@ export default function PharmacyPrescriptionsPage() {
 
             if (error) throw error
 
+            // Log prescription status change (non-blocking)
+            if (newStatus === 'preparing') {
+                logActivity({
+                    action: ActivityActions.PRESCRIPTION_UPDATE,
+                    description: `Marked prescription ${id} as preparing`,
+                    target_table: 'prescriptions',
+                    target_id: id,
+                }).catch(() => {})
+            } else if (newStatus === 'dispensed') {
+                logActivity({
+                    action: ActivityActions.PRESCRIPTION_DISPENSE,
+                    description: `Dispensed prescription ${id}`,
+                    target_table: 'prescriptions',
+                    target_id: id,
+                }).catch(() => {})
+            }
             if (selectedPrescription?.id === id && newStatus === 'dispensed') {
                 setSelectedPrescription(null)
                 alert('✅ Prescription dispensed successfully! Inventory has been updated.')
@@ -399,10 +438,10 @@ export default function PharmacyPrescriptionsPage() {
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                {searchedPrescriptions.map((prescription) => (
-                                    <button
-                                        key={prescription.id}
-                                        onClick={() => setSelectedPrescription(prescription)}
+                                                {searchedPrescriptions.map((prescription) => (
+                                                    <button
+                                                        key={prescription.id}
+                                                        onClick={() => handleSelectPrescription(prescription)}
                                         className={`w-full rounded-xl border p-4 text-left transition-all hover:shadow-md ${selectedPrescription?.id === prescription.id
                                             ? 'border-cyan-500 bg-cyan-50 ring-2 ring-cyan-500'
                                             : prescription.urgency === 'stat'

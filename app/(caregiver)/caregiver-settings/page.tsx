@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { logActivity } from '@/lib/activity-logger'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
@@ -234,6 +235,11 @@ export default function SettingsPage() {
     loadUserData()
   }, [])
 
+  // Log that caregiver opened settings
+  useEffect(() => {
+    logActivity({ action: 'caregiver_settings_view', action_category: 'system', description: 'Viewed settings page' }).catch(() => {})
+  }, [])
+
   useEffect(() => {
     if (user) {
       setProfileForm({
@@ -420,6 +426,9 @@ export default function SettingsPage() {
 
       setFeedbackSuccess(true)
       addToast('success', 'Thank you for your feedback!')
+
+      // Log feedback submission
+      logActivity({ action: 'caregiver_feedback_send', action_category: 'other', description: `Feedback sent: ${feedbackType}`, metadata: { type: feedbackType } }).catch(() => {})
 
       setTimeout(() => {
         setShowFeedbackModal(false)

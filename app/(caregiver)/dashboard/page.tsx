@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/server'
+import { logActivityServer } from '@/lib/activity-logger'
 import { getChildrenByCaregiver, getUpcomingAppointments, getCompletedAppointmentsCount } from '@/lib/db/queries'
 import type { Appointment } from '@/types'
 import Link from 'next/link'
@@ -128,6 +129,20 @@ export default async function DashboardPage() {
 
   if (!user) {
     return <div>Please log in</div>
+  }
+
+  // Log caregiver dashboard view (server-side)
+  try {
+    await logActivityServer(supabase, {
+      user_id: user.id,
+      user_email: user.email,
+      user_role: (user.user_metadata as any)?.role || null,
+      action: 'caregiver_dashboard_view',
+      resource_name: 'caregiver_dashboard',
+      description: `Caregiver ${user.id} viewed dashboard`
+    }, { autoUser: false })
+  } catch (e) {
+    // ignore logging errors
   }
 
   const fullName = (user?.user_metadata as { full_name?: string })?.full_name || 'Caregiver'

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
+import { logActivity, ActivityActions } from '@/lib/activity-logger'
 import {
     Pill,
     ClipboardList,
@@ -147,6 +148,17 @@ export default function PharmacyDashboardPage() {
             supabase.removeChannel(channel)
         }
     }, [loadDashboardData])
+
+    // Log dashboard view after initial load
+    useEffect(() => {
+        if (!loading) {
+            logActivity({
+                action: ActivityActions.REPORT_VIEW,
+                description: 'Viewed pharmacy dashboard',
+                metadata: {},
+            }).catch(() => {})
+        }
+    }, [loading])
 
     function getTimeAgo(dateString: string) {
         const now = new Date().getTime()

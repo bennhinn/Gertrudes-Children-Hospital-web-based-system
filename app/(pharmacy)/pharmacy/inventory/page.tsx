@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { createClient } from '@/lib/supabase/client'
+import { logActivity, ActivityActions } from '@/lib/activity-logger'
 import {
   CheckCircle2, Package, History, Plus, Loader2, Download, ShoppingCart,
   AlertTriangle, Truck, Pill, TrendingDown,
@@ -235,6 +236,12 @@ export default function PharmacyInventoryPage() {
     setOrderQuantity(50)
     setSelectedSupplierId(medication.supplier_id || '')
     setShowOrderModal(true)
+    // Log opening order modal
+    logActivity({
+      action: ActivityActions.SUPPLY_ORDER_CREATE || 'supply_order_create',
+      description: `Opened restock order modal for ${medication.name}`,
+      metadata: { medicationId: medication.id },
+    }).catch(() => {})
   }
 
   async function submitOrder() {
@@ -261,6 +268,12 @@ export default function PharmacyInventoryPage() {
       setSelectedMedication(null)
       loadData()
       alert('✅ Order placed successfully!')
+      // Log order placement
+      logActivity({
+        action: ActivityActions.SUPPLY_ORDER_CREATE || 'supply_order_create',
+        description: `Placed supply order ${selectedMedication?.name}`,
+        metadata: { medicationId: selectedMedication?.id, poNumber: poNumber },
+      }).catch(() => {})
     } catch (error: any) {
       alert(error.message)
     } finally {
@@ -280,6 +293,12 @@ export default function PharmacyInventoryPage() {
       const newStock = (order.medication.stock || 0) + order.quantity
       await supabase.from('medications').update({ stock: newStock }).eq('id', order.medication_id)
       loadData()
+      logActivity({
+        action: ActivityActions.DELIVERY_RECEIVE || 'delivery_receive',
+        description: `Marked order ${order.id} as delivered`,
+        target_id: order.id,
+        metadata: { medicationId: order.medication_id, quantity: order.quantity },
+      }).catch(() => {})
     } catch (error: any) {
       alert(error.message)
     } finally {
@@ -295,6 +314,12 @@ export default function PharmacyInventoryPage() {
       setShowAddModal(false)
       setFormData({ name: '', stock: 0 })
       loadData()
+      // Log new medication added
+      logActivity({
+        action: ActivityActions.MEDICATION_CREATE || 'medication_create',
+        description: `Added new medication ${formData.name}`,
+        metadata: { name: formData.name },
+      }).catch(() => {})
     } catch (error: any) {
       alert(error.message)
     } finally {
@@ -345,6 +370,13 @@ export default function PharmacyInventoryPage() {
       if (error) throw error
       alert(`✅ Invoice ${invoiceNumber} created`)
       await loadData()
+      // Log invoice creation
+      logActivity({
+        action: ActivityActions.INVOICE_CREATE,
+        description: `Created supplier invoice ${invoiceNumber} for order ${order.id}`,
+        target_id: order.id,
+        metadata: { invoiceNumber },
+      }).catch(() => {})
     } catch (err: any) {
       alert(`Failed to create invoice: ${err.message}`)
     } finally {
@@ -411,6 +443,12 @@ export default function PharmacyInventoryPage() {
       alert('✅ Payment recorded! Receipt generated.')
       await loadData()
       setShowSupplierPaymentModal(false)
+        // Log supplier payment
+        logActivity({
+          action: ActivityActions.PAYMENT_CREATE,
+          description: `Processed supplier payment for invoice ${selectedInvoice?.invoice_number}`,
+          metadata: { amount: supplierPaymentAmount, invoiceId: selectedInvoice?.id },
+        }).catch(() => {})
     } catch (err: any) {
       alert(`Payment failed: ${err.message}`)
     } finally {

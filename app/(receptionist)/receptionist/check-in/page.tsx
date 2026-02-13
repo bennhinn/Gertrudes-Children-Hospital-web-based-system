@@ -26,6 +26,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { isValidCheckInCode } from '@/utils/qr'
+import { logActivity, ActivityActions } from '@/lib/activity-logger'
 
 // Dynamically import the QR scanner (client only)
 const QRScannerModal = dynamic(
@@ -51,7 +52,7 @@ interface Appointment {
   }
 }
 
-// Queue Ticket Modal Component (unchanged)
+// Queue Ticket Modal Component (unchanged, but with added logging)
 function QueueTicketModal({
   isOpen,
   onClose,
@@ -67,6 +68,29 @@ function QueueTicketModal({
 }) {
   if (!isOpen) return null
 
+  const handleCheckAnother = () => {
+    onClose()
+    logActivity({
+      action: 'check_another_patient',
+      action_category: 'appointment',
+      action_type: 'view',
+      status: 'success',
+      description: 'Clicked "Check Another" from queue ticket',
+      metadata: { patientName, queueNumber },
+    }).catch(() => {})
+  }
+
+  const handleViewQueue = () => {
+    logActivity({
+      action: 'view_queue',
+      action_category: 'appointment',
+      action_type: 'view',
+      status: 'success',
+      description: 'Clicked "View Queue" from queue ticket',
+      metadata: { patientName, queueNumber },
+    }).catch(() => {})
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4"
@@ -80,7 +104,7 @@ function QueueTicketModal({
           {/* Header */}
           <div className="bg-gradient-to-br from-green-500 to-emerald-600 px-6 py-8 text-center text-white relative">
             <button
-              onClick={onClose}
+              onClick={handleCheckAnother}
               className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors"
             >
               <X className="h-5 w-5 text-white" />
@@ -124,13 +148,16 @@ function QueueTicketModal({
           <div className="border-t border-slate-100 px-4 py-4 flex gap-3">
             <Button
               variant="secondary"
-              onClick={onClose}
+              onClick={handleCheckAnother}
               className="flex-1 h-12 rounded-xl text-base"
             >
               Check Another
             </Button>
             <Link href="/receptionist/queue" className="flex-1">
-              <Button className="w-full h-12 rounded-xl text-base bg-gradient-to-r from-green-600 to-emerald-600">
+              <Button
+                className="w-full h-12 rounded-xl text-base bg-gradient-to-r from-green-600 to-emerald-600"
+                onClick={handleViewQueue}
+              >
                 View Queue
               </Button>
             </Link>
@@ -174,12 +201,23 @@ export default function CheckInPage() {
     time: string
   }>({ isOpen: false, queueNumber: 0, patientName: '', time: '' })
 
-  // New state for QR & manual code
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [manualCode, setManualCode] = useState('')
   const [checkingInByCode, setCheckingInByCode] = useState(false)
 
   const searchTimeout = useRef<NodeJS.Timeout | undefined>(undefined)
+
+  // Page view logging
+  useEffect(() => {
+    logActivity({
+      action: 'page_view',
+      action_category: 'appointment',
+      action_type: 'view',
+      status: 'success',
+      description: 'Viewed patient check-in page',
+      metadata: { path: '/receptionist/check-in' },
+    }).catch(() => {})
+  }, [])
 
   // Load all today's appointments on mount
   useEffect(() => {
@@ -220,7 +258,7 @@ export default function CheckInPage() {
     }
   }
 
-  // Filter appointments when search query changes (unchanged)
+  // Filter appointments when search query changes
   useEffect(() => {
     if (searchTimeout.current) clearTimeout(searchTimeout.current)
 
@@ -252,7 +290,7 @@ export default function CheckInPage() {
   }, [searchQuery, allAppointments])
 
   // ---------- CENTRAL CHECK-IN LOGIC ----------
-  async function performCheckIn(appointment: Appointment) {
+  async function performCheckIn(appointment: Appointment, method: 'appointment_card' | 'qr_scan' | 'manual_code') {
     setCheckingIn(appointment.id)
     setError(null)
 
@@ -305,12 +343,52 @@ export default function CheckInPage() {
         time: checkInTime,
       })
 
+      // ✅ SUCCESS LOG – Check-in
+      logActivity({
+        action: ActivityActions.CHECKIN_CREATE,
+        action_category: 'appointment',
+        action_type: 'create',
+        status: 'success',
+        target_table: 'check_ins',
+        target_id: appointment.id,
+        resource_name: childName,
+        description: `Checked in patient ${childName} (queue #${nextQueueNumber})`,
+        metadata: {
+          appointmentId: appointment.id,
+          appointmentTime: appointment.scheduled_for,
+          queueNumber: nextQueueNumber,
+          patientName: childName,
+          patientId: appointment.child?.id,
+          caregiverName: appointment.caregiver?.profiles?.full_name,
+          method,
+        },
+      }).catch(() => {})
+
       // Remove from both lists
       setAppointments((prev) => prev.filter((a) => a.id !== appointment.id))
       setAllAppointments((prev) => prev.filter((a) => a.id !== appointment.id))
     } catch (err) {
       console.error('Check-in error:', err)
-      setError(err instanceof Error ? err.message : 'Failed to check in patient. Please try again.')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to check in patient. Please try again.'
+      setError(errorMessage)
+
+      // ❌ FAILURE LOG – Check-in
+      logActivity({
+        action: ActivityActions.CHECKIN_CREATE,
+        action_category: 'appointment',
+        action_type: 'create',
+        status: 'failure',
+        target_table: 'appointments',
+        target_id: appointment.id,
+        resource_name: appointment.child?.full_name || 'Unknown',
+        description: `Failed to check in patient: ${errorMessage}`,
+        error_message: errorMessage,
+        metadata: {
+          appointmentId: appointment.id,
+          appointmentStatus: appointment.status,
+          method,
+        },
+      }).catch(() => {})
     } finally {
       setCheckingIn(null)
     }
@@ -318,7 +396,6 @@ export default function CheckInPage() {
 
   // ---------- CHECK-IN BY APPOINTMENT ID (used by QR scanner) ----------
   async function checkInByAppointmentId(appointmentId: string) {
-    // Try to find in current list
     let appointment = appointments.find((a) => a.id === appointmentId)
 
     if (!appointment) {
@@ -340,18 +417,43 @@ export default function CheckInPage() {
         if (error || !data) throw new Error('Appointment not found')
         appointment = data as Appointment
       } catch (err) {
-        setError('Appointment not found. Please try again.')
+        const errorMessage = 'Appointment not found. Please try again.'
+        setError(errorMessage)
+
+        // ❌ QR SCAN FAILURE LOG
+        logActivity({
+          action: 'qr_scan_failed',
+          action_category: 'appointment',
+          action_type: 'view',
+          status: 'failure',
+          target_table: 'appointments',
+          target_id: appointmentId,
+          description: `QR scan failed: ${errorMessage}`,
+          error_message: errorMessage,
+          metadata: { scannedCode: appointmentId, method: 'qr_scan' },
+        }).catch(() => {})
         return
       }
     }
 
-    // Prevent double check-in
     if (appointment.status === 'checked_in') {
       setError('This patient has already been checked in.')
+      // ❌ ALREADY CHECKED IN LOG
+      logActivity({
+        action: 'check_in_already_checked',
+        action_category: 'appointment',
+        action_type: 'reject',
+        status: 'failure',
+        target_table: 'appointments',
+        target_id: appointment.id,
+        resource_name: appointment.child?.full_name,
+        description: `Attempted check-in on already checked-in patient (QR)`,
+        metadata: { appointmentId, method: 'qr_scan' },
+      }).catch(() => {})
       return
     }
 
-    await performCheckIn(appointment)
+    await performCheckIn(appointment, 'qr_scan')
   }
 
   // ---------- CHECK-IN BY MANUAL CODE (GCH-XXXXX) ----------
@@ -372,7 +474,7 @@ export default function CheckInPage() {
           caregiver:caregivers(id, profiles(full_name, phone))
         `
         )
-        .eq('check_in_code', code)   // full "GCH-XXXXX"
+        .eq('check_in_code', code)
         .single()
 
       if (error || !data) throw new Error('Invalid check-in code')
@@ -381,13 +483,38 @@ export default function CheckInPage() {
 
       if (appointment.status === 'checked_in') {
         setError('This patient has already been checked in.')
+        // ❌ ALREADY CHECKED IN LOG (manual)
+        logActivity({
+          action: 'check_in_already_checked',
+          action_category: 'appointment',
+          action_type: 'reject',
+          status: 'failure',
+          target_table: 'appointments',
+          target_id: appointment.id,
+          resource_name: appointment.child?.full_name,
+          description: `Attempted check-in on already checked-in patient (manual code)`,
+          metadata: { code, method: 'manual_code' },
+        }).catch(() => {})
         return
       }
 
-      await performCheckIn(appointment)
+      await performCheckIn(appointment, 'manual_code')
       setManualCode('') // clear input on success
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Invalid check-in code')
+      const errorMessage = err instanceof Error ? err.message : 'Invalid check-in code'
+      setError(errorMessage)
+
+      // ❌ INVALID CODE LOG
+      logActivity({
+        action: ActivityActions.CHECKIN_CREATE,
+        action_category: 'appointment',
+        action_type: 'create',
+        status: 'failure',
+        target_table: 'appointments',
+        description: `Invalid check-in code attempted: ${code}`,
+        error_message: errorMessage,
+        metadata: { code, method: 'manual_code' },
+      }).catch(() => {})
     } finally {
       setCheckingInByCode(false)
     }
@@ -395,7 +522,55 @@ export default function CheckInPage() {
 
   // ---------- ORIGINAL CHECK-IN (from appointment card) ----------
   async function handleCheckIn(appointment: Appointment) {
-    await performCheckIn(appointment)
+    await performCheckIn(appointment, 'appointment_card')
+  }
+
+  // ---------- QR SCANNER HANDLERS ----------
+  const handleOpenScanner = () => {
+    setIsScannerOpen(true)
+    logActivity({
+      action: 'qr_scanner_open',
+      action_category: 'appointment',
+      action_type: 'view',
+      status: 'success',
+      description: 'Opened QR scanner modal',
+      metadata: { source: 'checkin_page' },
+    }).catch(() => {})
+  }
+
+  const handleCloseScanner = () => {
+    setIsScannerOpen(false)
+    logActivity({
+      action: 'qr_scanner_close',
+      action_category: 'appointment',
+      action_type: 'view',
+      status: 'success',
+      description: 'Closed QR scanner modal',
+    }).catch(() => {})
+  }
+
+  // ---------- REFRESH HANDLER ----------
+  const handleRefresh = () => {
+    loadTodayAppointments()
+    logActivity({
+      action: 'appointment_list_refresh',
+      action_category: 'appointment',
+      action_type: 'view',
+      status: 'success',
+      description: 'Manually refreshed today’s appointments',
+    }).catch(() => {})
+  }
+
+  // ---------- CLEAR SEARCH ----------
+  const handleClearSearch = () => {
+    setSearchQuery('')
+    logActivity({
+      action: 'search_cleared',
+      action_category: 'appointment',
+      action_type: 'view',
+      status: 'success',
+      description: 'Cleared patient search',
+    }).catch(() => {})
   }
 
   function formatTime(dateString: string) {
@@ -440,7 +615,7 @@ export default function CheckInPage() {
             variant="ghost"
             size="sm"
             className="h-11 w-11 rounded-xl"
-            onClick={loadTodayAppointments}
+            onClick={handleRefresh}
             disabled={loading}
           >
             <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
@@ -464,7 +639,7 @@ export default function CheckInPage() {
         <CardContent className="p-4 lg:p-5">
           <div className="flex flex-col sm:flex-row gap-3 items-stretch">
             <Button
-              onClick={() => setIsScannerOpen(true)}
+              onClick={handleOpenScanner}
               className="h-14 flex-1 gap-3 text-base rounded-xl bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-sm"
               variant="secondary"
             >
@@ -514,7 +689,7 @@ export default function CheckInPage() {
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
               {searchQuery && (
                 <button
-                  onClick={() => setSearchQuery('')}
+                  onClick={handleClearSearch}
                   className="p-2 hover:bg-slate-100 rounded-full transition-colors"
                 >
                   <X className="h-5 w-5 text-slate-400" />
@@ -564,7 +739,7 @@ export default function CheckInPage() {
                 <Button
                   variant="secondary"
                   className="rounded-full px-6"
-                  onClick={() => setSearchQuery('')}
+                  onClick={handleClearSearch}
                 >
                   Clear search
                 </Button>
@@ -674,7 +849,7 @@ export default function CheckInPage() {
       {/* QR Scanner Modal */}
       <QRScannerModal
         isOpen={isScannerOpen}
-        onClose={() => setIsScannerOpen(false)}
+        onClose={handleCloseScanner}
         onScan={checkInByAppointmentId}
       />
 

@@ -41,7 +41,7 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
         const { data: supplier } = await supabase
           .from('suppliers')
           .select('company_name')
-          .eq('user_id', authUser.id)
+          .eq('id', authUser.id)
           .single();
 
         if (supplier?.company_name) {

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { logActivity } from '@/lib/activity-logger'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -129,6 +130,11 @@ export default function HealthRecordsPage() {
     fetchHealthRecords()
   }, [])
 
+  // Log that caregiver viewed health records
+  useEffect(() => {
+    logActivity({ action: 'caregiver_health_records_view', action_category: 'report', description: 'Viewed health records' }).catch(() => {})
+  }, [])
+
   // ------------------------------------------------------------
   // Toggle reminder preference (example – replace with real API)
   // ------------------------------------------------------------
@@ -153,6 +159,8 @@ export default function HealthRecordsPage() {
           prev ? { ...prev, reminderEnabled: !currentState } : null
         )
       }
+      // Log toggling prescription reminder
+      logActivity({ action: 'toggle_prescription_reminder', action_category: 'prescription', target_table: 'prescriptions', target_id: prescriptionId, description: `Toggled reminder to ${!currentState}` }).catch(() => {})
     } catch (err) {
       console.error('Failed to update reminder:', err)
     }

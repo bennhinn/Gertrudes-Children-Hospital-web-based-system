@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { logActivity } from '@/lib/activity-logger'
 import {
     LayoutDashboard,
     UserCheck,
@@ -68,6 +69,18 @@ export default function ReceptionistLayout({
 
         checkAuth()
     }, [router])
+
+    // Log receptionist area view once auth finished
+    useEffect(() => {
+        if (!loading) {
+            // non-blocking log
+            logActivity({
+                action: 'receptionist_view',
+                description: `Visited receptionist area: ${pathname}`,
+                metadata: { pathname },
+            }).catch(() => {})
+        }
+    }, [loading, pathname])
 
     useEffect(() => {
         setMobileMenuOpen(false)

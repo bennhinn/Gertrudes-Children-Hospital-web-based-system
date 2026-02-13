@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { logActivity } from '@/lib/activity-logger'
 import {
     LayoutDashboard,
     Pill,
@@ -83,6 +84,17 @@ export default function PharmacyLayout({
     useEffect(() => {
         setMobileMenuOpen(false)
     }, [pathname])
+
+    // Log pharmacy area view once auth finished (non-blocking)
+    useEffect(() => {
+        if (!loading) {
+            logActivity({
+                action: 'pharmacy_view',
+                description: `Visited pharmacy area: ${pathname}`,
+                metadata: { pathname },
+            }).catch(() => {})
+        }
+    }, [loading, pathname])
 
     async function handleLogout() {
         const supabase = createClient()

@@ -32,7 +32,6 @@ interface QueueStats {
     pendingLabResults: number
 }
 
-// Enhanced type with nested appointment child
 interface QueuePatient {
     id: string
     child_id: string
@@ -94,11 +93,9 @@ export default function DoctorDashboard() {
     const [showPrescriptionModal, setShowPrescriptionModal] = useState(false)
     const [showLabOrderModal, setShowLabOrderModal] = useState(false)
 
-    // ---------- HELPER: get child info from check-in ----------
     const getPatientChild = (patient: QueuePatient) => {
         return patient.child || patient.appointment?.child || null
     }
-    // ----------------------------------------------------------
 
     const loadDashboardData = useCallback(async () => {
         setLoading(true)
@@ -137,7 +134,7 @@ export default function DoctorDashboard() {
             const today = new Date()
             today.setHours(0, 0, 0, 0)
 
-            // Get waiting patients with full details - including appointment.child
+            // Get waiting patients with full details
             const { data: waitingPatients, error: queueError } = await supabase
                 .from('check_ins')
                 .select(`
@@ -171,17 +168,10 @@ export default function DoctorDashboard() {
                 console.error('Queue error:', queueError)
             }
 
-            console.log('✅ Waiting patients:', waitingPatients?.length, waitingPatients)
-
-            setDebugInfo(prev => prev + ` | Waiting/In consultation: ${waitingPatients?.length || 0}`)
-
             // Filter patients waiting for this doctor or unassigned
             const myQueue = (waitingPatients || []).filter(p =>
                 !p.appointment?.doctor_id || p.appointment?.doctor_id === doctorData?.id
             )
-
-            console.log('✅ My queue:', myQueue.length, myQueue)
-            setDebugInfo(prev => prev + ` | My queue: ${myQueue.length}`)
             setQueue(myQueue)
 
             // Get completed consultations today
@@ -216,10 +206,6 @@ export default function DoctorDashboard() {
                 console.error('Pending labs error:', labError)
             }
 
-            console.log('🔬 Pending lab results for doctor:', doctorData?.id)
-            console.log('🔬 Query returned:', pendingLabs?.length || 0, 'pending lab results')
-
-            // Calculate stats
             setStats({
                 waitingForMe: myQueue.filter(p => p.status === 'waiting').length,
                 completedToday: (completedToday || []).length,
@@ -284,19 +270,62 @@ export default function DoctorDashboard() {
         return `${hours}h ${mins}m`
     }
 
+    // ------------------------------------------------------------
+    // FIXED: startConsultation – creates/retrieves consultation and redirects
+    // ------------------------------------------------------------
     async function startConsultation(checkIn: QueuePatient) {
         try {
             const supabase = createClient()
+            if (!doctorId) throw new Error('Doctor ID not available')
 
+            // 1. Update check‑in status
             await supabase
                 .from('check_ins')
                 .update({ status: 'in_consultation' })
                 .eq('id', checkIn.id)
 
-            const consultId = checkIn.appointment?.id || checkIn.child_id
-            window.location.href = `/doctor/consultations/${consultId}`
+            // 2. Determine the appointment – must exist for a valid consultation
+            const appointmentId = checkIn.appointment?.id
+            if (!appointmentId) {
+                console.error('No appointment linked to this check‑in')
+                window.location.href = '/doctor/queue'
+                return
+            }
+
+            // 3. Check if a consultation already exists for this appointment
+            const { data: existingConsult } = await supabase
+                .from('consultations')
+                .select('id')
+                .eq('appointment_id', appointmentId)
+                .maybeSingle()
+
+            let consultationId: string
+
+            if (existingConsult) {
+                consultationId = existingConsult.id
+            } else {
+                // 4. Create a new consultation record
+                const { data: newConsult, error: createError } = await supabase
+                    .from('consultations')
+                    .insert({
+                        appointment_id: appointmentId,
+                        child_id: checkIn.child_id,
+                        doctor_id: doctorId,
+                        status: 'in_progress',
+                        started_at: new Date().toISOString(),
+                    })
+                    .select('id')
+                    .single()
+
+                if (createError) throw createError
+                consultationId = newConsult.id
+            }
+
+            // 5. Redirect to the consultation page with the REAL consultation ID
+            window.location.href = `/doctor/consultations/${consultationId}`
         } catch (error) {
             console.error('Error starting consultation:', error)
+            // Optionally show a toast notification
         }
     }
 
@@ -344,7 +373,7 @@ export default function DoctorDashboard() {
                 </Card>
             )}
 
-            {/* Welcome Header - Compact on Mobile */}
+            {/* Welcome Header */}
             <div className="rounded-xl bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-600 p-4 text-white shadow-lg lg:rounded-2xl lg:p-6">
                 <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0 flex-1">
@@ -366,8 +395,9 @@ export default function DoctorDashboard() {
                 </div>
             </div>
 
-            {/* Stats Grid - Compact on Mobile */}
+            {/* Stats Grid */}
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+                {/* ... (unchanged, same as your original) ... */}
                 <Card className="border-none shadow-md">
                     <CardContent className="p-3 lg:p-5">
                         <div className="flex items-center gap-3">
@@ -437,7 +467,7 @@ export default function DoctorDashboard() {
                 </Card>
             </div>
 
-            {/* Quick Actions - Horizontal scroll on mobile */}
+            {/* Quick Actions */}
             <div className="flex gap-3 overflow-x-auto pb-1 lg:grid lg:grid-cols-4 lg:overflow-visible">
                 <Link href="/doctor/queue" className="flex-shrink-0">
                     <Button variant="secondary" className="h-auto flex-col gap-1.5 px-5 py-3 lg:w-full lg:gap-2 lg:py-4">

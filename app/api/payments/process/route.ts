@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { processPayment, PaymentRequest, PaymentResponse } from '@/lib/mock-payment-gateway';
+import { logActivityServer } from '@/lib/activity-logger';
 
 /**
  * POST /api/payments/process
@@ -108,6 +109,28 @@ export async function POST(request: NextRequest) {
     }
 
     paymentId = payment.id;
+
+    // Log audit entry for payment creation
+    try {
+      await logActivityServer(supabase, {
+        user_id: user.id,
+        user_email: user.email || null,
+        user_role: null,
+        action: 'payment_create',
+        action_type: 'create',
+        action_category: 'other',
+        target_table: 'payments',
+        target_id: payment.id,
+        resource_name: payment.payment_number || null,
+        description: `Payment record created for invoice ${body.invoiceId}`,
+        metadata: { amount: body.amount, method: body.paymentMethod },
+        status: 'pending',
+        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
+        user_agent: request.headers.get('user-agent') || null,
+      });
+    } catch (e) {
+      console.error('Failed to write audit log for payment creation', e);
+    }
 
     // Log transaction start
     await supabase.from('transaction_logs').insert({
@@ -261,6 +284,32 @@ export async function POST(request: NextRequest) {
             new_balance: newBalanceDue,
           },
         });
+
+        // Audit log for completed payment
+        try {
+          await logActivityServer(supabase, {
+            user_id: user.id,
+            user_email: user.email || null,
+            user_role: null,
+            action: 'payment_completed',
+            action_type: 'update',
+            action_category: 'other',
+            target_table: 'payments',
+            target_id: payment.id,
+            resource_name: updatedPayment?.payment_number || null,
+            description: `Payment of ${body.amount} completed for invoice ${body.invoiceId}`,
+            metadata: {
+              transactionId: paymentResponse.transactionId,
+              receiptNumber: paymentResponse.receiptNumber,
+              gatewayMessage: paymentResponse.message,
+            },
+            status: 'success',
+            ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
+            user_agent: request.headers.get('user-agent') || null,
+          });
+        } catch (e) {
+          console.error('Failed to write audit log for payment completion', e);
+        }
       } else {
         // Log failed transaction
         await supabase.from('transaction_logs').insert({
@@ -305,6 +354,27 @@ export async function POST(request: NextRequest) {
           error_message: processingError instanceof Error ? processingError.message : 'Unknown error',
         })
         .eq('id', payment.id);
+
+      // Audit log for failed payment processing
+      try {
+        await logActivityServer(supabase, {
+          user_id: user.id,
+          user_email: user.email || null,
+          user_role: null,
+          action: 'payment_failed',
+          action_type: 'update',
+          action_category: 'finance',
+          target_table: 'payments',
+          target_id: payment.id,
+          description: `Payment processing failed for invoice ${body.invoiceId}`,
+          metadata: { error: processingError instanceof Error ? processingError.message : String(processingError) },
+          status: 'failure',
+          ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
+          user_agent: request.headers.get('user-agent') || null,
+        });
+      } catch (e) {
+        console.error('Failed to write audit log for payment failure', e);
+      }
 
       // Log error
       await supabase.from('transaction_logs').insert({

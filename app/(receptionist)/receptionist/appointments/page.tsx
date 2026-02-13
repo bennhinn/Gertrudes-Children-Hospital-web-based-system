@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { AppointmentDetailsModal, AdmitPatientModal } from './_components/appointment-modals'
+import { logActivity, ActivityActions } from '@/lib/activity-logger'
 
 interface Appointment {
     id: string
@@ -84,10 +85,29 @@ export default function AppointmentsPage() {
         loadAppointments()
     }, [loadAppointments])
 
+    // Log appointments view after initial load
+    useEffect(() => {
+        if (!loading) {
+            logActivity({
+                action: ActivityActions.APPOINTMENT_VIEW,
+                description: `Viewed appointments list (filter=${dateFilter})`,
+                metadata: { dateFilter },
+            }).catch(() => {})
+        }
+    }, [loading, dateFilter])
+
     // Modal handlers
     const handleViewDetails = (appointment: Appointment) => {
         setSelectedAppointment(appointment)
         setShowDetailsModal(true)
+        // Log viewing a specific appointment
+        logActivity({
+            action: ActivityActions.APPOINTMENT_VIEW,
+            description: `Viewed appointment ${appointment.id}`,
+            target_table: 'appointments',
+            target_id: appointment.id,
+            metadata: { visit_type: appointment.visit_type },
+        }).catch(() => {})
     }
 
     const handleAdmitFromDetails = () => {
@@ -103,6 +123,12 @@ export default function AppointmentsPage() {
     const handleAdmitSuccess = () => {
         loadAppointments() // Refresh the list
         setSelectedAppointment(null)
+        // Log successful admit action
+        logActivity({
+            action: ActivityActions.APPOINTMENT_UPDATE,
+            description: 'Admitted patient from appointments view',
+            action_category: 'appointment',
+        }).catch(() => {})
     }
 
     const handleCloseModals = () => {

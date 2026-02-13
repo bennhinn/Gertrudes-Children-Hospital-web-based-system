@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { supabaseServer } from '@/lib/supabaseServer'
+import { logActivityServer } from '@/lib/activity-logger'
 import { Button } from '@/components/ui/button'
 import { CaregiverBottomNav } from '@/components/caregiver-bottom-nav'
 import CaregiverHeader from '@/components/caregiver-header'
@@ -35,6 +36,20 @@ export default async function CaregiverLayout({ children }: { children: React.Re
 
   if (!user || error) {
     redirect('/login')
+  }
+
+  // Log caregiver layout/page view on the server (non-blocking errors handled by logger)
+  try {
+    await logActivityServer(supabase, {
+      user_id: user.id,
+      user_email: user.email,
+      user_role: (user.user_metadata as any)?.role || null,
+      action: 'caregiver_layout_view',
+      resource_name: 'caregiver_layout',
+      description: 'Caregiver layout rendered (page view)'
+    }, { autoUser: false })
+  } catch (e) {
+    // swallow - logger already logs errors to console
   }
 
   const fullName = (user.user_metadata as { full_name?: string })?.full_name || 'User'

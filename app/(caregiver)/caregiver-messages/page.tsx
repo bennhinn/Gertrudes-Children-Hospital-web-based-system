@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { logActivity, ActivityActions } from '@/lib/activity-logger'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
@@ -100,6 +101,15 @@ export default function MessagesPage() {
         }
         getCurrentUser()
     }, [supabase.auth])
+
+    // Log that the caregiver viewed the messages inbox
+    useEffect(() => {
+        logActivity({
+            action: 'caregiver_messages_view',
+            action_category: 'chat',
+            description: 'Caregiver viewed messages inbox'
+        }).catch(() => {})
+    }, [])
 
     // Fetch conversations
     const fetchConversations = useCallback(async () => {
@@ -293,6 +303,14 @@ export default function MessagesPage() {
     const handleSelectConversation = (conversation: Conversation) => {
         setSelectedConversation(conversation)
         fetchMessages(conversation.id)
+        logActivity({
+            action: 'conversation_open',
+            action_category: 'chat',
+            target_table: 'chat_conversations',
+            target_id: conversation.id,
+            resource_name: conversation.staffName,
+            description: `Opened conversation with ${conversation.staffName}`
+        }).catch(() => {})
     }
 
     // Send a message
@@ -301,10 +319,11 @@ export default function MessagesPage() {
 
         setSending(true)
         try {
+            const messageToSend = newMessage.trim()
             const response = await fetch(`/api/messages/${selectedConversation.id}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: newMessage.trim() })
+                body: JSON.stringify({ content: messageToSend })
             })
 
             if (!response.ok) {
@@ -313,6 +332,16 @@ export default function MessagesPage() {
 
             // Message will be added via real-time subscription
             setNewMessage('')
+
+            // Log the sent message (client-side intake)
+            logActivity({
+                action: ActivityActions.MESSAGE_SEND,
+                action_category: 'chat',
+                target_table: 'chat_conversations',
+                target_id: selectedConversation.id,
+                description: messageToSend.substring(0, 200),
+                metadata: { snippet: messageToSend.substring(0, 200) }
+            }).catch(() => {})
         } catch (err) {
             console.error('Error sending message:', err)
             alert('Failed to send message. Please try again.')
@@ -363,6 +392,14 @@ export default function MessagesPage() {
 
             if (data.conversation) {
                 handleSelectConversation(data.conversation)
+                logActivity({
+                    action: ActivityActions.CONVERSATION_CREATE,
+                    action_category: 'chat',
+                    target_table: 'chat_conversations',
+                    target_id: data.conversation.id,
+                    resource_name: data.conversation.staffName,
+                    description: `Created conversation with ${data.conversation.staffName}`
+                }).catch(() => {})
             }
         } catch (err) {
             console.error('Error creating conversation:', err)
@@ -764,7 +801,7 @@ export default function MessagesPage() {
                     <p className="text-slate-500 mt-1">Chat with doctors and staff</p>
                 </div>
                 <Button
-                    onClick={() => setShowNewMessage(true)}
+                    onClick={() => { logActivity({ action: 'opened_new_message_modal', action_category: 'chat', description: 'Opened new message modal' }).catch(() => {}); setShowNewMessage(true) }}
                     className="rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/25"
                 >
                     <Plus className="h-4 w-4 mr-2" />
@@ -810,7 +847,7 @@ export default function MessagesPage() {
                         <p className="text-slate-500 font-medium">No conversations found</p>
                         <p className="text-sm text-slate-400 mt-1">Start a new conversation to connect with staff</p>
                         <Button
-                            onClick={() => setShowNewMessage(true)}
+                            onClick={() => { logActivity({ action: 'opened_new_message_modal', action_category: 'chat', description: 'Opened new message modal (start conversation)' }).catch(() => {}); setShowNewMessage(true) }}
                             className="mt-4 rounded-xl"
                         >
                             <Plus className="h-4 w-4 mr-2" />

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import { normalizeJoinedChild } from '@/lib/db/normalizeJoin'
 import Link from 'next/link'
+import { logActivity, ActivityActions } from '@/lib/activity-logger'
 import {
     Search,
     X,
@@ -20,7 +21,7 @@ import {
     AlertCircle,
     Eye,
     Volume2,
-    XCircle
+    XCircle,
 } from 'lucide-react'
 
 interface CheckIn {
@@ -42,6 +43,7 @@ interface CheckIn {
             profiles: {
                 full_name: string
                 phone: string
+            
             }
         }
     }
@@ -312,6 +314,17 @@ export default function QueuePage() {
         }
     }, [loadQueue])
 
+    // Log queue view after initial load (non-blocking)
+    useEffect(() => {
+        if (!loading) {
+            logActivity({
+                action: ActivityActions.REPORT_VIEW,
+                description: 'Viewed queue management',
+                metadata: {},
+            }).catch(() => {})
+        }
+    }, [loading])
+
     async function updateStatus(checkInId: string, newStatus: string) {
         try {
             const supabase = createClient()
@@ -338,6 +351,22 @@ export default function QueuePage() {
             // The check_in table tracks the queue status separately from appointment status
 
             loadQueue()
+            // Log status change (non-blocking)
+            if (newStatus === 'in_consultation') {
+                logActivity({
+                    action: ActivityActions.CHECKIN_CALL,
+                    description: `Called patient ${checkInId}`,
+                    target_id: checkInId,
+                    target_table: 'check_ins',
+                }).catch(() => {})
+            } else if (newStatus === 'completed') {
+                logActivity({
+                    action: ActivityActions.CHECKIN_COMPLETE,
+                    description: `Completed visit for ${checkInId}`,
+                    target_id: checkInId,
+                    target_table: 'check_ins',
+                }).catch(() => {})
+            }
         } catch (err) {
             console.error('Error updating status:', err)
             setError(err instanceof Error ? err.message : 'Failed to update status')
@@ -408,6 +437,14 @@ export default function QueuePage() {
     function openPatientDetails(checkIn: CheckIn) {
         setSelectedCheckIn(checkIn)
         setShowDetailsModal(true)
+        // Log opening patient details (non-blocking)
+        logActivity({
+            action: ActivityActions.PATIENT_VIEW,
+            description: `Viewed queued patient ${checkIn.id}`,
+            target_id: checkIn.id,
+            target_table: 'check_ins',
+            metadata: { queueNumber: checkIn.queue_number },
+        }).catch(() => {})
     }
 
     if (loading) {
