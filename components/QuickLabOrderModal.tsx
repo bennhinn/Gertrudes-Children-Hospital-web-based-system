@@ -20,6 +20,7 @@ interface Child {
   id: string
   full_name: string
   date_of_birth: string
+  caregiver_id: string
 }
 
 interface LabTest {
@@ -34,7 +35,7 @@ interface QuickLabOrderModalProps {
   onClose: () => void
   doctorId: string
   preSelectedChildId?: string
-  consultationId?: string   // ← NEW
+  consultationId?: string
 }
 
 export default function QuickLabOrderModal({
@@ -42,7 +43,7 @@ export default function QuickLabOrderModal({
   onClose,
   doctorId,
   preSelectedChildId,
-  consultationId,           // ← NEW
+  consultationId,
 }: QuickLabOrderModalProps) {
   const [loading, setLoading] = useState(false)
   const [children, setChildren] = useState<Child[]>([])
@@ -73,7 +74,7 @@ export default function QuickLabOrderModal({
     const supabase = createClient()
     const { data } = await supabase
       .from('children')
-      .select('id, full_name, date_of_birth')
+      .select('id, full_name, date_of_birth, caregiver_id')
       .order('full_name')
 
     if (data) setChildren(data)
@@ -110,44 +111,120 @@ export default function QuickLabOrderModal({
     try {
       const supabase = createClient()
 
-      // Create lab orders for each selected test
-      const orders = selectedTests.map(testId => {
-        const test = labTests.find(t => t.id === testId)
-        return {
+      // ----- 1. Get caregiver_id for the selected child -----
+      const selectedChild = children.find(c => c.id === formData.child_id)
+      if (!selectedChild) throw new Error('Patient not found')
+      const caregiverId = selectedChild.caregiver_id
+      if (!caregiverId) throw new Error('Patient has no caregiver assigned')
+
+      // ----- 2. Create each lab order individually and collect IDs -----
+      const createdLabOrderIds: string[] = []
+
+      for (const testId of selectedTests) {
+        const test = labTests.find(t => t.id === testId)!
+        const { data: order, error: orderError } = await supabase
+          .from('lab_orders')
+          .insert({
+            child_id: formData.child_id,
+            doctor_id: doctorId,
+            consultation_id: consultationId,
+            test_id: testId,
+            test_name: test.name,
+            priority: formData.priority,
+            clinical_notes: formData.clinical_notes,
+            special_instructions: formData.special_instructions,
+            status: 'pending',
+            ordered_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single()
+
+        if (orderError) throw orderError
+        createdLabOrderIds.push(order.id)
+      }
+
+      // ----- 3. Calculate total cost -----
+      const totalCost = selectedTests.reduce((sum, testId) => {
+        const test = labTests.find(t => t.id === testId)!
+        return sum + test.cost
+      }, 0)
+
+      // ----- 4. Create a single invoice for all tests -----
+      const invoiceNumber = `INV-${Date.now()}`
+      const dueDate = new Date()
+      dueDate.setDate(dueDate.getDate() + 7) // due in 7 days
+
+      const { data: invoice, error: invoiceError } = await supabase
+        .from('invoices')
+        .insert({
+          invoice_number: invoiceNumber,
           child_id: formData.child_id,
-          doctor_id: doctorId,
-          consultation_id: consultationId,   // ← LINK TO CONSULTATION
-          test_id: testId,
-          test_name: test?.name || '',
-          priority: formData.priority,
-          clinical_notes: formData.clinical_notes,
-          special_instructions: formData.special_instructions,
-          status: 'pending',
+          caregiver_id: caregiverId,
+          consultation_id: consultationId,
+          invoice_date: new Date().toISOString().split('T')[0],
+          due_date: dueDate.toISOString().split('T')[0],
+          subtotal: totalCost,
+          tax_amount: 0,
+          discount_amount: 0,
+          total: totalCost,                // ✅ schema: 'total' not 'total_amount'
+          paid_amount: 0,
+          balance_due: totalCost,
+          status: 'pending',              // pending, paid, cancelled
+          created_by: doctorId,
+          // lab_order_ids: createdLabOrderIds, // optional – you can add this array column later
+        })
+        .select()
+        .single()
+
+      if (invoiceError) throw invoiceError
+
+      // ----- 5. Create invoice line items for each test -----
+      const lineItems = selectedTests.map((testId, index) => {
+        const test = labTests.find(t => t.id === testId)!
+        const labOrderId = createdLabOrderIds[index] // matches order by iteration
+        return {
+          invoice_id: invoice.id,
+          item_type: 'lab_test',
+          item_id: labOrderId,
+          description: test.name,
+          quantity: 1,
+          unit_price: test.cost,
+          discount_percent: 0,
+          tax_percent: 0,
+          line_total: test.cost,
         }
       })
 
-      const { error } = await supabase.from('lab_orders').insert(orders)
+      const { error: lineItemsError } = await supabase
+        .from('invoice_line_items')
+        .insert(lineItems)
 
-      if (error) throw error
+      if (lineItemsError) throw lineItemsError
 
-      // Log activity
-      const patientName = children.find(c => c.id === formData.child_id)?.full_name || 'Unknown'
-      const testNames = selectedTests.map(testId => labTests.find(t => t.id === testId)?.name).filter(Boolean).join(', ')
+      // ----- 6. Log activity -----
+      const patientName = selectedChild.full_name
+      const testNames = selectedTests.map(testId => labTests.find(t => t.id === testId)?.name).join(', ')
       await logActivity({
-        action: 'create_lab_order',
+        action: 'create_lab_order_with_invoice',
         target_table: 'lab_order',
-        description: `Ordered lab tests for ${patientName}: ${testNames}`,
+        target_id: createdLabOrderIds[0], // first order ID
+        description: `Ordered lab tests for ${patientName}: ${testNames}. Invoice #${invoiceNumber} created for KSh ${totalCost.toFixed(2)}`,
         metadata: {
           patient_id: formData.child_id,
           patient_name: patientName,
+          caregiver_id: caregiverId,
           priority: formData.priority,
           consultation_id: consultationId,
           tests: selectedTests.map(testId => labTests.find(t => t.id === testId)?.name),
-          test_count: orders.length
-        }
+          test_count: selectedTests.length,
+          invoice_id: invoice.id,
+          invoice_number: invoiceNumber,
+          total_cost: totalCost,
+          lab_order_ids: createdLabOrderIds,
+        },
       })
 
-      // Reset form
+      // ----- 7. Reset form and close -----
       setFormData({
         child_id: '',
         priority: 'routine',
@@ -156,7 +233,7 @@ export default function QuickLabOrderModal({
       })
       setSelectedTests([])
 
-      alert(`${orders.length} lab order(s) created successfully!`)
+      alert(`✅ ${createdLabOrderIds.length} lab order(s) created and invoice #${invoiceNumber} generated!`)
       onClose()
     } catch (error: any) {
       console.error('Error creating lab orders:', error)

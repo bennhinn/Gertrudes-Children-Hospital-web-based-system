@@ -3,6 +3,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// -----------------------------------------------------------------
+// TYPES
+// -----------------------------------------------------------------
 interface TransformedPrescription {
   id: string
   medicationName: string
@@ -21,6 +24,16 @@ interface TransformedPrescription {
   childName: string
   childId: string
   reminderEnabled: boolean
+  // 🧾 INVOICE INTEGRATION
+  invoice?: {
+    id: string
+    invoice_number: string
+    total: number
+    paid_amount: number
+    balance_due: number
+    status: 'pending' | 'paid' | 'cancelled'
+    due_date: string
+  } | null
 }
 
 interface TransformedLabResult {
@@ -34,6 +47,27 @@ interface TransformedLabResult {
   childId: string
   childName: string
   orderedBy: string
+  // 🧾 INVOICE INTEGRATION
+  invoice?: {
+    id: string
+    invoice_number: string
+    total: number
+    paid_amount: number
+    balance_due: number
+    status: 'pending' | 'paid' | 'cancelled'
+    due_date: string
+  } | null
+}
+
+// Type for the raw invoice data returned from Supabase (may be array or object)
+type RawInvoice = {
+  id: string
+  invoice_number: string
+  total: number
+  paid_amount: number
+  balance_due: number
+  status: 'pending' | 'paid' | 'cancelled'
+  due_date: string
 }
 
 function safeArray<T>(data: T | T[] | null | undefined): T[] {
@@ -122,7 +156,52 @@ export async function GET() {
     console.log('[Health Records] Prescriptions fetched:', prescriptions?.length || 0)
 
     // -----------------------------------------------------------------
-    // 3. TRANSFORM PRESCRIPTIONS
+    // 🧾 INVOICE INTEGRATION – FETCH INVOICE STATUS FOR PRESCRIPTION ITEMS
+    // -----------------------------------------------------------------
+    const prescriptionItemIds: string[] = []
+    for (const pres of safeArray(prescriptions)) {
+      const items = safeArray(pres.prescription_items)
+      items.forEach(item => {
+        if (item.id) prescriptionItemIds.push(item.id)
+      })
+    }
+
+    let prescriptionInvoiceMap: Record<string, RawInvoice> = {}
+    if (prescriptionItemIds.length > 0) {
+      const { data: invoiceLinks, error: invoiceLinkError } = await supabase
+        .from('invoice_line_items')
+        .select(`
+          item_id,
+          invoice:invoices!inner (
+            id,
+            invoice_number,
+            total,
+            paid_amount,
+            balance_due,
+            status,
+            due_date
+          )
+        `)
+        .in('item_id', prescriptionItemIds)
+        .eq('item_type', 'prescription')
+
+      if (invoiceLinkError) {
+        console.error('[Health Records] Failed to fetch prescription invoice links:', invoiceLinkError)
+      } else {
+        // Build map – handle invoice possibly being an array or single object
+        prescriptionInvoiceMap = (invoiceLinks || []).reduce<Record<string, RawInvoice>>((acc, link) => {
+          // Supabase may return invoice as array; extract first element if needed
+          const invoiceData = Array.isArray(link.invoice) ? link.invoice[0] : link.invoice
+          if (invoiceData) {
+            acc[link.item_id] = invoiceData
+          }
+          return acc
+        }, {})
+      }
+    }
+
+    // -----------------------------------------------------------------
+    // 3. TRANSFORM PRESCRIPTIONS (with invoice data)
     // -----------------------------------------------------------------
     const transformedPrescriptions: TransformedPrescription[] = []
 
@@ -204,6 +283,18 @@ export async function GET() {
         const form = medicationData?.form || 'tablet'
         const strength = medicationData?.strength || item.dosage || 'As prescribed'
 
+        // 🧾 INVOICE INTEGRATION – get invoice for this prescription item (if any)
+        const rawInvoice = prescriptionInvoiceMap[item.id]
+        const invoiceData = rawInvoice ? {
+          id: rawInvoice.id,
+          invoice_number: rawInvoice.invoice_number,
+          total: rawInvoice.total,
+          paid_amount: rawInvoice.paid_amount,
+          balance_due: rawInvoice.balance_due,
+          status: rawInvoice.status,
+          due_date: rawInvoice.due_date,
+        } : null
+
         transformedPrescriptions.push({
           id: useSyntheticFallback
             ? `synthetic-${pres.id}`
@@ -224,6 +315,7 @@ export async function GET() {
           childName,
           childId: pres.child_id,
           reminderEnabled: pres.reminders_enabled || false,
+          invoice: invoiceData,
         })
       }
     }
@@ -264,13 +356,61 @@ export async function GET() {
     console.log('[Health Records] Found lab orders:', labOrders?.length || 0)
 
     // -----------------------------------------------------------------
-    // 5. TRANSFORM LAB RESULTS
+    // 🧾 INVOICE INTEGRATION – FETCH INVOICE STATUS FOR LAB ORDERS
+    // -----------------------------------------------------------------
+    const labOrderIds = safeArray(labOrders).map(o => o.id)
+    let labInvoiceMap: Record<string, RawInvoice> = {}
+    if (labOrderIds.length > 0) {
+      const { data: invoiceLinks, error: invoiceLinkError } = await supabase
+        .from('invoice_line_items')
+        .select(`
+          item_id,
+          invoice:invoices!inner (
+            id,
+            invoice_number,
+            total,
+            paid_amount,
+            balance_due,
+            status,
+            due_date
+          )
+        `)
+        .in('item_id', labOrderIds)
+        .eq('item_type', 'lab_test')
+
+      if (invoiceLinkError) {
+        console.error('[Health Records] Failed to fetch lab invoice links:', invoiceLinkError)
+      } else {
+        labInvoiceMap = (invoiceLinks || []).reduce<Record<string, RawInvoice>>((acc, link) => {
+          const invoiceData = Array.isArray(link.invoice) ? link.invoice[0] : link.invoice
+          if (invoiceData) {
+            acc[link.item_id] = invoiceData
+          }
+          return acc
+        }, {})
+      }
+    }
+
+    // -----------------------------------------------------------------
+    // 5. TRANSFORM LAB RESULTS (with invoice data)
     // -----------------------------------------------------------------
     const transformedLabResults: TransformedLabResult[] = safeArray(labOrders).map(order => {
       const doctorArray = safeArray(order.doctor)
       const doctorProfileArray = safeArray(doctorArray[0]?.profile)
       const testArray = safeArray(order.test)
       const testData = testArray[0]
+
+      // 🧾 INVOICE INTEGRATION – get invoice for this lab order
+      const rawInvoice = labInvoiceMap[order.id]
+      const invoiceData = rawInvoice ? {
+        id: rawInvoice.id,
+        invoice_number: rawInvoice.invoice_number,
+        total: rawInvoice.total,
+        paid_amount: rawInvoice.paid_amount,
+        balance_due: rawInvoice.balance_due,
+        status: rawInvoice.status,
+        due_date: rawInvoice.due_date,
+      } : null
 
       return {
         id: order.id,
@@ -282,7 +422,8 @@ export async function GET() {
         results: order.structured_results || order.results,
         childId: order.child_id,
         childName: childMap[order.child_id] || 'Unknown Child',
-        orderedBy: doctorProfileArray[0]?.full_name || 'Unknown Doctor'
+        orderedBy: doctorProfileArray[0]?.full_name || 'Unknown Doctor',
+        invoice: invoiceData,
       }
     })
 

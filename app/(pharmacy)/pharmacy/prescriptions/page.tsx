@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
-import { Search, X } from 'lucide-react'
+import { Search, X, CreditCard } from 'lucide-react'
 import { logActivity, ActivityActions } from '@/lib/activity-logger'
 
 interface Prescription {
@@ -44,6 +44,16 @@ interface PrescriptionItem {
     duration: string
     quantity: number
     instructions: string | null
+    // 🆕 invoice info attached later
+    invoice?: {
+        id: string
+        invoice_number: string
+        total: number
+        paid_amount: number
+        balance_due: number
+        status: 'pending' | 'paid' | 'cancelled'
+        due_date: string
+    } | null
 }
 
 type StatusFilter = 'all' | 'pending' | 'preparing'
@@ -62,7 +72,7 @@ export default function PharmacyPrescriptionsPage() {
         try {
             const supabase = createClient()
 
-            // FIX: Direct joins to child and doctor tables
+            // 1. Fetch prescriptions with child, doctor, and items
             const { data, error } = await supabase
                 .from('prescriptions')
                 .select(`
@@ -78,8 +88,58 @@ export default function PharmacyPrescriptionsPage() {
 
             console.log('📋 Loaded prescriptions:', data?.length || 0)
 
+            // 2. Collect all prescription item IDs to fetch invoice status
+            const itemIds: string[] = []
+            data?.forEach((pres: any) => {
+                if (pres.prescription_items) {
+                    pres.prescription_items.forEach((item: any) => itemIds.push(item.id))
+                }
+            })
+
+            let invoiceMap: Record<string, any> = {}
+            if (itemIds.length > 0) {
+                const { data: invoiceLinks, error: invoiceError } = await supabase
+                    .from('invoice_line_items')
+                    .select(`
+            item_id,
+            invoice:invoices!inner (
+              id,
+              invoice_number,
+              total,
+              paid_amount,
+              balance_due,
+              status,
+              due_date
+            )
+          `)
+                    .in('item_id', itemIds)
+                    .eq('item_type', 'prescription')
+
+                if (invoiceError) {
+                    console.error('Error fetching invoice data:', invoiceError)
+                } else {
+                    invoiceMap = (invoiceLinks || []).reduce((acc, link) => {
+                        // Handle possible array
+                        const invoiceData = Array.isArray(link.invoice) ? link.invoice[0] : link.invoice
+                        acc[link.item_id] = invoiceData
+                        return acc
+                    }, {} as Record<string, any>)
+                }
+            }
+
+            // 3. Attach invoice info to each prescription item
+            const enrichedData = (data || []).map((pres: any) => {
+                if (pres.prescription_items) {
+                    pres.prescription_items = pres.prescription_items.map((item: any) => ({
+                        ...item,
+                        invoice: invoiceMap[item.id] || null,
+                    }))
+                }
+                return pres as Prescription
+            })
+
             // Sort by urgency
-            const sortedData = (data || []).sort((a, b) => {
+            const sortedData = enrichedData.sort((a, b) => {
                 const urgencyOrder = { stat: 0, urgent: 1, routine: 2 }
                 return urgencyOrder[a.urgency as keyof typeof urgencyOrder] - urgencyOrder[b.urgency as keyof typeof urgencyOrder]
             })
@@ -123,9 +183,9 @@ export default function PharmacyPrescriptionsPage() {
 
     function handleSelectPrescription(prescription: Prescription) {
         setSelectedPrescription(prescription)
-        // non-blocking log
+        // Use string literal for prescription view to avoid enum error
         logActivity({
-            action: ActivityActions.PRESCRIPTION_VIEW || 'prescription_view',
+            action: 'prescription_view' as any,
             description: `Opened prescription ${prescription.id}`,
             target_table: 'prescriptions',
             target_id: prescription.id,
@@ -136,6 +196,19 @@ export default function PharmacyPrescriptionsPage() {
         setUpdating(id)
         try {
             const supabase = createClient()
+
+            // Optional: Block dispensing if unpaid
+            if (newStatus === 'dispensed') {
+                const prescription = prescriptions.find(p => p.id === id)
+                if (prescription) {
+                    const paymentStatus = getPaymentStatus(prescription)
+                    if (paymentStatus !== 'paid') {
+                        alert('Cannot dispense unpaid prescription. Please collect payment first.')
+                        setUpdating(null)
+                        return
+                    }
+                }
+            }
 
             const updateData: Record<string, unknown> = { status: newStatus }
             if (newStatus === 'dispensed') {
@@ -277,6 +350,49 @@ export default function PharmacyPrescriptionsPage() {
         const hours = Math.floor(diff / 60)
         if (hours < 24) return `${hours}h ago`
         return `${Math.floor(hours / 24)}d ago`
+    }
+
+    // Determine overall payment status for a prescription
+    function getPaymentStatus(pres: Prescription): 'paid' | 'unpaid' | 'partially_paid' | 'no_invoice' {
+        const items = pres.prescription_items || []
+        if (items.length === 0) return 'no_invoice'
+
+        let allPaid = true
+        let anyPaid = false
+        let anyUnpaid = false
+
+        for (const item of items) {
+            if (!item.invoice) {
+                allPaid = false
+                anyUnpaid = true
+                continue
+            }
+            if (item.invoice.status === 'paid') {
+                anyPaid = true
+            } else {
+                allPaid = false
+                anyUnpaid = true
+            }
+        }
+
+        if (allPaid) return 'paid'
+        if (anyPaid && anyUnpaid) return 'partially_paid'
+        if (anyUnpaid) return 'unpaid'
+        return 'no_invoice'
+    }
+
+    function getPaymentBadge(pres: Prescription) {
+        const status = getPaymentStatus(pres)
+        switch (status) {
+            case 'paid':
+                return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">Paid</Badge>
+            case 'unpaid':
+                return <Badge className="bg-red-100 text-red-700 border-red-200">Unpaid</Badge>
+            case 'partially_paid':
+                return <Badge className="bg-amber-100 text-amber-700 border-amber-200">Partially Paid</Badge>
+            default:
+                return null
+        }
     }
 
     // Filter prescriptions
@@ -438,10 +554,10 @@ export default function PharmacyPrescriptionsPage() {
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                                {searchedPrescriptions.map((prescription) => (
-                                                    <button
-                                                        key={prescription.id}
-                                                        onClick={() => handleSelectPrescription(prescription)}
+                                {searchedPrescriptions.map((prescription) => (
+                                    <button
+                                        key={prescription.id}
+                                        onClick={() => handleSelectPrescription(prescription)}
                                         className={`w-full rounded-xl border p-4 text-left transition-all hover:shadow-md ${selectedPrescription?.id === prescription.id
                                             ? 'border-cyan-500 bg-cyan-50 ring-2 ring-cyan-500'
                                             : prescription.urgency === 'stat'
@@ -475,7 +591,11 @@ export default function PharmacyPrescriptionsPage() {
                                                 <p className="text-sm text-slate-500">
                                                     {prescription.prescription_items?.length || 0} medication(s)
                                                 </p>
-                                                <p className="text-xs text-slate-400">{getTimeAgo(prescription.prescribed_at)}</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <p className="text-xs text-slate-400">{getTimeAgo(prescription.prescribed_at)}</p>
+                                                    {/* 🆕 Payment status badge */}
+                                                    {getPaymentBadge(prescription)}
+                                                </div>
                                             </div>
                                             <Badge className={prescription.status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 'bg-blue-50 text-blue-700 border-blue-200'}>
                                                 {prescription.status === 'pending' ? 'Pending' : 'Preparing'}
@@ -539,6 +659,21 @@ export default function PharmacyPrescriptionsPage() {
                                                                     ⚠️ {item.instructions}
                                                                 </p>
                                                             )}
+                                                            {/* 🆕 Payment info for this item */}
+                                                            {item.invoice && (
+                                                                <div className="mt-2 flex items-center gap-2">
+                                                                    <CreditCard className="h-4 w-4 text-slate-400" />
+                                                                    <span className={`text-xs font-medium ${item.invoice.status === 'paid' ? 'text-emerald-600' : 'text-red-600'
+                                                                        }`}>
+                                                                        {item.invoice.status === 'paid' ? 'Paid' : 'Unpaid'}
+                                                                    </span>
+                                                                    {item.invoice.status !== 'paid' && (
+                                                                        <span className="text-xs text-slate-400">
+                                                                            (Balance: KES {item.invoice.balance_due.toFixed(2)})
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -546,6 +681,19 @@ export default function PharmacyPrescriptionsPage() {
                                         ))}
                                     </div>
                                 </div>
+
+                                {/* Overall Payment Status */}
+                                {selectedPrescription.prescription_items && selectedPrescription.prescription_items.length > 0 && (
+                                    <div className="rounded-xl bg-slate-50 p-4">
+                                        <h3 className="flex items-center gap-2 font-semibold text-slate-800">
+                                            <CreditCard className="h-5 w-5" />
+                                            Payment Status
+                                        </h3>
+                                        <div className="mt-2">
+                                            {getPaymentBadge(selectedPrescription)}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Notes */}
                                 {selectedPrescription.notes && (

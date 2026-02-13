@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
+import PaymentModal from '@/components/PaymentModal' // adjust path if needed
 import {
   FileText,
   TestTube,
@@ -31,19 +32,28 @@ import {
 } from 'lucide-react'
 
 // ------------------------------------------------------------
-// Interfaces that match the actual API response
+// Interfaces that match the actual API response (with invoice)
 // ------------------------------------------------------------
 interface LabResult {
   id: string
   testName: string
   description: string
-  status: string          // 'pending' | 'processing' | 'completed' | etc.
+  status: string
   orderedAt: string
   completedAt?: string
-  results?: any           // raw JSON or structured results
+  results?: any
   childId: string
   childName: string
   orderedBy: string
+  invoice?: {
+    id: string
+    invoice_number: string
+    total: number
+    paid_amount: number
+    balance_due: number
+    status: 'pending' | 'paid' | 'cancelled'
+    due_date: string
+  } | null
 }
 
 interface Prescription {
@@ -64,11 +74,20 @@ interface Prescription {
   childName: string
   childId: string
   reminderEnabled: boolean
+  invoice?: {
+    id: string
+    invoice_number: string
+    total: number
+    paid_amount: number
+    balance_due: number
+    status: 'pending' | 'paid' | 'cancelled'
+    due_date: string
+  } | null
 }
 
 interface Child {
   id: string
-  fullName: string        // camelCase, as returned by API
+  fullName: string
   dateOfBirth?: string
   gender?: string
   bloodType?: string
@@ -88,6 +107,11 @@ export default function HealthRecordsPage() {
   const [childFilter, setChildFilter] = useState<string>('all')
   const [error, setError] = useState<string | null>(null)
 
+  // Payment modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
+  const [selectedDescription, setSelectedDescription] = useState<string>('')
+
   // ------------------------------------------------------------
   // Fetch all health records from our fixed API
   // ------------------------------------------------------------
@@ -103,7 +127,7 @@ export default function HealthRecordsPage() {
 
       const data = await response.json()
 
-      // Map API fields to our interfaces
+      // Map API fields to our interfaces (invoice data is already attached)
       setChildren(
         (data.children || []).map((c: any) => ({
           id: c.id,
@@ -140,12 +164,6 @@ export default function HealthRecordsPage() {
   // ------------------------------------------------------------
   async function toggleReminder(prescriptionId: string, currentState: boolean) {
     try {
-      // TODO: Replace with actual API call
-      // await fetch(`/api/prescriptions/${prescriptionId}/reminder`, {
-      //   method: 'PATCH',
-      //   body: JSON.stringify({ enabled: !currentState })
-      // })
-
       // Optimistic update
       setPrescriptions(prev =>
         prev.map(rx =>
@@ -164,6 +182,22 @@ export default function HealthRecordsPage() {
     } catch (err) {
       console.error('Failed to update reminder:', err)
     }
+  }
+
+  // ------------------------------------------------------------
+  // Payment handlers
+  // ------------------------------------------------------------
+  function handlePayNow(invoice: any, description: string) {
+    setSelectedInvoice(invoice)
+    setSelectedDescription(description)
+    setShowPaymentModal(true)
+  }
+
+  function handlePaymentSuccess() {
+    setShowPaymentModal(false)
+    setSelectedInvoice(null)
+    setSelectedDescription('')
+    fetchHealthRecords() // refresh to update invoice status
   }
 
   // ------------------------------------------------------------
@@ -585,6 +619,8 @@ export default function HealthRecordsPage() {
             filteredLabResults.map((result) => {
               // Determine if abnormal – you may need to derive this from `results`
               const isAbnormal = false // TODO: implement logic based on your data
+              const showPayButton = result.invoice && result.invoice.status !== 'paid'
+
               return (
                 <button
                   key={result.id}
@@ -631,6 +667,18 @@ export default function HealthRecordsPage() {
                     <Badge className={getStatusColor(result.status)}>
                       {result.status}
                     </Badge>
+                    {showPayButton && (
+                      <Button
+                        size="sm"
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handlePayNow(result.invoice, result.testName)
+                        }}
+                      >
+                        Pay Now
+                      </Button>
+                    )}
                     <ChevronRight className="h-5 w-5 text-slate-300" />
                   </div>
                 </button>
@@ -652,35 +700,48 @@ export default function HealthRecordsPage() {
               <div className="space-y-3">
                 {filteredPrescriptions
                   .filter(p => p.status === 'active')
-                  .map((rx) => (
-                    <button
-                      key={rx.id}
-                      onClick={() => setSelectedPrescription(rx)}
-                      className="w-full flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all text-left"
-                    >
-                      <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center shrink-0">
-                        <Pill className="h-6 w-6 text-purple-600" />
-                      </div>
+                  .map((rx) => {
+                    const showPayButton = rx.invoice && rx.invoice.status !== 'paid'
+                    return (
+                      <button
+                        key={rx.id}
+                        onClick={() => setSelectedPrescription(rx)}
+                        className="w-full flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all text-left"
+                      >
+                        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center shrink-0">
+                          <Pill className="h-6 w-6 text-purple-600" />
+                        </div>
 
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-slate-900">{rx.medicationName}</p>
-                        <p className="text-sm text-slate-500">
-                          {rx.dosage} • {rx.frequency}
-                        </p>
-                        <p className="text-xs text-slate-400 mt-0.5">{rx.childName}</p>
-                      </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-slate-900">{rx.medicationName}</p>
+                          <p className="text-sm text-slate-500">
+                            {rx.dosage} • {rx.frequency}
+                          </p>
+                          <p className="text-xs text-slate-400 mt-0.5">{rx.childName}</p>
+                        </div>
 
-                      <div className="text-right shrink-0">
-                        {rx.daysLeft && (
-                          <p className="text-sm font-medium text-amber-600">{rx.daysLeft} days left</p>
-                        )}
-                        <div className="flex items-center gap-1 mt-1">
+                        <div className="text-right shrink-0 flex items-center gap-2">
+                          {rx.daysLeft && (
+                            <p className="text-sm font-medium text-amber-600">{rx.daysLeft} days left</p>
+                          )}
                           {rx.reminderEnabled && <Bell className="h-4 w-4 text-blue-500" />}
+                          {showPayButton && (
+                            <Button
+                              size="sm"
+                              className="bg-purple-600 hover:bg-purple-700 text-white"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handlePayNow(rx.invoice, rx.medicationName)
+                              }}
+                            >
+                              Pay Now
+                            </Button>
+                          )}
                           <ChevronRight className="h-5 w-5 text-slate-300" />
                         </div>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    )
+                  })}
               </div>
             </div>
           )}
@@ -694,30 +755,45 @@ export default function HealthRecordsPage() {
               <div className="space-y-3">
                 {filteredPrescriptions
                   .filter(p => p.status !== 'active')
-                  .map((rx) => (
-                    <button
-                      key={rx.id}
-                      onClick={() => setSelectedPrescription(rx)}
-                      className="w-full flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-sm transition-all text-left opacity-75 hover:opacity-100"
-                    >
-                      <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-                        <Pill className="h-6 w-6 text-slate-400" />
-                      </div>
+                  .map((rx) => {
+                    const showPayButton = rx.invoice && rx.invoice.status !== 'paid'
+                    return (
+                      <button
+                        key={rx.id}
+                        onClick={() => setSelectedPrescription(rx)}
+                        className="w-full flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-sm transition-all text-left opacity-75 hover:opacity-100"
+                      >
+                        <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                          <Pill className="h-6 w-6 text-slate-400" />
+                        </div>
 
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-slate-700">{rx.medicationName}</p>
-                        <p className="text-sm text-slate-500">
-                          {rx.dosage} • {rx.frequency}
-                        </p>
-                        <p className="text-xs text-slate-400 mt-0.5">{rx.childName}</p>
-                      </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-slate-700">{rx.medicationName}</p>
+                          <p className="text-sm text-slate-500">
+                            {rx.dosage} • {rx.frequency}
+                          </p>
+                          <p className="text-xs text-slate-400 mt-0.5">{rx.childName}</p>
+                        </div>
 
-                      <div className="flex items-center gap-2 shrink-0">
-                        <Badge className={getStatusColor(rx.status)}>{rx.status}</Badge>
-                        <ChevronRight className="h-5 w-5 text-slate-300" />
-                      </div>
-                    </button>
-                  ))}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {showPayButton && (
+                            <Button
+                              size="sm"
+                              className="bg-purple-600 hover:bg-purple-700 text-white"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handlePayNow(rx.invoice, rx.medicationName)
+                              }}
+                            >
+                              Pay Now
+                            </Button>
+                          )}
+                          <Badge className={getStatusColor(rx.status)}>{rx.status}</Badge>
+                          <ChevronRight className="h-5 w-5 text-slate-300" />
+                        </div>
+                      </button>
+                    )
+                  })}
               </div>
             </div>
           )}
@@ -732,6 +808,25 @@ export default function HealthRecordsPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Payment Modal – rendered conditionally */}
+      {showPaymentModal && selectedInvoice && (
+        <PaymentModal
+          invoiceId={selectedInvoice.id}
+          invoiceNumber={selectedInvoice.invoice_number}
+          totalAmount={selectedInvoice.balance_due || selectedInvoice.total}
+          items={[{
+            description: selectedDescription,
+            quantity: 1,
+            amount: selectedInvoice.balance_due || selectedInvoice.total
+          }]}
+          subtotal={selectedInvoice.balance_due || selectedInvoice.total}
+          tax={0}
+          discount={0}
+          onSuccess={handlePaymentSuccess}
+          onCancel={() => setShowPaymentModal(false)}
+        />
       )}
     </div>
   )
