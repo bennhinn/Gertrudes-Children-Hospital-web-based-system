@@ -1,204 +1,221 @@
+// components/mobile-menu.tsx
 "use client"
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
+import {
+  Hospital,
+  BookOpen,
+  Stethoscope,
+  Star,
+  Phone,
+  X,
+  Menu
+} from "lucide-react"
 
-export default function MobileMenu() {
-    const [isOpen, setIsOpen] = useState(false)
+interface MobileMenuProps {
+  scrolled?: boolean
+}
 
-    // Handle escape key and body scroll lock
-    useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = "hidden"
+export default function MobileMenu({ scrolled = false }: MobileMenuProps) {
+  const [isOpen, setIsOpen] = useState(false)
 
-            const handleEscape = (e: KeyboardEvent) => {
-                if (e.key === "Escape") setIsOpen(false)
-            }
+  // Handle escape key and body scroll lock
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden"
 
-            document.addEventListener("keydown", handleEscape)
-            return () => {
-                document.body.style.overflow = ""
-                document.removeEventListener("keydown", handleEscape)
-            }
-        } else {
-            document.body.style.overflow = ""
-        }
-    }, [isOpen])
+      const handleEscape = (e: KeyboardEvent) => {
+        if (e.key === "Escape") setIsOpen(false)
+      }
 
-    // Close menu when clicking nav links
-    const handleLinkClick = () => setIsOpen(false)
-
-    const pathname = usePathname()
-    const [hash, setHash] = useState("")
-
-    useEffect(() => {
-        if (typeof window !== "undefined") {
-            setHash(window.location.hash || "")
-
-            const onHash = () => setHash(window.location.hash || "")
-            window.addEventListener("hashchange", onHash)
-            return () => window.removeEventListener("hashchange", onHash)
-        }
-    }, [])
-
-    const isActive = (href: string) => {
-        if (href.startsWith("#")) return hash === href
-        if (!pathname) return false
-        return pathname === href || pathname.startsWith(href)
+      document.addEventListener("keydown", handleEscape)
+      return () => {
+        document.body.style.overflow = ""
+        document.removeEventListener("keydown", handleEscape)
+      }
+    } else {
+      document.body.style.overflow = ""
     }
+  }, [isOpen])
 
-    return (
-        <div className="sm:hidden">
-            {/* Hamburger Button - Only visible on mobile */}
-            <button
-                onClick={() => setIsOpen(true)}
-                aria-label="Open menu"
-                aria-expanded={isOpen}
-                className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/10 backdrop-blur-sm text-white transition-all hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-            >
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-            </button>
+  // Close menu when clicking nav links
+  const handleLinkClick = () => setIsOpen(false)
 
-            {/* Mobile Menu Overlay & Panel */}
-            {isOpen && (
-                <>
-                    {/* Backdrop */}
-                    <div
-                        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity"
-                        onClick={() => setIsOpen(false)}
-                        aria-hidden="true"
-                    />
+  const pathname = usePathname()
+  const [hash, setHash] = useState("")
 
-                    {/* Menu Panel */}
-                    <div
-                        className="fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-white shadow-2xl transition-transform"
-                        role="dialog"
-                        aria-modal="true"
-                        aria-label="Mobile menu"
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setHash(window.location.hash || "")
+
+      const onHash = () => setHash(window.location.hash || "")
+      window.addEventListener("hashchange", onHash)
+      return () => window.removeEventListener("hashchange", onHash)
+    }
+  }, [])
+
+  const isActive = (href: string) => {
+    if (href.startsWith("#")) return hash === href
+    if (!pathname) return false
+    return pathname === href || pathname.startsWith(href)
+  }
+
+  return (
+    <div className="sm:hidden">
+      {/* Hamburger Button - adapts to header background */}
+      <button
+        onClick={() => setIsOpen(true)}
+        aria-label="Open menu"
+        aria-expanded={isOpen}
+        className={`inline-flex items-center justify-center h-10 w-10 rounded-full transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-white ${
+          scrolled
+            ? 'text-blue-900 hover:bg-blue-50'
+            : 'bg-white/10 backdrop-blur-sm text-white hover:bg-white/20'
+        }`}
+      >
+        <Menu className="h-6 w-6" aria-hidden="true" />
+      </button>
+
+      {/* Mobile Menu Overlay & Panel */}
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setIsOpen(false)}
+            aria-hidden="true"
+          />
+
+          {/* Menu Panel */}
+          <div
+            className="fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-white shadow-2xl transition-transform"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mobile menu"
+          >
+            <div className="flex h-full flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50">
+                    <Hospital className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <span className="text-base font-bold text-blue-900">GCH</span>
+                </div>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  aria-label="Close menu"
+                  className="inline-flex items-center justify-center h-10 w-10 rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
+                  <X className="h-6 w-6" aria-hidden="true" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto px-6 py-6">
+                {/* Navigation Links */}
+                <nav className="space-y-1">
+                  <a
+                    href="#about"
+                    onClick={handleLinkClick}
+                    className={`flex items-center h-14 rounded-xl px-4 text-base font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                      isActive("#about")
+                        ? "bg-blue-600 text-white"
+                        : "text-slate-700 hover:bg-blue-50 hover:text-blue-600"
+                    }`}
+                  >
+                    <span
+                      className={`mr-4 flex h-10 w-10 items-center justify-center rounded-lg ${
+                        isActive("#about") ? "bg-white/20 text-white" : "bg-blue-50 text-blue-600"
+                      }`}
                     >
-                        <div className="flex h-full flex-col">
-                            {/* Header */}
-                            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-                                <div className="flex items-center gap-2">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50">
-                                        <span className="text-xl">🏥</span>
-                                    </div>
-                                    <span className="text-base font-bold text-blue-900">GCH</span>
-                                </div>
-                                <button
-                                    onClick={() => setIsOpen(false)}
-                                    aria-label="Close menu"
-                                    className="inline-flex items-center justify-center h-10 w-10 rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                                >
-                                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
+                      <BookOpen className="h-5 w-5" />
+                    </span>
+                    About
+                  </a>
+                  <a
+                    href="#services"
+                    onClick={handleLinkClick}
+                    className={`flex items-center h-14 rounded-xl px-4 text-base font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                      isActive("#services")
+                        ? "bg-blue-600 text-white"
+                        : "text-slate-700 hover:bg-blue-50 hover:text-blue-600"
+                    }`}
+                  >
+                    <span
+                      className={`mr-4 flex h-10 w-10 items-center justify-center rounded-lg ${
+                        isActive("#services") ? "bg-white/20 text-white" : "bg-pink-50 text-pink-600"
+                      }`}
+                    >
+                      <Stethoscope className="h-5 w-5" />
+                    </span>
+                    Services
+                  </a>
+                  <a
+                    href="#why-us"
+                    onClick={handleLinkClick}
+                    className={`flex items-center h-14 rounded-xl px-4 text-base font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                      isActive("#why-us")
+                        ? "bg-blue-600 text-white"
+                        : "text-slate-700 hover:bg-blue-50 hover:text-blue-600"
+                    }`}
+                  >
+                    <span
+                      className={`mr-4 flex h-10 w-10 items-center justify-center rounded-lg ${
+                        isActive("#why-us") ? "bg-white/20 text-white" : "bg-amber-50 text-amber-600"
+                      }`}
+                    >
+                      <Star className="h-5 w-5" />
+                    </span>
+                    Why Us
+                  </a>
+                  <a
+                    href="#contact"
+                    onClick={handleLinkClick}
+                    className={`flex items-center h-14 rounded-xl px-4 text-base font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                      isActive("#contact")
+                        ? "bg-blue-600 text-white"
+                        : "text-slate-700 hover:bg-blue-50 hover:text-blue-600"
+                    }`}
+                  >
+                    <span
+                      className={`mr-4 flex h-10 w-10 items-center justify-center rounded-lg ${
+                        isActive("#contact") ? "bg-white/20 text-white" : "bg-green-50 text-green-600"
+                      }`}
+                    >
+                      <Phone className="h-5 w-5" />
+                    </span>
+                    Contact
+                  </a>
+                </nav>
 
-                            {/* Content */}
-                            <div className="flex-1 overflow-y-auto px-6 py-6">
-                                {/* Navigation Links */}
-                                <nav className="space-y-1">
-                                    <a
-                                        href="#about"
-                                        onClick={handleLinkClick}
-                                        className={
-                                            `flex items-center h-14 rounded-xl px-4 text-base font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ` +
-                                            (isActive("#about")
-                                                ? "bg-blue-600 text-white"
-                                                : "text-slate-700 hover:bg-blue-50 hover:text-blue-600")
-                                        }
-                                    >
-                                        <span className={
-                                            `mr-4 flex h-10 w-10 items-center justify-center rounded-lg text-xl ` +
-                                            (isActive("#about") ? "bg-white/20 text-white" : "bg-blue-50 text-slate-700")
-                                        }>
-                                            📖
-                                        </span>
-                                        About
-                                    </a>
-                                    <a
-                                        href="#services"
-                                        onClick={handleLinkClick}
-                                        className={
-                                            `flex items-center h-14 rounded-xl px-4 text-base font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ` +
-                                            (isActive("#services")
-                                                ? "bg-blue-600 text-white"
-                                                : "text-slate-700 hover:bg-blue-50 hover:text-blue-600")
-                                        }
-                                    >
-                                        <span className={
-                                            `mr-4 flex h-10 w-10 items-center justify-center rounded-lg text-xl ` +
-                                            (isActive("#services") ? "bg-white/20 text-white" : "bg-pink-50 text-slate-700")
-                                        }>
-                                            🏥
-                                        </span>
-                                        Services
-                                    </a>
-                                    <a
-                                        href="#why-us"
-                                        onClick={handleLinkClick}
-                                        className={
-                                            `flex items-center h-14 rounded-xl px-4 text-base font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ` +
-                                            (isActive("#why-us")
-                                                ? "bg-blue-600 text-white"
-                                                : "text-slate-700 hover:bg-blue-50 hover:text-blue-600")
-                                        }
-                                    >
-                                        <span className={
-                                            `mr-4 flex h-10 w-10 items-center justify-center rounded-lg text-xl ` +
-                                            (isActive("#why-us") ? "bg-white/20 text-white" : "bg-amber-50 text-slate-700")
-                                        }>
-                                            ⭐
-                                        </span>
-                                        Why Us
-                                    </a>
-                                    <a
-                                        href="#contact"
-                                        onClick={handleLinkClick}
-                                        className={
-                                            `flex items-center h-14 rounded-xl px-4 text-base font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ` +
-                                            (isActive("#contact")
-                                                ? "bg-blue-600 text-white"
-                                                : "text-slate-700 hover:bg-blue-50 hover:text-blue-600")
-                                        }
-                                    >
-                                        <span className={
-                                            `mr-4 flex h-10 w-10 items-center justify-center rounded-lg text-xl ` +
-                                            (isActive("#contact") ? "bg-white/20 text-white" : "bg-green-50 text-slate-700")
-                                        }>
-                                            📞
-                                        </span>
-                                        Contact
-                                    </a>
-                                </nav>
+                {/* Sign In Button - after nav links */}
+                <div className="mt-8">
+                  <Link
+                    href="/login"
+                    onClick={handleLinkClick}
+                    className="flex items-center justify-center h-12 w-full rounded-xl bg-blue-600 px-6 font-semibold text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow-md active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                  >
+                    Sign In
+                  </Link>
+                </div>
+              </div>
 
-                                {/* Sign In Button - after nav links */}
-                                <div className="mt-8">
-                                    <Link
-                                        href="/login"
-                                        onClick={handleLinkClick}
-                                        className="flex items-center justify-center h-12 w-full rounded-xl bg-blue-600 px-6 font-semibold text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow-md active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                                    >
-                                        Sign In
-                                    </Link>
-                                </div>
-                            </div>
-
-                            {/* Footer */}
-                            <div className="border-t border-slate-100 px-6 py-4">
-                                <p className="text-xs text-center text-slate-500">
-                                    Need help? <a href="mailto:support@gch.co.ke" className="text-blue-600 font-medium hover:underline">support@gch.co.ke</a>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
-        </div>
-    )
+              {/* Footer */}
+              <div className="border-t border-slate-100 px-6 py-4">
+                <p className="text-xs text-center text-slate-500">
+                  Need help?{" "}
+                  <a href="mailto:support@gch.co.ke" className="text-blue-600 font-medium hover:underline">
+                    support@gch.co.ke
+                  </a>
+                </p>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
 }
