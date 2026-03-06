@@ -2,9 +2,6 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { logActivity, ActivityActions } from '@/lib/activity-logger'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -413,38 +410,38 @@ export default function AppointmentsPage() {
     switch (status) {
       case 'pending':
         return {
-          bg: 'bg-amber-50',
-          text: 'text-amber-800',
-          border: 'border-amber-200',
-          icon: <ClockIcon className="h-3 w-3" />,
+          bg: '#FFFBEB',
+          text: '#92400E',
+          border: '#FDE68A',
+          icon: <ClockIcon style={{ width: 12, height: 12 }} />,
         }
       case 'confirmed':
         return {
-          bg: 'bg-blue-50',
-          text: 'text-blue-800',
-          border: 'border-blue-200',
-          icon: <CheckCircle className="h-3 w-3" />,
+          bg: '#EFF6FF',
+          text: '#1E40AF',
+          border: '#BFDBFE',
+          icon: <CheckCircle style={{ width: 12, height: 12 }} />,
         }
       case 'completed':
         return {
-          bg: 'bg-emerald-50',
-          text: 'text-emerald-800',
-          border: 'border-emerald-200',
-          icon: <CheckCircle className="h-3 w-3" />,
+          bg: '#ECFDF5',
+          text: '#065F46',
+          border: '#A7F3D0',
+          icon: <CheckCircle style={{ width: 12, height: 12 }} />,
         }
       case 'cancelled':
         return {
-          bg: 'bg-slate-100',
-          text: 'text-slate-800',
-          border: 'border-slate-200',
-          icon: <XCircle className="h-3 w-3" />,
+          bg: '#F8FAFC',
+          text: '#1E293B',
+          border: '#E2E8F0',
+          icon: <XCircle style={{ width: 12, height: 12 }} />,
         }
       default:
         return {
-          bg: 'bg-slate-100',
-          text: 'text-slate-800',
-          border: 'border-slate-200',
-          icon: <ClockIcon className="h-3 w-3" />,
+          bg: '#F8FAFC',
+          text: '#1E293B',
+          border: '#E2E8F0',
+          icon: <ClockIcon style={{ width: 12, height: 12 }} />,
         }
     }
   }
@@ -515,141 +512,129 @@ export default function AppointmentsPage() {
 
   if (children.length === 0) {
     return (
-      <main className="space-y-6">
-        <Card className="border border-slate-200 shadow-lg bg-white">
-          <CardContent className="py-12 sm:py-16 text-center">
-            <div className="mx-auto mb-4 inline-flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-full bg-blue-50">
-              <User className="h-10 w-10 sm:h-12 sm:w-12 text-blue-600" />
-            </div>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-800">
-              No Children Registered
-            </h2>
-            <p className="mt-2 text-sm sm:text-base text-slate-600">
-              Please add a child to your profile before booking appointments
-            </p>
-            <Button
-              onClick={() => router.push('/patients')}
-              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
-            >
-              Add Child
-            </Button>
-          </CardContent>
-        </Card>
+      <main style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div className="clay-inset" style={{ padding: '48px 24px', textAlign: 'center' }}>
+          <div className="clay-empty-ico" style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)', margin: '0 auto 16px' }}>
+            <User style={{ width: 40, height: 40, color: '#fff' }} />
+          </div>
+          <h2 className="clay-display" style={{ fontSize: '1.25rem', color: 'var(--clay-text-dark)' }}>
+            No Children Registered
+          </h2>
+          <p style={{ marginTop: 8, fontSize: '0.875rem', color: 'var(--clay-text-muted)' }}>
+            Please add a child to your profile before booking appointments
+          </p>
+          <button
+            className="clay-cta"
+            onClick={() => router.push('/patients')}
+            style={{ marginTop: 16 }}
+          >
+            Add Child
+          </button>
+        </div>
       </main>
     )
   }
 
   return (
-    <main className="space-y-6">
+    <main style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="clay-hero" style={{ background: 'linear-gradient(135deg, #6366F1 0%, #818CF8 100%)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 flex items-center gap-2">
-            <Calendar className="h-7 w-7 text-blue-600" />
+          <h1 className="clay-display" style={{ fontSize: '1.75rem', color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Calendar style={{ width: 28, height: 28, color: '#fff' }} />
             My Appointments
           </h1>
-          <p className="mt-1 text-sm sm:text-base text-slate-600">
-            Manage your children's medical appointments
+          <p style={{ marginTop: 4, fontSize: '0.875rem', color: 'rgba(255,255,255,0.8)' }}>
+            Manage your children&apos;s medical appointments
           </p>
         </div>
         {!showBookingForm && (
-          <Button
+          <button
+            className="clay-cta"
             onClick={() => setShowBookingForm(true)}
-            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg"
+            style={{ background: '#fff', color: '#6366F1' }}
           >
-            <CalendarPlus className="h-4 w-4 mr-1.5" />
+            <CalendarPlus style={{ width: 16, height: 16, marginRight: 6 }} />
             New Appointment
-          </Button>
+          </button>
         )}
       </div>
 
       {/* Quick Stats */}
       {appointments.length > 0 && !showBookingForm && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Card className="border border-slate-200 shadow-sm bg-white">
-            <CardContent className="p-3">
-              <p className="text-xs text-slate-500">Total</p>
-              <p className="text-lg font-bold text-slate-800">{appointments.length}</p>
-            </CardContent>
-          </Card>
-          <Card className="border border-slate-200 shadow-sm bg-white">
-            <CardContent className="p-3">
-              <p className="text-xs text-slate-500">Pending</p>
-              <p className="text-lg font-bold text-amber-600">
-                {appointments.filter((a) => a.status === 'pending').length}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="border border-slate-200 shadow-sm bg-white">
-            <CardContent className="p-3">
-              <p className="text-xs text-slate-500">Confirmed</p>
-              <p className="text-lg font-bold text-blue-600">
-                {appointments.filter((a) => a.status === 'confirmed').length}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="border border-slate-200 shadow-sm bg-white">
-            <CardContent className="p-3">
-              <p className="text-xs text-slate-500">Completed</p>
-              <p className="text-lg font-bold text-emerald-600">
-                {appointments.filter((a) => a.status === 'completed').length}
-              </p>
-            </CardContent>
-          </Card>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
+          <div className="clay-stat" style={{ padding: 12 }}>
+            <p style={{ fontSize: '0.75rem', color: 'var(--clay-text-muted)' }}>Total</p>
+            <p className="clay-display" style={{ fontSize: '1.25rem', color: 'var(--clay-text-dark)' }}>{appointments.length}</p>
+            <div className="stat-blob" style={{ background: '#6366F1' }} />
+          </div>
+          <div className="clay-stat" style={{ padding: 12 }}>
+            <p style={{ fontSize: '0.75rem', color: 'var(--clay-text-muted)' }}>Pending</p>
+            <p className="clay-display" style={{ fontSize: '1.25rem', color: '#D97706' }}>
+              {appointments.filter((a) => a.status === 'pending').length}
+            </p>
+            <div className="stat-blob" style={{ background: '#F59E0B' }} />
+          </div>
+          <div className="clay-stat" style={{ padding: 12 }}>
+            <p style={{ fontSize: '0.75rem', color: 'var(--clay-text-muted)' }}>Confirmed</p>
+            <p className="clay-display" style={{ fontSize: '1.25rem', color: '#2563EB' }}>
+              {appointments.filter((a) => a.status === 'confirmed').length}
+            </p>
+            <div className="stat-blob" style={{ background: '#3B82F6' }} />
+          </div>
+          <div className="clay-stat" style={{ padding: 12 }}>
+            <p style={{ fontSize: '0.75rem', color: 'var(--clay-text-muted)' }}>Completed</p>
+            <p className="clay-display" style={{ fontSize: '1.25rem', color: '#059669' }}>
+              {appointments.filter((a) => a.status === 'completed').length}
+            </p>
+            <div className="stat-blob" style={{ background: '#10B981' }} />
+          </div>
         </div>
       )}
 
       {/* Booking Form */}
       {showBookingForm && (
-        <Card className="border border-slate-200 shadow-lg bg-white">
-          <CardHeader className="border-b border-slate-200 bg-white pb-4">
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowBookingForm(false)
-                  setError(null)
-                }}
-                className="h-8 w-8 p-0 text-slate-600 hover:text-slate-800 hover:bg-slate-100"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <div>
-                <CardTitle className="text-xl font-semibold text-slate-800">
-                  Book New Appointment
-                </CardTitle>
-                <p className="text-sm text-slate-500 mt-1">
-                  Complete all required fields (*)
-                </p>
-              </div>
+        <div className="clay-card-static" style={{ overflow: 'hidden' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button
+              type="button"
+              className="clay-btn-sec"
+              onClick={() => {
+                setShowBookingForm(false)
+                setError(null)
+              }}
+              style={{ width: 32, height: 32, padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <ArrowLeft style={{ width: 16, height: 16 }} />
+            </button>
+            <div>
+              <h2 className="clay-display" style={{ fontSize: '1.25rem', color: 'var(--clay-text-dark)' }}>
+                Book New Appointment
+              </h2>
+              <p style={{ fontSize: '0.875rem', color: 'var(--clay-text-muted)', marginTop: 4 }}>
+                Complete all required fields (*)
+              </p>
             </div>
-          </CardHeader>
-          <CardContent className="pt-6">
+          </div>
+          <div style={{ padding: '24px 20px' }}>
             {error && (
-              <div className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                  <div>{error}</div>
-                </div>
+              <div style={{ marginBottom: 20, borderRadius: 12, border: '1px solid #FECACA', background: '#FEF2F2', padding: 16, fontSize: '0.875rem', color: '#B91C1C', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <AlertCircle style={{ width: 16, height: 16, marginTop: 2, flexShrink: 0 }} />
+                <div>{error}</div>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 20 }}>
                 <div>
-                  <label
-                    htmlFor="child_id"
-                    className="mb-2 block text-sm font-medium text-slate-700"
-                  >
+                  <label htmlFor="child_id" className="clay-label">
                     Select Child *
                   </label>
                   <select
                     id="child_id"
                     name="child_id"
                     required
-                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors appearance-none"
+                    className="clay-field"
                   >
                     <option value="">Choose a child</option>
                     {children.map((child) => (
@@ -661,16 +646,13 @@ export default function AppointmentsPage() {
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="doctor_id"
-                    className="mb-2 block text-sm font-medium text-slate-700"
-                  >
+                  <label htmlFor="doctor_id" className="clay-label">
                     Select Doctor (Optional)
                   </label>
                   <select
                     id="doctor_id"
                     name="doctor_id"
-                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors appearance-none"
+                    className="clay-field"
                   >
                     <option value="">Any available doctor</option>
                     {doctors.map((doctor) => (
@@ -682,30 +664,24 @@ export default function AppointmentsPage() {
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="scheduled_for"
-                    className="mb-2 block text-sm font-medium text-slate-700"
-                  >
-                    Date & Time *
+                  <label htmlFor="scheduled_for" className="clay-label">
+                    Date &amp; Time *
                   </label>
-                  <div className="relative">
+                  <div style={{ position: 'relative' }}>
                     <input
                       id="scheduled_for"
                       name="scheduled_for"
                       type="datetime-local"
                       required
                       min={new Date().toISOString().slice(0, 16)}
-                      className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors"
+                      className="clay-field"
                     />
-                    <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                    <Calendar style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: '#9CA3AF', pointerEvents: 'none' }} />
                   </div>
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="notes"
-                    className="mb-2 block text-sm font-medium text-slate-700"
-                  >
+                  <label htmlFor="notes" className="clay-label">
                     Reason for Visit / Notes
                   </label>
                   <textarea
@@ -713,253 +689,256 @@ export default function AppointmentsPage() {
                     name="notes"
                     rows={3}
                     placeholder="Describe the reason for this appointment..."
-                    className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors"
+                    className="clay-field"
                   />
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-slate-200">
-                <Button
+              <div style={{ display: 'flex', gap: 12, paddingTop: 16, borderTop: '1px solid #E5E7EB' }}>
+                <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md transition-all duration-300"
+                  className="clay-cta"
+                  style={{ flex: 1 }}
                 >
                   {loading ? (
                     <>
-                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      <div style={{ width: 16, height: 16, border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', marginRight: 8 }} />
                       Booking Appointment...
                     </>
                   ) : (
                     <>
-                      <CalendarPlus className="h-4 w-4 mr-1.5" />
+                      <CalendarPlus style={{ width: 16, height: 16, marginRight: 6 }} />
                       Book Appointment
                     </>
                   )}
-                </Button>
-                <Button
+                </button>
+                <button
                   type="button"
                   onClick={() => {
                     setShowBookingForm(false)
                     setError(null)
                   }}
-                  variant="secondary"
-                  className="flex-1 border-slate-300 text-slate-700 hover:bg-slate-50"
+                  className="clay-btn-sec"
+                  style={{ flex: 1 }}
                 >
                   Cancel
-                </Button>
+                </button>
               </div>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Search and Filter Section */}
       {appointments.length > 0 && !showBookingForm && (
-        <Card className="border border-slate-200 shadow-sm bg-white">
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search by child name, doctor, notes..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-slate-300 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-
-              <select
-                value={statusFilter}
-                onChange={(e) =>
-                  setStatusFilter(e.target.value as 'all' | AppointmentStatus)
-                }
-                className="px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors bg-white"
-              >
-                <option value="all">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
+        <div className="clay-filter">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ position: 'relative', flex: '1 1 250px' }}>
+              <Search style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: '#9CA3AF' }} />
+              <input
+                type="text"
+                placeholder="Search by child name, doctor, notes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="clay-search"
+                style={{ paddingLeft: 40, paddingRight: 40 }}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: 0 }}
+                >
+                  <X style={{ width: 16, height: 16 }} />
+                </button>
+              )}
             </div>
 
-            {(searchQuery || statusFilter !== 'all') && (
-              <p className="mt-3 text-sm text-slate-500">
-                Showing {filteredAppointments.length} of {appointments.length} appointments
-                {searchQuery && <span> for &quot;{searchQuery}&quot;</span>}
-                {statusFilter !== 'all' && <span> with status &quot;{statusFilter}&quot;</span>}
-              </p>
-            )}
-          </CardContent>
-        </Card>
+            <select
+              value={statusFilter}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as 'all' | AppointmentStatus)
+              }
+              className="clay-field"
+              style={{ minWidth: 160 }}
+            >
+              <option value="all">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+
+          {(searchQuery || statusFilter !== 'all') && (
+            <p style={{ marginTop: 12, fontSize: '0.875rem', color: 'var(--clay-text-muted)' }}>
+              Showing {filteredAppointments.length} of {appointments.length} appointments
+              {searchQuery && <span> for &quot;{searchQuery}&quot;</span>}
+              {statusFilter !== 'all' && <span> with status &quot;{statusFilter}&quot;</span>}
+            </p>
+          )}
+        </div>
       )}
 
       {/* Appointments List */}
       {appointments.length === 0 && !showBookingForm ? (
-        <Card className="border border-slate-200 shadow-lg bg-white">
-          <CardContent className="py-12 sm:py-16 text-center">
-            <div className="mx-auto mb-4 inline-flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-full bg-blue-50">
-              <Calendar className="h-10 w-10 sm:h-12 sm:w-12 text-blue-600" />
-            </div>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-800">
-              No Appointments Yet
-            </h2>
-            <p className="mt-2 text-sm sm:text-base text-slate-600">
-              Book your first appointment to get started
-            </p>
-            <Button
-              onClick={() => setShowBookingForm(true)}
-              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
-            >
-              <CalendarPlus className="h-4 w-4 mr-1.5" />
-              Book First Appointment
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="clay-inset" style={{ padding: '48px 24px', textAlign: 'center' }}>
+          <div className="clay-empty-ico" style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)', margin: '0 auto 16px' }}>
+            <Calendar style={{ width: 40, height: 40, color: '#fff' }} />
+          </div>
+          <h2 className="clay-display" style={{ fontSize: '1.25rem', color: 'var(--clay-text-dark)' }}>
+            No Appointments Yet
+          </h2>
+          <p style={{ marginTop: 8, fontSize: '0.875rem', color: 'var(--clay-text-muted)' }}>
+            Book your first appointment to get started
+          </p>
+          <button
+            className="clay-cta"
+            onClick={() => setShowBookingForm(true)}
+            style={{ marginTop: 16 }}
+          >
+            <CalendarPlus style={{ width: 16, height: 16, marginRight: 6 }} />
+            Book First Appointment
+          </button>
+        </div>
       ) : filteredAppointments.length === 0 && !showBookingForm ? (
-        <Card className="border border-slate-200 shadow-lg bg-white">
-          <CardContent className="py-12 sm:py-16 text-center">
-            <div className="mx-auto mb-4 inline-flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-slate-100">
-              <Search className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400" />
-            </div>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-800">
-              No Matching Appointments
-            </h2>
-            <p className="mt-2 text-sm sm:text-base text-slate-600">
-              Try adjusting your search or filter criteria
-            </p>
-            <Button
-              onClick={() => {
-                setSearchQuery('')
-                setStatusFilter('all')
-              }}
-              className="mt-4 bg-slate-200 text-slate-700 hover:bg-slate-300"
-            >
-              Clear Filters
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="clay-inset" style={{ padding: '48px 24px', textAlign: 'center' }}>
+          <div className="clay-empty-ico" style={{ background: 'linear-gradient(135deg, #94A3B8, #CBD5E1)', margin: '0 auto 16px' }}>
+            <Search style={{ width: 32, height: 32, color: '#fff' }} />
+          </div>
+          <h2 className="clay-display" style={{ fontSize: '1.25rem', color: 'var(--clay-text-dark)' }}>
+            No Matching Appointments
+          </h2>
+          <p style={{ marginTop: 8, fontSize: '0.875rem', color: 'var(--clay-text-muted)' }}>
+            Try adjusting your search or filter criteria
+          </p>
+          <button
+            className="clay-btn-sec"
+            onClick={() => {
+              setSearchQuery('')
+              setStatusFilter('all')
+            }}
+            style={{ marginTop: 16 }}
+          >
+            Clear Filters
+          </button>
+        </div>
       ) : (
         !showBookingForm && (
-          <div className="grid gap-4">
+          <div style={{ display: 'grid', gap: 16 }}>
             {filteredAppointments.map((appointment) => {
               const statusColors = getStatusColor(appointment.status)
               return (
-                <Card
+                <div
                   key={appointment.id}
-                  className="border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 bg-white"
+                  className="clay-card-static"
+                  style={{ padding: '16px 20px' }}
                 >
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="flex-1">
-                        {/* Child Info */}
-                        <div className="mb-3 flex items-start justify-between gap-2">
-                          <div>
-                            <h3 className="text-base sm:text-lg font-bold text-slate-800">
-                              {appointment.child?.full_name || 'Unknown Child'}
-                            </h3>
-                            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                              Age: {formatAge(appointment.child?.date_of_birth || '')}
-                            </p>
-                          </div>
-                          <Badge
-                            className={`shrink-0 ${statusColors.bg} ${statusColors.text} ${statusColors.border} flex items-center gap-1`}
-                          >
-                            {statusColors.icon}
-                            {appointment.status.charAt(0).toUpperCase() +
-                              appointment.status.slice(1)}
-                          </Badge>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <div style={{ flex: 1 }}>
+                      {/* Child Info */}
+                      <div style={{ marginBottom: 12, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                        <div>
+                          <h3 className="clay-display" style={{ fontSize: '1.1rem', color: 'var(--clay-text-dark)' }}>
+                            {appointment.child?.full_name || 'Unknown Child'}
+                          </h3>
+                          <p style={{ fontSize: '0.8rem', color: 'var(--clay-text-muted)', marginTop: 4 }}>
+                            Age: {formatAge(appointment.child?.date_of_birth || '')}
+                          </p>
                         </div>
-
-                        {/* Appointment Details */}
-                        <div className="space-y-2 text-sm text-slate-600">
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-slate-400" />
-                            <span className="font-medium text-slate-800">
-                              {formatDate(appointment.scheduled_for)}
-                            </span>
-                          </div>
-
-                          {appointment.doctor && (
-                            <div className="flex items-center gap-2">
-                              <Stethoscope className="h-4 w-4 text-slate-400" />
-                              <span className="text-slate-700">
-                                Dr. {appointment.doctor.profiles?.full_name}
-                              </span>
-                            </div>
-                          )}
-
-                          {appointment.notes && (
-                            <div className="mt-3 rounded-lg bg-slate-50 p-3 border border-slate-200">
-                              <div className="flex items-center gap-1.5 mb-1">
-                                <FileText className="h-3 w-3 text-slate-600" />
-                                <p className="text-xs font-medium text-slate-700">
-                                  Notes:
-                                </p>
-                              </div>
-                              <p className="text-sm text-slate-700">
-                                {appointment.notes}
-                              </p>
-                            </div>
-                          )}
-                        </div>
+                        <span
+                          className="clay-badge"
+                          style={{
+                            background: statusColors.bg,
+                            color: statusColors.text,
+                            border: `1px solid ${statusColors.border}`,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {statusColors.icon}
+                          {appointment.status.charAt(0).toUpperCase() +
+                            appointment.status.slice(1)}
+                        </span>
                       </div>
 
-                      {/* Actions */}
-                      <div className="flex flex-wrap gap-2 pt-4 border-t border-slate-200 sm:border-0 sm:pt-0 sm:ml-4 sm:flex-col">
-                        {(appointment.status === 'pending' ||
-                          appointment.status === 'confirmed') && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleViewQR(appointment)}
-                            disabled={loadingQr === appointment.id}
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
-                          >
-                            {loadingQr === appointment.id ? 'Loading...' : 'View QR'}
-                          </Button>
+                      {/* Appointment Details */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: '0.875rem', color: 'var(--clay-text-muted)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <Clock style={{ width: 16, height: 16, color: '#9CA3AF' }} />
+                          <span style={{ fontWeight: 500, color: 'var(--clay-text-dark)' }}>
+                            {formatDate(appointment.scheduled_for)}
+                          </span>
+                        </div>
+
+                        {appointment.doctor && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <Stethoscope style={{ width: 16, height: 16, color: '#9CA3AF' }} />
+                            <span style={{ color: 'var(--clay-text-dark)' }}>
+                              Dr. {appointment.doctor.profiles?.full_name}
+                            </span>
+                          </div>
                         )}
 
-                        {(appointment.status === 'pending' ||
-                          appointment.status === 'confirmed') && (
-                          <Button
-                            size="sm"
-                            onClick={() => handlePayAtAppointment(appointment.id)}
-                            disabled={loadingPayInvoice === appointment.id}
-                            variant="secondary"
-                            className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                          >
-                            {loadingPayInvoice === appointment.id
-                              ? '...'
-                              : 'Make Payment'}
-                          </Button>
-                        )}
-
-                        {appointment.status === 'pending' && (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => handleCancelAppointment(appointment.id)}
-                            disabled={cancellingId === appointment.id}
-                            className="border-red-300 text-red-700 hover:bg-red-50"
-                          >
-                            {cancellingId === appointment.id
-                              ? 'Cancelling...'
-                              : 'Cancel'}
-                          </Button>
+                        {appointment.notes && (
+                          <div className="clay-inset" style={{ marginTop: 12, padding: 12 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                              <FileText style={{ width: 12, height: 12, color: 'var(--clay-text-muted)' }} />
+                              <p className="clay-label" style={{ margin: 0 }}>Notes:</p>
+                            </div>
+                            <p style={{ fontSize: '0.875rem', color: 'var(--clay-text-dark)' }}>
+                              {appointment.notes}
+                            </p>
+                          </div>
                         )}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+
+                    {/* Actions */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingTop: 12, borderTop: '1px solid #E5E7EB' }}>
+                      {(appointment.status === 'pending' ||
+                        appointment.status === 'confirmed') && (
+                        <button
+                          className="clay-cta"
+                          onClick={() => handleViewQR(appointment)}
+                          disabled={loadingQr === appointment.id}
+                          style={{ fontSize: '0.8rem', padding: '8px 16px' }}
+                        >
+                          {loadingQr === appointment.id ? 'Loading...' : 'View QR'}
+                        </button>
+                      )}
+
+                      {(appointment.status === 'pending' ||
+                        appointment.status === 'confirmed') && (
+                        <button
+                          className="clay-cta-emerald"
+                          onClick={() => handlePayAtAppointment(appointment.id)}
+                          disabled={loadingPayInvoice === appointment.id}
+                          style={{ fontSize: '0.8rem', padding: '8px 16px' }}
+                        >
+                          {loadingPayInvoice === appointment.id
+                            ? '...'
+                            : 'Make Payment'}
+                        </button>
+                      )}
+
+                      {appointment.status === 'pending' && (
+                        <button
+                          className="clay-cta-rose"
+                          onClick={() => handleCancelAppointment(appointment.id)}
+                          disabled={cancellingId === appointment.id}
+                          style={{ fontSize: '0.8rem', padding: '8px 16px' }}
+                        >
+                          {cancellingId === appointment.id
+                            ? 'Cancelling...'
+                            : 'Cancel'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               )
             })}
           </div>
@@ -969,78 +948,80 @@ export default function AppointmentsPage() {
       {/* ----- QR CODE MODAL (NOW WITH SHORT CODE) ----- */}
       {qrModalData && (
         <div
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
+          className="clay-modal"
           onClick={() => setQrModalData(null)}
         >
           <div
-            className="w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto"
+            className="clay-card-static"
+            style={{ width: '100%', maxWidth: 420, maxHeight: '90vh', overflowY: 'auto', borderRadius: 20 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-5 sm:p-6">
-              <div className="text-center">
+            <div style={{ padding: '20px 24px' }}>
+              <div style={{ textAlign: 'center' }}>
                 {/* Drag handle for mobile */}
-                <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-300 sm:hidden" />
+                <div style={{ margin: '0 auto 16px', height: 6, width: 48, borderRadius: 999, background: '#CBD5E1', display: 'block' }} />
 
-                <h3 className="text-xl font-bold text-slate-900 mb-1">
+                <h3 className="clay-display" style={{ fontSize: '1.25rem', color: 'var(--clay-text-dark)', marginBottom: 4 }}>
                   Appointment QR Code
                 </h3>
-                <p className="text-sm text-slate-500 mb-4">
+                <p style={{ fontSize: '0.875rem', color: 'var(--clay-text-muted)', marginBottom: 16 }}>
                   Show this QR code at the hospital for check-in
                 </p>
 
                 {/* Child Name */}
-                <div className="mb-4 rounded-xl bg-blue-50 border border-blue-100 p-3">
-                  <p className="text-sm font-medium text-slate-700">
+                <div className="clay-inset" style={{ marginBottom: 16, padding: 12 }}>
+                  <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--clay-text-dark)' }}>
                     Patient:{' '}
-                    <span className="text-blue-600 font-semibold">
+                    <span style={{ color: 'var(--clay-accent)', fontWeight: 600 }}>
                       {qrModalData.childName}
                     </span>
                   </p>
                 </div>
 
                 {/* QR Code Image */}
-                <div className="flex justify-center mb-5">
-                  <div className="rounded-2xl bg-white p-4 shadow-lg border border-slate-200">
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+                  <div className="clay-card-static" style={{ padding: 16 }}>
                     <img
                       src={qrModalData.qrCode}
                       alt="Appointment QR Code"
-                      className="w-52 h-52 sm:w-56 sm:h-56"
+                      style={{ width: 208, height: 208 }}
                     />
                   </div>
                 </div>
 
                 {/* ----- SHORT CHECK-IN CODE CARD ----- */}
-                <div className="mt-2 mb-5 bg-slate-50 border border-slate-200 rounded-xl p-4">
-                  <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">
+                <div className="clay-inset" style={{ marginBottom: 20, padding: 16 }}>
+                  <p className="clay-label" style={{ marginBottom: 4 }}>
                     Short check‑in code
                   </p>
-                  <p className="text-3xl font-mono font-bold tracking-wider text-slate-800">
+                  <p className="clay-display" style={{ fontSize: '1.875rem', fontFamily: 'monospace', letterSpacing: '0.1em', color: 'var(--clay-text-dark)' }}>
                     {qrModalData.checkInCode}
                   </p>
-                  <p className="text-xs text-slate-500 mt-2">
-                    Can't scan? Enter this code at the reception kiosk.
+                  <p style={{ fontSize: '0.75rem', color: 'var(--clay-text-muted)', marginTop: 8 }}>
+                    Can&apos;t scan? Enter this code at the reception kiosk.
                   </p>
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-3">
-                  <Button
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button
+                    className="clay-cta"
                     onClick={downloadQR}
-                    className="flex-1 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                    style={{ flex: 1, padding: '12px 16px' }}
                   >
-                    <Download className="h-4 w-4 mr-1.5" />
+                    <Download style={{ width: 16, height: 16, marginRight: 6 }} />
                     Download QR
-                  </Button>
-                  <Button
+                  </button>
+                  <button
+                    className="clay-btn-sec"
                     onClick={() => setQrModalData(null)}
-                    variant="secondary"
-                    className="flex-1 py-3 rounded-lg border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold"
+                    style={{ flex: 1, padding: '12px 16px' }}
                   >
                     Close
-                  </Button>
+                  </button>
                 </div>
 
-                <p className="mt-4 text-xs text-slate-400">
+                <p style={{ marginTop: 16, fontSize: '0.75rem', color: '#9CA3AF' }}>
                   Tip: Save this image to your phone for easy access
                 </p>
               </div>
@@ -1053,11 +1034,12 @@ export default function AppointmentsPage() {
       {selectedInvoice && (
         <div>
           <div
-            className="fixed inset-0 z-[90] bg-black/40"
+            className="clay-modal"
+            style={{ zIndex: 90, background: 'rgba(0,0,0,0.4)', backdropFilter: 'none' }}
             onClick={() => setSelectedInvoice(null)}
           />
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div className="w-full max-w-2xl">
+          <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, pointerEvents: 'none' }}>
+            <div style={{ width: '100%', maxWidth: 672, pointerEvents: 'auto' }}>
               <AppointmentPaymentLauncher
                 invoice={selectedInvoice}
                 autoOpen={true}

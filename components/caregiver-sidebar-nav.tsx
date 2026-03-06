@@ -33,8 +33,8 @@ export function CaregiverSidebarNav() {
     const pathname = usePathname()
 
     return (
-        <nav className="space-y-1.5" aria-label="Main navigation">
-            <div className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: 6 }} aria-label="Main navigation">
+            <div className="clay-label" style={{ padding: '0 12px', marginBottom: 4, color: 'var(--clay-text-muted)' }}>
                 Menu
             </div>
             {navItems.map((item) => {
@@ -46,40 +46,63 @@ export function CaregiverSidebarNav() {
                         key={item.href}
                         href={item.href}
                         aria-current={isActive ? 'page' : undefined}
-                        className={`group flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 ${isActive
-                                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20 ring-1 ring-blue-500/30'
-                                : 'bg-white text-slate-700 ring-1 ring-slate-100 hover:ring-blue-200 hover:shadow-md hover:bg-blue-50/60'
-                            }`}
+                        className={isActive ? 'clay-nav-active' : 'clay-nav-item'}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            padding: '12px 16px',
+                            textDecoration: 'none',
+                        }}
                     >
                         <div
-                            className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors duration-200 ${isActive
-                                    ? 'bg-white/20 text-white'
-                                    : 'bg-slate-50 text-slate-600 group-hover:bg-blue-100 group-hover:text-blue-600'
-                                }`}
+                            className="clay-ico"
+                            style={{
+                                width: 36,
+                                height: 36,
+                                background: isActive
+                                    ? 'rgba(255,255,255,.2)'
+                                    : 'linear-gradient(135deg, #EEF2FF, #C7D2FE)',
+                                boxShadow: isActive
+                                    ? 'none'
+                                    : '0 2px 0 rgba(99,102,241,.12), inset 0 1px 0 rgba(255,255,255,.5)',
+                            }}
                         >
-                            <Icon className="h-5 w-5" />
+                            <Icon size={18} style={{ color: isActive ? 'white' : '#6366F1' }} />
                         </div>
-                        <div className="min-w-0 flex-1">
+                        <div style={{ minWidth: 0, flex: 1 }}>
                             <div
-                                className={`text-sm font-semibold ${isActive ? 'text-white' : 'text-slate-900'
-                                    }`}
+                                style={{
+                                    fontSize: 13,
+                                    fontWeight: 700,
+                                    color: isActive ? 'white' : 'var(--clay-text-dark)',
+                                    fontFamily: "'Nunito', sans-serif",
+                                }}
                             >
                                 {item.label}
                             </div>
                             {item.description && (
                                 <div
-                                    className={`truncate text-xs ${isActive ? 'text-white/75' : 'text-slate-500'
-                                        }`}
+                                    style={{
+                                        fontSize: 11,
+                                        color: isActive ? 'rgba(255,255,255,.7)' : 'var(--clay-text-muted)',
+                                        fontFamily: "'Nunito', sans-serif",
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                    }}
                                 >
                                     {item.description}
                                 </div>
                             )}
                         </div>
                         <ChevronRight
-                            className={`h-4 w-4 shrink-0 transition-all duration-150 ${isActive
-                                    ? 'text-white/70 opacity-100'
-                                    : 'text-slate-300 opacity-0 group-hover:opacity-100 group-hover:text-blue-500 group-hover:translate-x-0.5'
-                                }`}
+                            size={16}
+                            style={{
+                                flexShrink: 0,
+                                color: isActive ? 'rgba(255,255,255,.6)' : 'var(--clay-text-muted)',
+                                opacity: isActive ? 1 : 0.4,
+                            }}
                             aria-hidden="true"
                         />
                     </Link>

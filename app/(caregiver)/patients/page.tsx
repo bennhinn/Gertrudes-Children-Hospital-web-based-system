@@ -2,9 +2,6 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { logActivity, ActivityActions } from '@/lib/activity-logger'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Search, X, Baby, Plus, LayoutDashboard, Calendar, AlertTriangle, FileText, Heart, Stethoscope, UserPlus, ChevronLeft, Users, FileCheck } from 'lucide-react'
@@ -162,147 +159,142 @@ export default function PatientsPage() {
     })
   }, [children, searchQuery])
 
-  // Get gender-specific icon and color
   function getGenderDetails(gender: string) {
     switch (gender) {
       case 'male':
-        return { color: 'text-blue-600', bg: 'bg-blue-50', ring: 'ring-blue-200/60', icon: '♂' }
+        return { color: '#3B82F6', bg: '#EFF6FF', icon: '♂' }
       case 'female':
-        return { color: 'text-pink-600', bg: 'bg-pink-50', ring: 'ring-pink-200/60', icon: '♀' }
+        return { color: '#EC4899', bg: '#FDF2F8', icon: '♀' }
       default:
-        return { color: 'text-purple-600', bg: 'bg-purple-50', ring: 'ring-purple-200/60', icon: '⚧' }
+        return { color: 'var(--clay-purple)', bg: 'var(--clay-purple-s)', icon: '⚧' }
     }
   }
 
   return (
-    <main className="space-y-5 sm:space-y-6 lg:space-y-8">
+    <main style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* Hero Header */}
-      <section className="relative overflow-hidden rounded-2xl bg-linear-to-br from-blue-600 via-blue-700 to-indigo-700 p-5 text-white shadow-lg shadow-blue-600/20 sm:rounded-3xl sm:p-8 lg:p-10">
-        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5 motion-safe:animate-pulse sm:h-56 sm:w-56" aria-hidden="true" />
-        <div className="absolute -bottom-6 -left-6 h-28 w-28 rounded-full bg-white/5 motion-safe:animate-pulse [animation-delay:1s] sm:h-40 sm:w-40" aria-hidden="true" />
-        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <section className="clay-hero" style={{ background: 'linear-gradient(135deg, var(--clay-indigo), #4F46E5)', padding: '32px 28px', color: 'white', position: 'relative' }}>
+        <div className="deco-blob" style={{ width: 180, height: 180, top: -40, right: -40, background: 'rgba(255,255,255,.08)' }} aria-hidden="true" />
+        <div className="deco-blob" style={{ width: 120, height: 120, bottom: -30, left: -30, background: 'rgba(255,255,255,.06)', animationDelay: '2s' }} aria-hidden="true" />
+        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-blue-100 backdrop-blur-sm">
-              <Users className="h-3 w-3" />
+            <span className="clay-badge" style={{ background: 'rgba(255,255,255,.15)', color: '#C7D2FE', marginBottom: 10, display: 'inline-flex', alignItems: 'center', gap: 6, backdropFilter: 'blur(6px)' }}>
+              <Users style={{ width: 12, height: 12 }} />
               Children Profiles
-            </div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl lg:text-4xl">
+            </span>
+            <h1 className="clay-display" style={{ fontSize: 32, fontWeight: 700, color: 'white', margin: 0 }}>
               My Children
             </h1>
-            <p className="mt-1 text-sm text-blue-100 sm:text-base">
+            <p style={{ marginTop: 6, fontSize: 15, color: '#C7D2FE' }}>
               Manage your children&apos;s health profiles
             </p>
           </div>
-          <div className="flex gap-3">
+          <div style={{ display: 'flex', gap: 12 }}>
             {!showAddForm && (
-              <Button
+              <button
+                className="clay-cta"
                 onClick={() => { logActivity({ action: 'opened_add_child_form', action_category: 'patient', description: 'Opened add child form' }).catch(() => { }); setShowAddForm(true) }}
-                className="flex-1 sm:flex-none bg-white text-blue-600 hover:bg-white/95 shadow-lg shadow-blue-900/20 active:scale-95 transition-transform text-sm sm:text-base font-semibold"
+                style={{ padding: '10px 20px', fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'white', color: 'var(--clay-indigo)', boxShadow: '0 5px 0 rgba(0,0,0,.1), 0 8px 20px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.9)' }}
               >
-                <UserPlus className="h-4 w-4 mr-1.5" />
+                <UserPlus style={{ width: 16, height: 16 }} />
                 Add New Child
-              </Button>
+              </button>
             )}
-            <Button
+            <button
+              className="clay-btn-sec"
               onClick={() => router.push('/dashboard')}
-              variant="ghost"
-              className="flex-1 sm:flex-none bg-white/15 text-white backdrop-blur-md hover:bg-white/25 border border-white/20 active:scale-95 transition-transform text-sm sm:text-base"
+              style={{ padding: '10px 20px', fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,.15)', color: 'white', border: '1.5px solid rgba(255,255,255,.25)', backdropFilter: 'blur(8px)' }}
             >
-              <LayoutDashboard className="h-4 w-4 mr-1.5" />
+              <LayoutDashboard style={{ width: 16, height: 16 }} />
               Dashboard
-            </Button>
+            </button>
           </div>
         </div>
       </section>
 
       {/* Quick Stats Bar */}
       {children.length > 0 && !showAddForm && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
-          <Card className="group border-0 shadow-sm ring-1 ring-blue-100 bg-linear-to-br from-white via-white to-blue-50/80 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]">
-            <CardContent className="p-4 flex items-center gap-3 sm:gap-4">
-              <div className="h-11 w-11 shrink-0 rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25 flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
-                <Baby className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-blue-900 sm:text-sm">Total Children</p>
-                <p className="text-2xl font-bold text-blue-600 tracking-tight">{children.length}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="group border-0 shadow-sm ring-1 ring-emerald-100 bg-linear-to-br from-white via-white to-emerald-50/80 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]">
-            <CardContent className="p-4 flex items-center gap-3 sm:gap-4">
-              <div className="h-11 w-11 shrink-0 rounded-xl bg-linear-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/25 flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
-                <Calendar className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-emerald-900 sm:text-sm">Book Appointment</p>
-                <Button
-                  variant="ghost"
-                  className="p-0 h-auto text-base font-bold text-emerald-600 hover:text-emerald-700 active:scale-95 transition-transform"
-                  onClick={() => router.push('/caregiver-appointments')}
-                >
-                  Schedule now →
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          <Card
-            className="group border-0 shadow-sm ring-1 ring-purple-100 bg-linear-to-br from-white via-white to-purple-50/80 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]"
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+          <div className="clay-stat" style={{ background: 'white', padding: 20, display: 'flex', alignItems: 'center', gap: 16, position: 'relative' }}>
+            <div className="stat-blob" style={{ width: 80, height: 80, top: -20, right: -20, background: 'var(--clay-indigo-s)' }} />
+            <div className="clay-ico" style={{ width: 48, height: 48, background: 'linear-gradient(135deg, var(--clay-indigo), #4F46E5)' }}>
+              <Baby style={{ width: 22, height: 22, color: 'white' }} />
+            </div>
+            <div>
+              <span className="clay-label" style={{ color: 'var(--clay-text-muted)' }}>Total Children</span>
+              <p className="clay-display" style={{ fontSize: 28, fontWeight: 700, color: 'var(--clay-indigo)', margin: 0, lineHeight: 1 }}>{children.length}</p>
+            </div>
+          </div>
+          <div className="clay-stat" style={{ background: 'white', padding: 20, display: 'flex', alignItems: 'center', gap: 16, position: 'relative' }}>
+            <div className="stat-blob" style={{ width: 80, height: 80, top: -20, right: -20, background: 'var(--clay-emerald-s)' }} />
+            <div className="clay-ico" style={{ width: 48, height: 48, background: 'linear-gradient(135deg, var(--clay-emerald), #059669)' }}>
+              <Calendar style={{ width: 22, height: 22, color: 'white' }} />
+            </div>
+            <div>
+              <span className="clay-label" style={{ color: 'var(--clay-text-muted)' }}>Book Appointment</span>
+              <button
+                className="clay-btn-sec"
+                onClick={() => router.push('/caregiver-appointments')}
+                style={{ padding: '4px 12px', fontSize: 13, color: 'var(--clay-emerald)', border: 'none', background: 'var(--clay-emerald-s)', fontWeight: 800 }}
+              >
+                Schedule now →
+              </button>
+            </div>
+          </div>
+          <div
+            className="clay-stat"
+            style={{ background: 'white', padding: 20, display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer', position: 'relative' }}
             onClick={() => router.push('/caregiver-health-records')}
           >
-            <CardContent className="p-4 flex items-center gap-3 sm:gap-4">
-              <div className="h-11 w-11 shrink-0 rounded-xl bg-linear-to-br from-purple-500 to-purple-600 shadow-lg shadow-purple-500/25 flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
-                <FileCheck className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-purple-900 sm:text-sm">Health Records</p>
-                <p className="text-base font-bold text-purple-600">
-                  View All →
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+            <div className="stat-blob" style={{ width: 80, height: 80, top: -20, right: -20, background: 'var(--clay-purple-s)' }} />
+            <div className="clay-ico" style={{ width: 48, height: 48, background: 'linear-gradient(135deg, var(--clay-purple), #7C3AED)' }}>
+              <FileCheck style={{ width: 22, height: 22, color: 'white' }} />
+            </div>
+            <div>
+              <span className="clay-label" style={{ color: 'var(--clay-text-muted)' }}>Health Records</span>
+              <p style={{ fontSize: 15, fontWeight: 800, color: 'var(--clay-purple)', margin: 0 }}>
+                View All →
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Add Child Form */}
       {showAddForm && (
-        <Card className="border-0 shadow-lg ring-1 ring-slate-200 bg-white overflow-hidden">
-          <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowAddForm(false)
-                  setError(null)
-                }}
-                className="h-8 w-8 p-0 text-slate-600 hover:text-slate-800 hover:bg-slate-100"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <div>
-                <CardTitle className="text-xl font-semibold text-slate-800">
-                  Add New Child
-                </CardTitle>
-                <p className="text-sm text-slate-500 mt-1">
-                  Complete all required fields (*)
-                </p>
-              </div>
+        <div className="clay-card-static" style={{ background: 'white' }}>
+          <div style={{ borderBottom: '1.5px solid var(--clay-indigo-s)', padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button
+              type="button"
+              className="clay-btn-sec"
+              onClick={() => {
+                setShowAddForm(false)
+                setError(null)
+              }}
+              style={{ width: 36, height: 36, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <ChevronLeft style={{ width: 18, height: 18 }} />
+            </button>
+            <div>
+              <h2 className="clay-display" style={{ fontSize: 22, fontWeight: 700, color: 'var(--clay-text-dark)', margin: 0 }}>
+                Add New Child
+              </h2>
+              <p style={{ fontSize: 13, color: 'var(--clay-text-muted)', marginTop: 2 }}>
+                Complete all required fields (*)
+              </p>
             </div>
-          </CardHeader>
-          <CardContent className="pt-6">
+          </div>
+          <div style={{ padding: 24 }}>
             {error && (
-              <div className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              <div className="clay-inset" style={{ marginBottom: 20, padding: 16, background: 'var(--clay-rose-s)', border: '1.5px solid var(--clay-rose-l)', color: '#BE123C', fontSize: 14 }}>
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
                 <div>
-                  <label htmlFor="full_name" className="mb-2 block text-sm font-medium text-slate-700">
+                  <label htmlFor="full_name" className="clay-label" style={{ color: 'var(--clay-text-mid)' }}>
                     Full Name *
                   </label>
                   <input
@@ -311,36 +303,39 @@ export default function PatientsPage() {
                     type="text"
                     required
                     placeholder="Enter child's full name"
-                    className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors"
+                    className="clay-field"
+                    style={{ width: '100%', padding: '12px 16px', fontSize: 14 }}
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="date_of_birth" className="mb-2 block text-sm font-medium text-slate-700">
+                  <label htmlFor="date_of_birth" className="clay-label" style={{ color: 'var(--clay-text-mid)' }}>
                     Date of Birth *
                   </label>
-                  <div className="relative">
+                  <div style={{ position: 'relative' }}>
                     <input
                       id="date_of_birth"
                       name="date_of_birth"
                       type="date"
                       required
                       max={new Date().toISOString().split('T')[0]}
-                      className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors"
+                      className="clay-field"
+                      style={{ width: '100%', padding: '12px 16px', fontSize: 14 }}
                     />
-                    <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                    <Calendar style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: 'var(--clay-text-muted)', pointerEvents: 'none' }} />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="gender" className="mb-2 block text-sm font-medium text-slate-700">
+                  <label htmlFor="gender" className="clay-label" style={{ color: 'var(--clay-text-mid)' }}>
                     Gender *
                   </label>
                   <select
                     id="gender"
                     name="gender"
                     required
-                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors appearance-none"
+                    className="clay-field"
+                    style={{ width: '100%', padding: '12px 16px', fontSize: 14, appearance: 'none' }}
                   >
                     <option value="">Select gender</option>
                     <option value="male">Male</option>
@@ -350,13 +345,14 @@ export default function PatientsPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="blood_type" className="mb-2 block text-sm font-medium text-slate-700">
+                  <label htmlFor="blood_type" className="clay-label" style={{ color: 'var(--clay-text-mid)' }}>
                     Blood Type (Optional)
                   </label>
                   <select
                     id="blood_type"
                     name="blood_type"
-                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors appearance-none"
+                    className="clay-field"
+                    style={{ width: '100%', padding: '12px 16px', fontSize: 14, appearance: 'none' }}
                   >
                     <option value="">Select blood type</option>
                     <option value="A+">A+</option>
@@ -372,7 +368,7 @@ export default function PatientsPage() {
               </div>
 
               <div>
-                <label htmlFor="allergies" className="mb-2 block text-sm font-medium text-slate-700">
+                <label htmlFor="allergies" className="clay-label" style={{ color: 'var(--clay-text-mid)' }}>
                   Allergies (Optional)
                 </label>
                 <textarea
@@ -380,13 +376,14 @@ export default function PatientsPage() {
                   name="allergies"
                   rows={2}
                   placeholder="Separate multiple allergies with commas (e.g., Peanuts, Penicillin, Eggs)"
-                  className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors"
+                  className="clay-field"
+                  style={{ width: '100%', padding: '12px 16px', fontSize: 14, resize: 'vertical' }}
                 />
-                <p className="mt-2 text-xs text-slate-500">Tip: Separate multiple allergies with commas</p>
+                <p style={{ marginTop: 6, fontSize: 12, color: 'var(--clay-text-muted)' }}>Tip: Separate multiple allergies with commas</p>
               </div>
 
               <div>
-                <label htmlFor="medical_notes" className="mb-2 block text-sm font-medium text-slate-700">
+                <label htmlFor="medical_notes" className="clay-label" style={{ color: 'var(--clay-text-mid)' }}>
                   Medical Notes (Optional)
                 </label>
                 <textarea
@@ -394,66 +391,69 @@ export default function PatientsPage() {
                   name="medical_notes"
                   rows={3}
                   placeholder="Any medical conditions, medications, or important health information..."
-                  className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors"
+                  className="clay-field"
+                  style={{ width: '100%', padding: '12px 16px', fontSize: 14, resize: 'vertical' }}
                 />
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-slate-200">
-                <Button
+              <div style={{ display: 'flex', gap: 12, paddingTop: 16, borderTop: '1.5px solid var(--clay-indigo-s)' }}>
+                <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md active:scale-95 transition-all duration-300"
+                  className="clay-cta"
+                  style={{ flex: 1, padding: '12px 20px', fontSize: 15, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
                   {loading ? (
                     <>
-                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      <div style={{ width: 16, height: 16, border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }}></div>
                       Adding Child...
                     </>
                   ) : (
                     <>
-                      <UserPlus className="h-4 w-4 mr-1.5" />
+                      <UserPlus style={{ width: 16, height: 16 }} />
                       Add Child
                     </>
                   )}
-                </Button>
-                <Button
+                </button>
+                <button
                   type="button"
                   onClick={() => {
                     setShowAddForm(false)
                     setError(null)
                   }}
-                  variant="secondary"
-                  className="flex-1 border-slate-300 text-slate-700 hover:bg-slate-50 active:scale-95 transition-transform"
+                  className="clay-btn-sec"
+                  style={{ flex: 1, padding: '12px 20px', fontSize: 15 }}
                 >
                   Cancel
-                </Button>
+                </button>
               </div>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Search */}
       {children.length > 0 && !showAddForm && (
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 sm:h-5 sm:w-5" />
+        <div style={{ position: 'relative' }}>
+          <Search style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', width: 18, height: 18, color: 'var(--clay-text-muted)' }} />
           <input
             type="text"
             placeholder="Search by name, gender, blood type, allergies..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl bg-white pl-11 pr-11 py-3 text-sm shadow-sm ring-1 ring-slate-200 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow sm:rounded-2xl sm:py-3.5 sm:pl-12 sm:text-base"
+            className="clay-search"
+            style={{ width: '100%', padding: '14px 44px 14px 42px', fontSize: 15 }}
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 active:scale-90 transition-all"
+              style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'var(--clay-indigo-s)', border: 'none', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--clay-indigo)' }}
             >
-              <X className="h-4 w-4" />
+              <X style={{ width: 14, height: 14 }} />
             </button>
           )}
           {searchQuery && (
-            <p className="mt-2 pl-1 text-sm text-slate-500">
+            <p style={{ marginTop: 8, paddingLeft: 4, fontSize: 13, color: 'var(--clay-text-muted)' }}>
               Found {filteredChildren.length} of {children.length} children matching &quot;{searchQuery}&quot;
             </p>
           )}
@@ -462,75 +462,77 @@ export default function PatientsPage() {
 
       {/* Children List */}
       {children.length === 0 && !showAddForm ? (
-        <Card className="border-0 shadow-sm ring-1 ring-slate-100 bg-white">
-          <CardContent className="py-14 sm:py-20 text-center">
-            <div className="mx-auto mb-5 inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25 sm:h-24 sm:w-24 sm:rounded-3xl">
-              <Baby className="h-10 w-10 text-white sm:h-12 sm:w-12" />
-            </div>
-            <h2 className="text-xl font-bold text-slate-800 sm:text-2xl">No Children Added Yet</h2>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-slate-500 sm:text-base">Add your first child to start booking appointments and managing health records</p>
-            <Button
-              onClick={() => setShowAddForm(true)}
-              className="mt-6 bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg active:scale-95 transition-all"
-            >
-              <UserPlus className="h-4 w-4 mr-1.5" />
-              Add Your First Child
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="clay-card-static" style={{ background: 'white', padding: '56px 24px', textAlign: 'center' }}>
+          <div className="clay-empty-ico">
+            <Baby style={{ width: 36, height: 36, color: 'var(--clay-indigo)' }} />
+          </div>
+          <h2 className="clay-display" style={{ fontSize: 24, fontWeight: 700, color: 'var(--clay-text-dark)', margin: '0 0 8px' }}>No Children Added Yet</h2>
+          <p style={{ maxWidth: 360, margin: '0 auto', fontSize: 15, color: 'var(--clay-text-muted)' }}>Add your first child to start booking appointments and managing health records</p>
+          <button
+            className="clay-cta"
+            onClick={() => setShowAddForm(true)}
+            style={{ marginTop: 24, padding: '12px 24px', fontSize: 15, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+          >
+            <UserPlus style={{ width: 16, height: 16 }} />
+            Add Your First Child
+          </button>
+        </div>
       ) : filteredChildren.length === 0 && !showAddForm ? (
-        <Card className="border-0 shadow-sm ring-1 ring-slate-100 bg-white">
-          <CardContent className="py-14 sm:py-20 text-center">
-            <div className="mx-auto mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 sm:h-20 sm:w-20 sm:rounded-3xl">
-              <Search className="h-8 w-8 text-slate-400 sm:h-10 sm:w-10" />
-            </div>
-            <h2 className="text-xl font-bold text-slate-800 sm:text-2xl">No Matching Children</h2>
-            <p className="mx-auto mt-2 max-w-xs text-sm text-slate-500 sm:text-base">Try adjusting your search term</p>
-            <Button
-              onClick={() => setSearchQuery('')}
-              className="mt-6 bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95 transition-all ring-1 ring-slate-200"
-            >
-              Clear Search
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="clay-card-static" style={{ background: 'white', padding: '56px 24px', textAlign: 'center' }}>
+          <div className="clay-empty-ico">
+            <Search style={{ width: 32, height: 32, color: 'var(--clay-text-muted)' }} />
+          </div>
+          <h2 className="clay-display" style={{ fontSize: 24, fontWeight: 700, color: 'var(--clay-text-dark)', margin: '0 0 8px' }}>No Matching Children</h2>
+          <p style={{ maxWidth: 320, margin: '0 auto', fontSize: 15, color: 'var(--clay-text-muted)' }}>Try adjusting your search term</p>
+          <button
+            className="clay-btn-sec"
+            onClick={() => setSearchQuery('')}
+            style={{ marginTop: 24, padding: '10px 24px', fontSize: 14 }}
+          >
+            Clear Search
+          </button>
+        </div>
       ) : !showAddForm && (
-        <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
           {filteredChildren.map((child) => {
             const genderDetails = getGenderDetails(child.gender)
             return (
-              <Card
+              <div
                 key={child.id}
-                className="group/card overflow-hidden border-0 shadow-sm ring-1 ring-slate-200/80 bg-white transition-all duration-200 hover:ring-blue-200 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]"
+                className="clay-card-static"
+                style={{ background: 'white' }}
               >
-                <CardContent className="p-4 sm:p-5 lg:p-6">
-                  {/* Header with Icon */}
-                  <div className="mb-3 flex items-start justify-between gap-2">
-                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ring-1 ${genderDetails.bg} ${genderDetails.ring} transition-transform duration-200 group-hover/card:scale-105 sm:h-12 sm:w-12`}>
-                      <span className={`text-base font-bold sm:text-lg ${genderDetails.color}`}>
+                <div style={{ padding: '20px 20px 0' }}>
+                  {/* Header with Avatar */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 14 }}>
+                    <div
+                      className="clay-avatar"
+                      style={{ width: 48, height: 48, background: genderDetails.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                    >
+                      <span style={{ fontSize: 20, fontWeight: 700, color: genderDetails.color }}>
                         {genderDetails.icon}
                       </span>
                     </div>
-                    <Badge className="shrink-0 rounded-full border-0 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-600 ring-1 ring-blue-200/60 sm:px-2.5 sm:py-1 sm:text-xs">
+                    <span className="clay-badge" style={{ background: 'var(--clay-indigo-s)', color: 'var(--clay-indigo)', flexShrink: 0 }}>
                       {calculateAge(child.date_of_birth)} {calculateAge(child.date_of_birth) === 1 ? 'yr' : 'yrs'} old
-                    </Badge>
+                    </span>
                   </div>
 
                   {/* Child Info */}
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-bold text-slate-800 truncate sm:text-base">{child.full_name}</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <h3 className="clay-display" style={{ fontSize: 17, fontWeight: 700, color: 'var(--clay-text-dark)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{child.full_name}</h3>
 
-                    <div className="space-y-1 text-xs text-slate-500 sm:space-y-1.5 sm:text-sm">
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className="h-3 w-3 shrink-0 text-slate-400" />
-                        <span className="truncate">{formatDate(child.date_of_birth)}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: 13, color: 'var(--clay-text-muted)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Calendar style={{ width: 13, height: 13, flexShrink: 0, color: 'var(--clay-text-muted)' }} />
+                        <span>{formatDate(child.date_of_birth)}</span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium ${genderDetails.bg} ${genderDetails.color} sm:text-xs`}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+                        <span className="clay-badge" style={{ background: genderDetails.bg, color: genderDetails.color }}>
                           {child.gender.charAt(0).toUpperCase() + child.gender.slice(1)}
                         </span>
                         {child.blood_type && (
-                          <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-red-50 text-red-600 ring-1 ring-red-100 sm:text-xs">
+                          <span className="clay-badge" style={{ background: 'var(--clay-rose-s)', color: 'var(--clay-rose)' }}>
                             {child.blood_type}
                           </span>
                         )}
@@ -539,53 +541,50 @@ export default function PatientsPage() {
 
                     {/* Additional Info */}
                     {(child.allergies || child.medical_notes) && (
-                      <div className="mt-3 space-y-2 sm:mt-4">
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
                         {child.allergies && (
-                          <div className="rounded-lg bg-red-50 p-2.5 ring-1 ring-red-100 sm:rounded-xl sm:p-3">
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                              <AlertTriangle className="h-3 w-3 shrink-0 text-red-600" />
-                              <p className="text-[11px] font-semibold text-red-700 sm:text-xs">Allergies</p>
+                          <div className="clay-inset" style={{ padding: 12, background: 'var(--clay-rose-s)', border: '1px solid var(--clay-rose-l)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                              <AlertTriangle style={{ width: 13, height: 13, flexShrink: 0, color: 'var(--clay-rose)' }} />
+                              <span style={{ fontSize: 11, fontWeight: 800, color: '#BE123C', textTransform: 'uppercase', letterSpacing: 0.5 }}>Allergies</span>
                             </div>
-                            <p className="text-[11px] text-red-600 line-clamp-1 sm:text-xs sm:line-clamp-2">{formatAllergies(child.allergies)}</p>
+                            <p style={{ fontSize: 12, color: 'var(--clay-rose)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{formatAllergies(child.allergies)}</p>
                           </div>
                         )}
                         {child.medical_notes && (
-                          <div className="rounded-lg bg-blue-50 p-2.5 ring-1 ring-blue-100 sm:rounded-xl sm:p-3">
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                              <FileText className="h-3 w-3 shrink-0 text-blue-600" />
-                              <p className="text-[11px] font-semibold text-blue-700 sm:text-xs">Medical Notes</p>
+                          <div className="clay-inset" style={{ padding: 12, background: 'var(--clay-indigo-s)', border: '1px solid var(--clay-indigo-l)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                              <FileText style={{ width: 13, height: 13, flexShrink: 0, color: 'var(--clay-indigo)' }} />
+                              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--clay-indigo)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Medical Notes</span>
                             </div>
-                            <p className="text-[11px] text-blue-600 line-clamp-1 sm:text-xs sm:line-clamp-2">{child.medical_notes}</p>
+                            <p style={{ fontSize: 12, color: 'var(--clay-text-mid)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{child.medical_notes}</p>
                           </div>
                         )}
                       </div>
                     )}
                   </div>
+                </div>
 
-                  {/* Actions */}
-                  <div className="mt-3 pt-3 border-t border-slate-100 sm:mt-4 sm:pt-4">
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => router.push('/caregiver-appointments')}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-600/20 active:scale-95 transition-all text-xs sm:text-sm"
-                      >
-                        <Calendar className="h-3.5 w-3.5 shrink-0 mr-1" />
-                        <span className="truncate">Book</span>
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="w-full text-slate-700 hover:bg-slate-50 ring-1 ring-slate-200 active:scale-95 transition-all text-xs sm:text-sm"
-                        onClick={() => router.push(`/caregiver-health-records?childId=${child.id}`)}
-                      >
-                        <FileCheck className="h-3.5 w-3.5 shrink-0 mr-1" />
-                        <span className="truncate">Records</span>
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                {/* Actions */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '16px 20px 20px', marginTop: 14, borderTop: '1.5px solid var(--clay-indigo-s)' }}>
+                  <button
+                    className="clay-cta"
+                    onClick={() => router.push('/caregiver-appointments')}
+                    style={{ padding: '9px 14px', fontSize: 13, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+                  >
+                    <Calendar style={{ width: 14, height: 14, flexShrink: 0 }} />
+                    <span>Book</span>
+                  </button>
+                  <button
+                    className="clay-btn-sec"
+                    onClick={() => router.push(`/caregiver-health-records?childId=${child.id}`)}
+                    style={{ padding: '9px 14px', fontSize: 13, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+                  >
+                    <FileCheck style={{ width: 14, height: 14, flexShrink: 0 }} />
+                    <span>Records</span>
+                  </button>
+                </div>
+              </div>
             )
           })}
         </div>

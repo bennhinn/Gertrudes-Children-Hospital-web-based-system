@@ -2,9 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { logActivity } from '@/lib/activity-logger'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import PaymentModal from '@/components/PaymentModal' // adjust path if needed
 import {
@@ -224,23 +221,23 @@ export default function HealthRecordsPage() {
   // ------------------------------------------------------------
   // Status badge styling
   // ------------------------------------------------------------
-  const getStatusColor = (status: string, isAbnormal?: boolean) => {
-    if (isAbnormal) return 'bg-red-50 text-red-700 border-red-200'
+  const getStatusStyle = (status: string, isAbnormal?: boolean) => {
+    if (isAbnormal) return { background: '#FEF2F2', color: '#B91C1C', borderColor: '#FECACA' }
     switch (status.toLowerCase()) {
       case 'completed':
       case 'collected':
       case 'dispensed':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-200'
+        return { background: '#ECFDF5', color: '#047857', borderColor: '#A7F3D0' }
       case 'active':
-        return 'bg-blue-50 text-blue-700 border-blue-200'
+        return { background: '#EFF6FF', color: '#1D4ED8', borderColor: '#BFDBFE' }
       case 'pending':
       case 'processing':
-        return 'bg-amber-50 text-amber-700 border-amber-200'
+        return { background: '#FFFBEB', color: '#B45309', borderColor: '#FDE68A' }
       case 'discontinued':
       case 'cancelled':
-        return 'bg-slate-50 text-slate-700 border-slate-200'
+        return { background: '#F8FAFC', color: '#334155', borderColor: '#E2E8F0' }
       default:
-        return 'bg-slate-50 text-slate-700 border-slate-200'
+        return { background: '#F8FAFC', color: '#334155', borderColor: '#E2E8F0' }
     }
   }
 
@@ -249,11 +246,11 @@ export default function HealthRecordsPage() {
   // ------------------------------------------------------------
   if (loading) {
     return (
-      <div className="space-y-6 pb-20 lg:pb-6">
-        <div className="h-8 w-40 bg-slate-200 rounded-lg animate-pulse" />
-        <div className="grid gap-4">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingBottom: '5rem' }}>
+        <div className="shimmer" style={{ height: 32, width: 160, borderRadius: 16 }} />
+        <div style={{ display: 'grid', gap: '1rem' }}>
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-24 bg-slate-100 rounded-xl animate-pulse" />
+            <div key={i} className="shimmer" style={{ height: 96, borderRadius: 20 }} />
           ))}
         </div>
       </div>
@@ -265,24 +262,23 @@ export default function HealthRecordsPage() {
   // ------------------------------------------------------------
   if (error) {
     return (
-      <div className="space-y-6 pb-20 lg:pb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Health Records</h1>
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="p-6 text-center">
-            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
-            <p className="text-red-800 font-medium mb-4">{error}</p>
-            <Button
-              onClick={() => {
-                setError(null)
-                fetchHealthRecords()
-              }}
-              className="rounded-xl"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Try Again
-            </Button>
-          </CardContent>
-        </Card>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingBottom: '5rem' }}>
+        <h1 className="clay-display" style={{ fontSize: '1.5rem', color: 'var(--clay-text-dark)' }}>Health Records</h1>
+        <div className="clay-card-static" style={{ background: '#FEF2F2', padding: '1.5rem', textAlign: 'center' }}>
+          <AlertCircle style={{ height: 48, width: 48, color: '#EF4444', margin: '0 auto 0.75rem' }} />
+          <p style={{ color: '#991B1B', fontWeight: 600, marginBottom: '1rem' }}>{error}</p>
+          <button
+            className="clay-cta clay-cta-rose"
+            onClick={() => {
+              setError(null)
+              fetchHealthRecords()
+            }}
+            style={{ padding: '0.625rem 1.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+          >
+            <RefreshCw style={{ height: 16, width: 16 }} />
+            Try Again
+          </button>
+        </div>
       </div>
     )
   }
@@ -292,84 +288,85 @@ export default function HealthRecordsPage() {
   // ------------------------------------------------------------
   if (selectedLabResult) {
     return (
-      <div className="space-y-6 pb-20 lg:pb-6">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingBottom: '5rem' }}>
         <button
           onClick={() => setSelectedLabResult(null)}
-          className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors"
+          className="clay-btn-sec"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', alignSelf: 'flex-start', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft style={{ height: 16, width: 16 }} />
           Back to Lab Results
         </button>
 
-        <div className="flex items-start justify-between gap-4">
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">{selectedLabResult.testName}</h1>
-            <p className="text-slate-500 mt-1">{selectedLabResult.childName}</p>
+            <h1 className="clay-display" style={{ fontSize: '1.25rem', color: 'var(--clay-text-dark)' }}>{selectedLabResult.testName}</h1>
+            <p style={{ color: 'var(--clay-text-muted)', marginTop: '0.25rem' }}>{selectedLabResult.childName}</p>
             {selectedLabResult.description && (
-              <p className="text-sm text-slate-600 mt-2">{selectedLabResult.description}</p>
+              <p style={{ fontSize: '0.875rem', color: 'var(--clay-text-mid)', marginTop: '0.5rem' }}>{selectedLabResult.description}</p>
             )}
           </div>
-          <Badge className={getStatusColor(selectedLabResult.status)}>
+          <span className="clay-badge" style={getStatusStyle(selectedLabResult.status)}>
             {selectedLabResult.status}
-          </Badge>
+          </span>
         </div>
 
-        <Card className="border-slate-100">
-          <CardContent className="p-4 space-y-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">Ordered on</span>
-              <span className="font-medium text-slate-900">
+        <div className="clay-card-static" style={{ padding: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div className="clay-info-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--clay-text-muted)', fontSize: '0.875rem' }}>Ordered on</span>
+              <span style={{ fontWeight: 600, color: 'var(--clay-text-dark)', fontSize: '0.875rem' }}>
                 {new Date(selectedLabResult.orderedAt).toLocaleDateString('en-US', {
                   month: 'short', day: 'numeric', year: 'numeric'
                 })}
               </span>
             </div>
             {selectedLabResult.completedAt && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Completed on</span>
-                <span className="font-medium text-slate-900">
+              <div className="clay-info-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--clay-text-muted)', fontSize: '0.875rem' }}>Completed on</span>
+                <span style={{ fontWeight: 600, color: 'var(--clay-text-dark)', fontSize: '0.875rem' }}>
                   {new Date(selectedLabResult.completedAt).toLocaleDateString('en-US', {
                     month: 'short', day: 'numeric', year: 'numeric'
                   })}
                 </span>
               </div>
             )}
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">Ordered by</span>
-              <span className="font-medium text-slate-900">{selectedLabResult.orderedBy}</span>
+            <div className="clay-info-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--clay-text-muted)', fontSize: '0.875rem' }}>Ordered by</span>
+              <span style={{ fontWeight: 600, color: 'var(--clay-text-dark)', fontSize: '0.875rem' }}>{selectedLabResult.orderedBy}</span>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Display results if available */}
         {selectedLabResult.results && (
-          <Card className="border-slate-100">
-            <CardHeader className="border-b border-slate-100 pb-4">
-              <CardTitle className="text-base">Results</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4">
+          <div className="clay-card-static" style={{ overflow: 'hidden' }}>
+            <div style={{ borderBottom: '1px solid rgba(199,210,254,.5)', padding: '1rem 1rem 0.75rem' }}>
+              <h3 className="clay-display" style={{ fontSize: '1rem', color: 'var(--clay-text-dark)' }}>Results</h3>
+            </div>
+            <div style={{ padding: '1rem' }}>
               {typeof selectedLabResult.results === 'string' ? (
-                <p className="text-sm whitespace-pre-wrap text-slate-700">
+                <p style={{ fontSize: '0.875rem', whiteSpace: 'pre-wrap', color: 'var(--clay-text-dark)' }}>
                   {selectedLabResult.results}
                 </p>
               ) : (
-                <pre className="text-xs bg-slate-50 p-3 rounded-lg overflow-x-auto">
+                <pre className="clay-inset" style={{ fontSize: '0.75rem', padding: '0.75rem', overflowX: 'auto', margin: 0 }}>
                   {JSON.stringify(selectedLabResult.results, null, 2)}
                 </pre>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
-        <div className="flex gap-3">
-          <Button variant="secondary" className="flex-1 rounded-xl py-5">
-            <Share2 className="h-4 w-4 mr-2" />
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button className="clay-btn-sec" style={{ flex: 1, padding: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+            <Share2 style={{ height: 16, width: 16 }} />
             Share
-          </Button>
-          <Button className="flex-1 rounded-xl py-5 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600">
-            <Download className="h-4 w-4 mr-2" />
+          </button>
+          <button className="clay-cta" style={{ flex: 1, padding: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'linear-gradient(135deg, #6366F1, #06B6D4)' }}>
+            <Download style={{ height: 16, width: 16 }} />
             Download PDF
-          </Button>
+          </button>
         </div>
       </div>
     )
@@ -380,138 +377,150 @@ export default function HealthRecordsPage() {
   // ------------------------------------------------------------
   if (selectedPrescription) {
     return (
-      <div className="space-y-6 pb-20 lg:pb-6">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingBottom: '5rem' }}>
         <button
           onClick={() => setSelectedPrescription(null)}
-          className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors"
+          className="clay-btn-sec"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', alignSelf: 'flex-start', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft style={{ height: 16, width: 16 }} />
           Back to Prescriptions
         </button>
 
-        <div className="flex items-start justify-between gap-4">
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">{selectedPrescription.medicationName}</h1>
+            <h1 className="clay-display" style={{ fontSize: '1.25rem', color: 'var(--clay-text-dark)' }}>{selectedPrescription.medicationName}</h1>
             {selectedPrescription.genericName && (
-              <p className="text-slate-500 mt-1">{selectedPrescription.genericName}</p>
+              <p style={{ color: 'var(--clay-text-muted)', marginTop: '0.25rem' }}>{selectedPrescription.genericName}</p>
             )}
           </div>
-          <Badge className={getStatusColor(selectedPrescription.status)}>
+          <span className="clay-badge" style={getStatusStyle(selectedPrescription.status)}>
             {selectedPrescription.status}
-          </Badge>
+          </span>
         </div>
 
         {/* Medication Details */}
-        <Card className="border-slate-100">
-          <CardContent className="p-4 space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
-                <Pill className="h-7 w-7 text-white" />
+        <div className="clay-card-static" style={{ padding: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div className="clay-ico" style={{ height: 56, width: 56, borderRadius: 18, background: 'linear-gradient(135deg, #8B5CF6, #EC4899)' }}>
+                <Pill style={{ height: 28, width: 28, color: '#fff' }} />
               </div>
               <div>
-                <p className="text-lg font-bold text-slate-900">
+                <p className="clay-display" style={{ fontSize: '1.125rem', color: 'var(--clay-text-dark)' }}>
                   {selectedPrescription.dosage} {selectedPrescription.form}
                 </p>
-                <p className="text-slate-500">{selectedPrescription.frequency}</p>
+                <p style={{ color: 'var(--clay-text-muted)' }}>{selectedPrescription.frequency}</p>
               </div>
             </div>
 
             {selectedPrescription.daysLeft && selectedPrescription.status === 'active' && (
-              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-amber-600" />
-                  <span className="text-sm font-medium text-amber-800">
-                    {selectedPrescription.daysLeft} days remaining
-                  </span>
-                </div>
+              <div className="clay-inset" style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Clock style={{ height: 16, width: 16, color: 'var(--clay-amber)' }} />
+                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#92400E' }}>
+                  {selectedPrescription.daysLeft} days remaining
+                </span>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Instructions */}
-        <Card className="border-slate-100">
-          <CardHeader className="border-b border-slate-100 pb-4">
-            <CardTitle className="text-base">Instructions</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <p className="text-slate-700">{selectedPrescription.instructions}</p>
-          </CardContent>
-        </Card>
+        <div className="clay-card-static" style={{ overflow: 'hidden' }}>
+          <div style={{ borderBottom: '1px solid rgba(199,210,254,.5)', padding: '1rem 1rem 0.75rem' }}>
+            <h3 className="clay-display" style={{ fontSize: '1rem', color: 'var(--clay-text-dark)' }}>Instructions</h3>
+          </div>
+          <div style={{ padding: '1rem' }}>
+            <p style={{ color: 'var(--clay-text-dark)', lineHeight: 1.6 }}>{selectedPrescription.instructions}</p>
+          </div>
+        </div>
 
         {/* Prescription Info */}
-        <Card className="border-slate-100">
-          <CardContent className="p-4 space-y-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">For</span>
-              <span className="font-medium text-slate-900">{selectedPrescription.childName}</span>
+        <div className="clay-card-static" style={{ padding: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div className="clay-info-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--clay-text-muted)', fontSize: '0.875rem' }}>For</span>
+              <span style={{ fontWeight: 600, color: 'var(--clay-text-dark)', fontSize: '0.875rem' }}>{selectedPrescription.childName}</span>
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">Prescribed by</span>
-              <span className="font-medium text-slate-900">{selectedPrescription.prescribedBy}</span>
+            <div className="clay-info-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--clay-text-muted)', fontSize: '0.875rem' }}>Prescribed by</span>
+              <span style={{ fontWeight: 600, color: 'var(--clay-text-dark)', fontSize: '0.875rem' }}>{selectedPrescription.prescribedBy}</span>
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">Start Date</span>
-              <span className="font-medium text-slate-900">
+            <div className="clay-info-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--clay-text-muted)', fontSize: '0.875rem' }}>Start Date</span>
+              <span style={{ fontWeight: 600, color: 'var(--clay-text-dark)', fontSize: '0.875rem' }}>
                 {new Date(selectedPrescription.startDate).toLocaleDateString('en-US', {
                   month: 'short', day: 'numeric', year: 'numeric'
                 })}
               </span>
             </div>
             {selectedPrescription.endDate && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">End Date</span>
-                <span className="font-medium text-slate-900">
+              <div className="clay-info-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--clay-text-muted)', fontSize: '0.875rem' }}>End Date</span>
+                <span style={{ fontWeight: 600, color: 'var(--clay-text-dark)', fontSize: '0.875rem' }}>
                   {new Date(selectedPrescription.endDate).toLocaleDateString('en-US', {
                     month: 'short', day: 'numeric', year: 'numeric'
                   })}
                 </span>
               </div>
             )}
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">Refills Remaining</span>
-              <span className="font-medium text-slate-900">{selectedPrescription.refillsRemaining}</span>
+            <div className="clay-info-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--clay-text-muted)', fontSize: '0.875rem' }}>Refills Remaining</span>
+              <span style={{ fontWeight: 600, color: 'var(--clay-text-dark)', fontSize: '0.875rem' }}>{selectedPrescription.refillsRemaining}</span>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Reminders */}
-        <Card className="border-slate-100">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                  <Bell className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-slate-900">Medication Reminders</p>
-                  <p className="text-sm text-slate-500">Get notified when it&apos;s time to take</p>
-                </div>
+        <div className="clay-card-static" style={{ padding: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div className="clay-ico" style={{ height: 40, width: 40, borderRadius: 14, background: 'linear-gradient(135deg, var(--clay-indigo-s), var(--clay-indigo-l))' }}>
+                <Bell style={{ height: 20, width: 20, color: 'var(--clay-indigo)' }} />
               </div>
-              <button
-                onClick={() => toggleReminder(selectedPrescription.id, selectedPrescription.reminderEnabled)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                  selectedPrescription.reminderEnabled ? 'bg-blue-600' : 'bg-slate-200'
-                }`}
-                role="switch"
-                aria-checked={selectedPrescription.reminderEnabled}
-              >
-                <span
-                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
-                    selectedPrescription.reminderEnabled ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
+              <div>
+                <p style={{ fontWeight: 600, color: 'var(--clay-text-dark)' }}>Medication Reminders</p>
+                <p style={{ fontSize: '0.875rem', color: 'var(--clay-text-muted)' }}>Get notified when it&apos;s time to take</p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+            <button
+              onClick={() => toggleReminder(selectedPrescription.id, selectedPrescription.reminderEnabled)}
+              className="clay-toggle"
+              style={{
+                position: 'relative',
+                display: 'inline-flex',
+                height: 24,
+                width: 44,
+                alignItems: 'center',
+                borderRadius: 9999,
+                border: 'none',
+                cursor: 'pointer',
+                background: selectedPrescription.reminderEnabled ? 'var(--clay-indigo)' : '#CBD5E1'
+              }}
+              role="switch"
+              aria-checked={selectedPrescription.reminderEnabled}
+            >
+              <span
+                className="clay-toggle-knob"
+                style={{
+                  display: 'inline-block',
+                  height: 20,
+                  width: 20,
+                  borderRadius: 9999,
+                  background: '#fff',
+                  transform: selectedPrescription.reminderEnabled ? 'translateX(22px)' : 'translateX(2px)'
+                }}
+              />
+            </button>
+          </div>
+        </div>
 
         {/* Refill Request */}
         {selectedPrescription.status === 'active' && selectedPrescription.refillsRemaining > 0 && (
-          <Button className="w-full rounded-xl py-5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
-            <RefreshCw className="h-4 w-4 mr-2" />
+          <button className="clay-cta" style={{ width: '100%', padding: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'linear-gradient(135deg, #8B5CF6, #EC4899)' }}>
+            <RefreshCw style={{ height: 16, width: 16 }} />
             Request Refill
-          </Button>
+          </button>
         )}
       </div>
     )
@@ -521,57 +530,50 @@ export default function HealthRecordsPage() {
   // Main List View
   // ------------------------------------------------------------
   return (
-    <div className="space-y-6 pb-20 lg:pb-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingBottom: '5rem' }}>
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Health Records</h1>
-          <p className="text-slate-500 mt-1">Lab results, prescriptions & medical history</p>
+          <h1 className="clay-display" style={{ fontSize: '1.5rem', color: 'var(--clay-text-dark)' }}>Health Records</h1>
+          <p style={{ color: 'var(--clay-text-muted)', marginTop: '0.25rem' }}>Lab results, prescriptions & medical history</p>
         </div>
-        <Button
+        <button
           onClick={() => {
             setRefreshing(true)
             fetchHealthRecords()
           }}
-          variant="ghost"
-          size="sm"
-          className="rounded-xl"
+          className="clay-btn-sec"
+          style={{ padding: '0.5rem', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           disabled={refreshing}
         >
-          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-        </Button>
+          <RefreshCw style={{ height: 16, width: 16, animation: refreshing ? 'spin 1s linear infinite' : 'none' }} />
+        </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
+      <div className="clay-tabs" style={{ display: 'flex', gap: 4 }}>
         <button
           onClick={() => setActiveTab('lab')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
-            activeTab === 'lab'
-              ? 'bg-white text-slate-900 shadow-sm'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
+          className={`clay-tab ${activeTab === 'lab' ? 'clay-tab-active' : ''}`}
+          style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.625rem' }}
         >
-          <TestTube className="h-4 w-4" />
+          <TestTube style={{ height: 16, width: 16 }} />
           Lab Results
           {labResults.filter(r => r.status.toLowerCase() !== 'completed').length > 0 && (
-            <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center">
+            <span style={{ height: 20, minWidth: 20, padding: '0 6px', borderRadius: 9999, background: 'var(--clay-amber)', color: '#fff', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {labResults.filter(r => r.status.toLowerCase() !== 'completed').length}
             </span>
           )}
         </button>
         <button
           onClick={() => setActiveTab('prescriptions')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
-            activeTab === 'prescriptions'
-              ? 'bg-white text-slate-900 shadow-sm'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
+          className={`clay-tab ${activeTab === 'prescriptions' ? 'clay-tab-active' : ''}`}
+          style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.625rem' }}
         >
-          <Pill className="h-4 w-4" />
+          <Pill style={{ height: 16, width: 16 }} />
           Prescriptions
           {prescriptions.filter(p => p.status === 'active').length > 0 && (
-            <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center">
+            <span style={{ height: 20, minWidth: 20, padding: '0 6px', borderRadius: 9999, background: 'var(--clay-indigo)', color: '#fff', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {prescriptions.filter(p => p.status === 'active').length}
             </span>
           )}
@@ -579,21 +581,23 @@ export default function HealthRecordsPage() {
       </div>
 
       {/* Search & Filter */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div style={{ flex: 1, position: 'relative' }}>
+          <Search style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', height: 18, width: 18, color: 'var(--clay-text-muted)' }} />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={`Search ${activeTab === 'lab' ? 'lab results' : 'medications'}...`}
-            className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+            className="clay-search"
+            style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.5rem', fontSize: '0.875rem' }}
           />
         </div>
         <select
           value={childFilter}
           onChange={(e) => setChildFilter(e.target.value)}
-          className="px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all bg-white"
+          className="clay-field"
+          style={{ padding: '0.75rem 1rem', fontSize: '0.875rem' }}
         >
           <option value="all">All Children</option>
           {children.map(child => (
@@ -606,14 +610,14 @@ export default function HealthRecordsPage() {
 
       {/* Lab Results Tab */}
       {activeTab === 'lab' && (
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {filteredLabResults.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="h-16 w-16 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-                <TestTube className="h-8 w-8 text-slate-400" />
+            <div style={{ textAlign: 'center', padding: '3rem 0' }}>
+              <div className="clay-empty-ico">
+                <TestTube style={{ height: 32, width: 32, color: 'var(--clay-indigo)' }} />
               </div>
-              <p className="text-slate-500 font-medium">No lab results found</p>
-              <p className="text-sm text-slate-400 mt-1">Results will appear here when available</p>
+              <p style={{ color: 'var(--clay-text-dark)', fontWeight: 600 }}>No lab results found</p>
+              <p style={{ fontSize: '0.875rem', color: 'var(--clay-text-muted)', marginTop: '0.25rem' }}>Results will appear here when available</p>
             </div>
           ) : (
             filteredLabResults.map((result) => {
@@ -625,61 +629,66 @@ export default function HealthRecordsPage() {
                 <button
                   key={result.id}
                   onClick={() => setSelectedLabResult(result)}
-                  className="w-full flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all text-left"
+                  className="clay-row"
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', textAlign: 'left', border: 'none', cursor: 'pointer' }}
                 >
                   <div
-                    className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${
-                      isAbnormal
-                        ? 'bg-red-50'
+                    className="clay-ico"
+                    style={{
+                      height: 48,
+                      width: 48,
+                      borderRadius: 16,
+                      background: isAbnormal
+                        ? 'linear-gradient(135deg, #FEF2F2, #FECDD3)'
                         : result.status.toLowerCase() === 'completed'
-                        ? 'bg-emerald-50'
-                        : 'bg-amber-50'
-                    }`}
+                        ? 'linear-gradient(135deg, #ECFDF5, #A7F3D0)'
+                        : 'linear-gradient(135deg, #FFFBEB, #FDE68A)'
+                    }}
                   >
                     {isAbnormal ? (
-                      <AlertCircle className="h-6 w-6 text-red-500" />
+                      <AlertCircle style={{ height: 24, width: 24, color: '#EF4444' }} />
                     ) : result.status.toLowerCase() === 'completed' ? (
-                      <CheckCircle className="h-6 w-6 text-emerald-500" />
+                      <CheckCircle style={{ height: 24, width: 24, color: '#10B981' }} />
                     ) : (
-                      <Clock className="h-6 w-6 text-amber-500" />
+                      <Clock style={{ height: 24, width: 24, color: '#F59E0B' }} />
                     )}
                   </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <p className="font-semibold text-slate-900 truncate">{result.testName}</p>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 2 }}>
+                      <p style={{ fontWeight: 700, color: 'var(--clay-text-dark)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{result.testName}</p>
                       {isAbnormal && (
-                        <Badge className="bg-red-100 text-red-700 border-red-200 text-[10px]">
+                        <span className="clay-badge" style={{ background: '#FEF2F2', color: '#B91C1C', borderColor: '#FECACA', fontSize: 10 }}>
                           Abnormal
-                        </Badge>
+                        </span>
                       )}
                     </div>
-                    <p className="text-sm text-slate-500">{result.childName}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p style={{ fontSize: '0.875rem', color: 'var(--clay-text-muted)' }}>{result.childName}</p>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--clay-text-muted)', marginTop: 2 }}>
                       {new Date(result.orderedAt).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric'
-                      })} • {result.orderedBy}
+                      })} &bull; {result.orderedBy}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Badge className={getStatusColor(result.status)}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                    <span className="clay-badge" style={getStatusStyle(result.status)}>
                       {result.status}
-                    </Badge>
+                    </span>
                     {showPayButton && (
-                      <Button
-                        size="sm"
-                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                      <button
+                        className="clay-cta"
+                        style={{ padding: '0.375rem 0.875rem', fontSize: '0.8125rem', background: 'linear-gradient(135deg, #8B5CF6, #6366F1)' }}
                         onClick={(e) => {
                           e.stopPropagation()
                           handlePayNow(result.invoice, result.testName)
                         }}
                       >
                         Pay Now
-                      </Button>
+                      </button>
                     )}
-                    <ChevronRight className="h-5 w-5 text-slate-300" />
+                    <ChevronRight style={{ height: 20, width: 20, color: 'var(--clay-text-muted)' }} />
                   </div>
                 </button>
               )
@@ -690,14 +699,14 @@ export default function HealthRecordsPage() {
 
       {/* Prescriptions Tab */}
       {activeTab === 'prescriptions' && (
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {/* Active Medications */}
           {filteredPrescriptions.filter(p => p.status === 'active').length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h3 className="clay-label" style={{ color: 'var(--clay-text-muted)', marginBottom: '0.75rem' }}>
                 Active Medications
               </h3>
-              <div className="space-y-3">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {filteredPrescriptions
                   .filter(p => p.status === 'active')
                   .map((rx) => {
@@ -706,38 +715,39 @@ export default function HealthRecordsPage() {
                       <button
                         key={rx.id}
                         onClick={() => setSelectedPrescription(rx)}
-                        className="w-full flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all text-left"
+                        className="clay-row"
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', textAlign: 'left', border: 'none', cursor: 'pointer' }}
                       >
-                        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center shrink-0">
-                          <Pill className="h-6 w-6 text-purple-600" />
+                        <div className="clay-ico" style={{ height: 48, width: 48, borderRadius: 16, background: 'linear-gradient(135deg, #EDE9FE, #DDD6FE)', flexShrink: 0 }}>
+                          <Pill style={{ height: 24, width: 24, color: '#8B5CF6' }} />
                         </div>
 
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-slate-900">{rx.medicationName}</p>
-                          <p className="text-sm text-slate-500">
-                            {rx.dosage} • {rx.frequency}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontWeight: 700, color: 'var(--clay-text-dark)' }}>{rx.medicationName}</p>
+                          <p style={{ fontSize: '0.875rem', color: 'var(--clay-text-muted)' }}>
+                            {rx.dosage} &bull; {rx.frequency}
                           </p>
-                          <p className="text-xs text-slate-400 mt-0.5">{rx.childName}</p>
+                          <p style={{ fontSize: '0.75rem', color: 'var(--clay-text-muted)', marginTop: 2 }}>{rx.childName}</p>
                         </div>
 
-                        <div className="text-right shrink-0 flex items-center gap-2">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
                           {rx.daysLeft && (
-                            <p className="text-sm font-medium text-amber-600">{rx.daysLeft} days left</p>
+                            <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--clay-amber)' }}>{rx.daysLeft} days left</p>
                           )}
-                          {rx.reminderEnabled && <Bell className="h-4 w-4 text-blue-500" />}
+                          {rx.reminderEnabled && <Bell style={{ height: 16, width: 16, color: 'var(--clay-indigo)' }} />}
                           {showPayButton && (
-                            <Button
-                              size="sm"
-                              className="bg-purple-600 hover:bg-purple-700 text-white"
+                            <button
+                              className="clay-cta"
+                              style={{ padding: '0.375rem 0.875rem', fontSize: '0.8125rem', background: 'linear-gradient(135deg, #8B5CF6, #6366F1)' }}
                               onClick={(e) => {
                                 e.stopPropagation()
                                 handlePayNow(rx.invoice, rx.medicationName)
                               }}
                             >
                               Pay Now
-                            </Button>
+                            </button>
                           )}
-                          <ChevronRight className="h-5 w-5 text-slate-300" />
+                          <ChevronRight style={{ height: 20, width: 20, color: 'var(--clay-text-muted)' }} />
                         </div>
                       </button>
                     )
@@ -749,10 +759,10 @@ export default function HealthRecordsPage() {
           {/* Past Medications */}
           {filteredPrescriptions.filter(p => p.status !== 'active').length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
+              <h3 className="clay-label" style={{ color: 'var(--clay-text-muted)', marginBottom: '0.75rem' }}>
                 Past Medications
               </h3>
-              <div className="space-y-3">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {filteredPrescriptions
                   .filter(p => p.status !== 'active')
                   .map((rx) => {
@@ -761,35 +771,36 @@ export default function HealthRecordsPage() {
                       <button
                         key={rx.id}
                         onClick={() => setSelectedPrescription(rx)}
-                        className="w-full flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-sm transition-all text-left opacity-75 hover:opacity-100"
+                        className="clay-row"
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', textAlign: 'left', border: 'none', cursor: 'pointer', opacity: 0.75 }}
                       >
-                        <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-                          <Pill className="h-6 w-6 text-slate-400" />
+                        <div className="clay-ico" style={{ height: 48, width: 48, borderRadius: 16, background: 'linear-gradient(135deg, #F1F5F9, #E2E8F0)', flexShrink: 0 }}>
+                          <Pill style={{ height: 24, width: 24, color: '#94A3B8' }} />
                         </div>
 
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-slate-700">{rx.medicationName}</p>
-                          <p className="text-sm text-slate-500">
-                            {rx.dosage} • {rx.frequency}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontWeight: 700, color: 'var(--clay-text-mid)' }}>{rx.medicationName}</p>
+                          <p style={{ fontSize: '0.875rem', color: 'var(--clay-text-muted)' }}>
+                            {rx.dosage} &bull; {rx.frequency}
                           </p>
-                          <p className="text-xs text-slate-400 mt-0.5">{rx.childName}</p>
+                          <p style={{ fontSize: '0.75rem', color: 'var(--clay-text-muted)', marginTop: 2 }}>{rx.childName}</p>
                         </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
                           {showPayButton && (
-                            <Button
-                              size="sm"
-                              className="bg-purple-600 hover:bg-purple-700 text-white"
+                            <button
+                              className="clay-cta"
+                              style={{ padding: '0.375rem 0.875rem', fontSize: '0.8125rem', background: 'linear-gradient(135deg, #8B5CF6, #6366F1)' }}
                               onClick={(e) => {
                                 e.stopPropagation()
                                 handlePayNow(rx.invoice, rx.medicationName)
                               }}
                             >
                               Pay Now
-                            </Button>
+                            </button>
                           )}
-                          <Badge className={getStatusColor(rx.status)}>{rx.status}</Badge>
-                          <ChevronRight className="h-5 w-5 text-slate-300" />
+                          <span className="clay-badge" style={getStatusStyle(rx.status)}>{rx.status}</span>
+                          <ChevronRight style={{ height: 20, width: 20, color: 'var(--clay-text-muted)' }} />
                         </div>
                       </button>
                     )
@@ -799,12 +810,12 @@ export default function HealthRecordsPage() {
           )}
 
           {filteredPrescriptions.length === 0 && (
-            <div className="text-center py-12">
-              <div className="h-16 w-16 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-                <Pill className="h-8 w-8 text-slate-400" />
+            <div style={{ textAlign: 'center', padding: '3rem 0' }}>
+              <div className="clay-empty-ico">
+                <Pill style={{ height: 32, width: 32, color: 'var(--clay-indigo)' }} />
               </div>
-              <p className="text-slate-500 font-medium">No prescriptions found</p>
-              <p className="text-sm text-slate-400 mt-1">Prescriptions will appear here when available</p>
+              <p style={{ color: 'var(--clay-text-dark)', fontWeight: 600 }}>No prescriptions found</p>
+              <p style={{ fontSize: '0.875rem', color: 'var(--clay-text-muted)', marginTop: '0.25rem' }}>Prescriptions will appear here when available</p>
             </div>
           )}
         </div>

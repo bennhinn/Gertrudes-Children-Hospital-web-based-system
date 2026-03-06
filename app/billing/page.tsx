@@ -4,29 +4,252 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import {
-  Receipt,
-  Download,
-  CreditCard,
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  ChevronLeft,
-  ChevronRight,
-  Filter,
-  Search,
-  ArrowUpRight,
-  Wallet,
+  Receipt, Download, CreditCard, AlertCircle, CheckCircle2,
+  Clock, ChevronLeft, ChevronRight, Filter, Search,
+  ArrowUpRight, Wallet,
 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { PDFDownloadButton } from '@/components/pdf-download-button'
+
+// ─── Clay Design System ───────────────────────────────────────────────────────
+const clayCSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&display=swap');
+
+  :root {
+    --bg: #EEF2FF;
+    --emerald: #10B981; --emerald-s: #ECFDF5; --emerald-l: #A7F3D0;
+    --amber: #F59E0B;   --amber-s: #FFFBEB;   --amber-l: #FDE68A;
+    --indigo: #6366F1;  --indigo-s: #EEF2FF;  --indigo-l: #C7D2FE;
+    --purple: #8B5CF6;  --purple-s: #EDE9FE;  --purple-l: #DDD6FE;
+    --sky: #0EA5E9;     --sky-s: #F0F9FF;     --sky-l: #BAE6FD;
+    --rose: #F43F5E;    --rose-s: #FFF1F2;
+    --orange: #F97316;  --orange-s: #FFF7ED;  --orange-l: #FED7AA;
+    --text-dark: #1E1B4B; --text-mid: #4C4C72; --text-muted: #9090B0;
+    --clay-sm:  0 4px 0 rgba(0,0,0,.12), 0 6px 16px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.7);
+    --clay-md:  0 6px 0 rgba(0,0,0,.13), 0 10px 24px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.65);
+    --clay-lg:  0 8px 0 rgba(0,0,0,.14), 0 16px 40px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.6);
+    --clay-pressed: 0 2px 0 rgba(0,0,0,.12), inset 0 2px 4px rgba(0,0,0,.08);
+    --spring: cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  .clay-page * { font-family: 'Nunito', sans-serif !important; box-sizing: border-box; }
+
+  /* noise grain overlay */
+  .clay-page::before {
+    content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    opacity:.35;
+  }
+
+  /* ── HERO HEADER ── */
+  .clay-hero {
+    background: linear-gradient(135deg, #059669, #10B981, #0D9488);
+    position: relative; overflow: hidden;
+  }
+  .clay-hero::after {
+    content:''; position:absolute; inset:0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+  @keyframes blobFloat { 0%,100%{transform:scale(1) rotate(0deg)} 50%{transform:scale(1.08) rotate(5deg)} }
+  .hero-blob { position:absolute; border-radius:50%; background:rgba(255,255,255,.08); pointer-events:none; animation:blobFloat 8s ease-in-out infinite; }
+  .clay-hero-badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,.18); backdrop-filter: blur(8px);
+    border-radius: 999px; padding: 5px 14px; font-size: 12px; font-weight: 800;
+    color: #ECFDF5; border: 1px solid rgba(255,255,255,.25);
+    box-shadow: 0 2px 0 rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.15);
+    margin-bottom: 10px;
+  }
+  .clay-back-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,.18); backdrop-filter: blur(8px);
+    border-radius: 999px; padding: 10px 20px; font-size: 13px; font-weight: 800;
+    color: white; border: 1px solid rgba(255,255,255,.25); cursor: pointer;
+    box-shadow: 0 3px 0 rgba(0,0,0,.1), inset 0 1px 0 rgba(255,255,255,.2);
+    transition: transform .2s var(--spring), background .2s ease;
+    text-decoration: none;
+  }
+  .clay-back-btn:hover { background: rgba(255,255,255,.28); transform: translateY(-2px); }
+  .clay-back-btn:active { transform: translateY(2px); }
+
+  /* ── STAT CARDS ── */
+  .clay-stat {
+    border-radius: 24px !important; border: none !important;
+    box-shadow: var(--clay-md) !important; overflow: hidden; position: relative;
+    transition: transform .22s var(--spring), box-shadow .22s ease;
+    cursor: default;
+  }
+  .clay-stat:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 14px 0 rgba(0,0,0,.13), 0 24px 52px rgba(0,0,0,.13), inset 0 1px 0 rgba(255,255,255,.65) !important;
+  }
+  .clay-stat:active { transform: translateY(3px); box-shadow: var(--clay-pressed) !important; }
+  .stat-blob { position:absolute; border-radius:50%; pointer-events:none; background:rgba(255,255,255,.14); }
+  .clay-stat:hover .clay-ico { transform: rotate(-10deg) scale(1.15) !important; }
+
+  /* ── ICON BUBBLE ── */
+  .clay-ico {
+    border-radius: 16px;
+    box-shadow: 0 4px 0 rgba(0,0,0,.15), 0 8px 16px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.5);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    transition: transform .22s var(--spring);
+  }
+
+  /* ── FILTER BAR ── */
+  .clay-filter {
+    border-radius: 24px; border: none;
+    box-shadow: var(--clay-md); background: white;
+    padding: 18px 22px;
+  }
+  .clay-search-wrap { position: relative; flex: 1; }
+  .clay-search-ico { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #9090B0; pointer-events: none; }
+  .clay-search {
+    border-radius: 999px !important;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,.07), inset 0 -1px 0 rgba(255,255,255,.8) !important;
+    border: 1.5px solid #A7F3D0 !important;
+    font-weight: 600 !important; background: #FAFBFF !important;
+    padding: 10px 14px 10px 42px !important; font-size: 14px; width: 100%;
+    transition: border-color .2s, box-shadow .2s; color: #1E1B4B;
+  }
+  .clay-search:focus { border-color: #10B981 !important; box-shadow: inset 0 2px 6px rgba(0,0,0,.05), 0 0 0 3px rgba(16,185,129,.12) !important; outline: none !important; }
+
+  /* ── STATUS SELECT ── */
+  .clay-select {
+    border-radius: 999px !important;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,.07), 0 1px 0 rgba(255,255,255,.9) !important;
+    border: 1.5px solid #A7F3D0 !important;
+    font-weight: 700 !important; background: #FAFBFF !important;
+    padding: 9px 18px; font-size: 14px; cursor: pointer; color: #1E1B4B;
+    appearance: none; min-width: 160px;
+    transition: border-color .2s;
+  }
+  .clay-select:focus { border-color: #10B981 !important; outline: none !important; }
+
+  /* ── APPLY BUTTON ── */
+  .clay-apply {
+    border-radius: 999px !important; border: none !important;
+    background: linear-gradient(135deg, #10B981, #059669) !important; color: white !important;
+    box-shadow: 0 5px 0 rgba(16,185,129,.35), 0 8px 20px rgba(16,185,129,.25), inset 0 1px 0 rgba(255,255,255,.3) !important;
+    font-weight: 800 !important; padding: 10px 22px; font-size: 14px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: transform .2s var(--spring), box-shadow .2s ease !important;
+    text-decoration: none;
+  }
+  .clay-apply:hover { transform: translateY(-3px) !important; box-shadow: 0 8px 0 rgba(16,185,129,.4), 0 14px 32px rgba(16,185,129,.3), inset 0 1px 0 rgba(255,255,255,.3) !important; }
+  .clay-apply:active { transform: translateY(3px) !important; }
+
+  /* ── CLEAR BUTTON ── */
+  .clay-clear {
+    border-radius: 999px !important;
+    box-shadow: 0 3px 0 rgba(0,0,0,.08), 0 5px 12px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.9) !important;
+    border: 1.5px solid #A7F3D0 !important; background: white !important;
+    font-weight: 700 !important; padding: 10px 20px; font-size: 14px; cursor: pointer;
+    color: #4C4C72; display: inline-flex; align-items: center; gap: 6px;
+    transition: transform .18s var(--spring) !important; text-decoration: none;
+  }
+  .clay-clear:hover { transform: translateY(-2px) !important; }
+
+  /* ── INVOICE LIST PANEL ── */
+  .clay-list-panel {
+    border-radius: 24px; border: none;
+    box-shadow: var(--clay-md); background: white; overflow: hidden;
+  }
+  .clay-list-head {
+    padding: 18px 24px 16px; border-bottom: 1px solid #ECFDF5;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  /* ── INVOICE ROW ── */
+  .clay-invoice-row {
+    padding: 16px 22px;
+    border-bottom: 1px solid #F0FDF4;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    transition: background .15s ease, transform .15s var(--spring);
+    flex-wrap: wrap;
+  }
+  .clay-invoice-row:last-child { border-bottom: none; }
+  .clay-invoice-row:hover { background: #F0FDF4; }
+  .clay-invoice-row:hover .inv-ico { transform: scale(1.1) rotate(-5deg); }
+  .inv-ico {
+    border-radius: 16px; flex-shrink: 0;
+    box-shadow: 0 3px 0 rgba(16,185,129,.2), 0 5px 14px rgba(16,185,129,.1), inset 0 1px 0 rgba(255,255,255,.6);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .22s var(--spring);
+    background: linear-gradient(135deg, #ECFDF5, #A7F3D0);
+  }
+
+  /* ── STATUS BADGE ── */
+  .clay-badge {
+    border-radius: 999px; font-weight: 800; font-size: 11px; padding: 3px 10px;
+    box-shadow: 0 2px 0 rgba(0,0,0,.07), inset 0 1px 0 rgba(255,255,255,.6);
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+
+  /* ── PAY NOW BUTTON ── */
+  .clay-pay {
+    border-radius: 999px !important; border: none !important;
+    background: linear-gradient(135deg, #10B981, #059669) !important; color: white !important;
+    box-shadow: 0 4px 0 rgba(16,185,129,.3), 0 6px 16px rgba(16,185,129,.2), inset 0 1px 0 rgba(255,255,255,.3) !important;
+    font-weight: 800 !important; padding: 7px 16px; font-size: 12px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 5px;
+    transition: transform .2s var(--spring), box-shadow .2s ease !important;
+  }
+  .clay-pay:hover { transform: translateY(-2px) !important; box-shadow: 0 6px 0 rgba(16,185,129,.35), 0 10px 24px rgba(16,185,129,.25), inset 0 1px 0 rgba(255,255,255,.3) !important; }
+  .clay-pay:active { transform: translateY(2px) !important; }
+
+  /* ── DETAILS LINK ── */
+  .clay-details {
+    border-radius: 999px;
+    box-shadow: 0 3px 0 rgba(0,0,0,.07), 0 5px 12px rgba(0,0,0,.05), inset 0 1px 0 rgba(255,255,255,.9);
+    border: 1.5px solid #A7F3D0; background: white; font-weight: 700;
+    padding: 6px 14px; font-size: 12px; cursor: pointer; color: #059669;
+    display: inline-flex; align-items: center; gap: 5px; text-decoration: none;
+    transition: transform .18s var(--spring);
+  }
+  .clay-details:hover { transform: translateY(-2px); }
+
+  /* ── PAGINATION ── */
+  .clay-pagination {
+    border-radius: 24px; border: none;
+    box-shadow: var(--clay-md); background: white;
+    padding: 16px 22px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+  .clay-page-btn {
+    border-radius: 999px;
+    box-shadow: 0 3px 0 rgba(0,0,0,.08), 0 5px 12px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.9);
+    border: 1.5px solid #A7F3D0; background: white; font-weight: 700;
+    width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: #059669;
+    transition: transform .18s var(--spring);
+  }
+  .clay-page-btn:hover { transform: translateY(-2px); }
+  .clay-page-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+  .clay-page-indicator {
+    background: linear-gradient(135deg, #ECFDF5, #A7F3D0);
+    border-radius: 999px; padding: 6px 18px; font-size: 13px; font-weight: 800; color: #15803D;
+    box-shadow: 0 2px 0 rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.7);
+  }
+
+  /* ── EMPTY STATE ── */
+  .clay-empty { padding: 60px 24px; text-align: center; }
+  @keyframes emptyBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+  .clay-empty-ico {
+    width: 72px; height: 72px; border-radius: 22px;
+    background: linear-gradient(135deg, #ECFDF5, #A7F3D0);
+    box-shadow: var(--clay-sm);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px; animation: emptyBounce 3.5s ease-in-out infinite;
+  }
+
+  /* ── DECORATIVE BLOBS ── */
+  @keyframes bgBlob { 0%,100%{transform:scale(1)} 50%{transform:scale(1.07) rotate(4deg)} }
+  .deco-blob { position:fixed; border-radius:50%; pointer-events:none; animation:bgBlob 8s ease-in-out infinite; z-index:0; }
+`;
 
 // ---------- Types ----------
 type InvoiceStatus = 'paid' | 'unpaid' | 'overdue' | 'pending'
@@ -39,479 +262,329 @@ interface Invoice {
   due_date: string | null
   created_at: string
   paid_at: string | null
-  child: {
-    full_name: string
-  } | null
-  caregiver: {
-    full_name: string
-  } | null
-  line_items: Array<{
-    description: string
-    amount: number
-  }>
+  child: { full_name: string } | null
+  caregiver: { full_name: string } | null
+  line_items: Array<{ description: string; amount: number }>
 }
 
-// ---------- Constants ----------
 const ITEMS_PER_PAGE = 10
 
 // ---------- Helpers ----------
-function statusConfig(status: InvoiceStatus) {
+function statusCfg(status: InvoiceStatus) {
   const configs = {
-    paid: {
-      variant: 'default' as const,
-      icon: CheckCircle2,
-      label: 'Paid',
-      className: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100',
-    },
-    unpaid: {
-      variant: 'destructive' as const,
-      icon: AlertCircle,
-      label: 'Unpaid',
-      className: 'bg-amber-100 text-amber-700 hover:bg-amber-100',
-    },
-    overdue: {
-      variant: 'destructive' as const,
-      icon: Clock,
-      label: 'Overdue',
-      className: 'bg-red-100 text-red-700 hover:bg-red-100',
-    },
-    pending: {
-      variant: 'secondary' as const,
-      icon: Clock,
-      label: 'Pending',
-      className: 'bg-slate-100 text-slate-700 hover:bg-slate-100',
-    },
+    paid:    { icon: CheckCircle2, label: 'Paid',    bg: '#DCFCE7', color: '#15803D' },
+    unpaid:  { icon: AlertCircle,  label: 'Unpaid',  bg: '#FEF9C3', color: '#A16207' },
+    overdue: { icon: Clock,        label: 'Overdue', bg: '#FFE4E6', color: '#BE123C' },
+    pending: { icon: Clock,        label: 'Pending', bg: '#F1F5F9', color: '#475569' },
   }
   return configs[status] || configs.pending
 }
 
 function formatCurrency(amount: number) {
-  return new Intl.NumberFormat('en-KE', {
-    style: 'currency',
-    currency: 'KES',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
+  return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount)
 }
 
 function formatDate(dateString: string | null) {
   if (!dateString) return 'N/A'
-  return new Date(dateString).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
+  return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 // ---------- Page Component ----------
 export default async function BillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    page?: string
-    status?: InvoiceStatus | 'all'
-    search?: string
-  }>
+  searchParams: Promise<{ page?: string; status?: InvoiceStatus | 'all'; search?: string }>
 }) {
-  // Await searchParams (Next.js 15+)
   const { page, status, search } = await searchParams
-
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   const currentPage = parseInt(page || '1')
   const statusFilter = status || 'all'
   const searchQuery = search || ''
 
-  // ----- Build main query (CORRECT JOIN via caregivers -> profiles) -----
   let query = supabase
     .from('invoices')
-    .select(
-      `
-      *,
-      line_items:invoice_line_items(*),
-      child:children!inner (
-        full_name
-      ),
-      caregiver:caregivers (
-        profile:profiles!inner (
-          full_name
-        )
-      )
-    `,
-      { count: 'exact' }
-    )
-    .eq('caregiver_id', user.id) // foreign key to caregivers table
+    .select(`*, line_items:invoice_line_items(*), child:children!inner(full_name), caregiver:caregivers(profile:profiles!inner(full_name))`, { count: 'exact' })
+    .eq('caregiver_id', user.id)
     .order('created_at', { ascending: false })
 
-  if (statusFilter !== 'all') {
-    query = query.eq('status', statusFilter)
-  }
-
-  if (searchQuery) {
-    query = query.or(
-      `invoice_number.ilike.%${searchQuery}%,child.full_name.ilike.%${searchQuery}%`
-    )
-  }
+  if (statusFilter !== 'all') query = query.eq('status', statusFilter)
+  if (searchQuery) query = query.or(`invoice_number.ilike.%${searchQuery}%,child.full_name.ilike.%${searchQuery}%`)
 
   const from = (currentPage - 1) * ITEMS_PER_PAGE
   const to = from + ITEMS_PER_PAGE - 1
-
   const { data: rawInvoices, count, error } = await query.range(from, to)
 
-  if (error) {
-    console.error('Error fetching invoices:', error)
-  }
+  if (error) console.error('Error fetching invoices:', error)
 
-  // 🔁 Transform raw data to match the Invoice type
-  const invoices: Invoice[] =
-    rawInvoices?.map((inv: any) => ({
-      ...inv,
-      // child already has full_name from the join
-      child: inv.child,
-      // caregiver profile is nested; extract full_name
-      caregiver: inv.caregiver?.profile
-        ? { full_name: inv.caregiver.profile.full_name }
-        : null,
-    })) || []
+  const invoices: Invoice[] = rawInvoices?.map((inv: any) => ({
+    ...inv,
+    child: inv.child,
+    caregiver: inv.caregiver?.profile ? { full_name: inv.caregiver.profile.full_name } : null,
+  })) || []
 
   const totalPages = Math.ceil((count || 0) / ITEMS_PER_PAGE)
 
-  // ----- Summary stats (only invoices table, no joins needed) -----
-  const { data: summaryStats } = await supabase
-    .from('invoices')
-    .select('status, total')
-    .eq('caregiver_id', user.id)
-
-  const outstanding =
-    summaryStats
-      ?.filter((inv) => inv.status === 'unpaid' || inv.status === 'overdue')
-      .reduce((sum, inv) => sum + (inv.total || 0), 0) || 0
-
-  const totalPaidYTD =
-    summaryStats
-      ?.filter((inv) => inv.status === 'paid')
-      .reduce((sum, inv) => sum + (inv.total || 0), 0) || 0
-
-  const overdueCount =
-    summaryStats?.filter((inv) => inv.status === 'overdue').length || 0
-
-  // Placeholder – replace with real data later
+  const { data: summaryStats } = await supabase.from('invoices').select('status, total').eq('caregiver_id', user.id)
+  const outstanding = summaryStats?.filter(i => i.status === 'unpaid' || i.status === 'overdue').reduce((s, i) => s + (i.total || 0), 0) || 0
+  const totalPaidYTD = summaryStats?.filter(i => i.status === 'paid').reduce((s, i) => s + (i.total || 0), 0) || 0
+  const overdueCount = summaryStats?.filter(i => i.status === 'overdue').length || 0
   const paymentMethodCount = 2
 
   return (
-    <main className="min-h-screen bg-linear-to-br from-slate-50 via-white to-slate-50 pb-8">
-      {/* Hero Header */}
-      <section className="relative overflow-hidden bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-700 text-white">
-        <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-white/5 motion-safe:animate-pulse sm:h-64 sm:w-64" aria-hidden="true" />
-        <div className="absolute -bottom-8 -left-8 h-36 w-36 rounded-full bg-white/5 motion-safe:animate-pulse [animation-delay:1s] sm:h-48 sm:w-48" aria-hidden="true" />
-        <div className="relative mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-emerald-100 backdrop-blur-sm">
-                <Wallet className="h-3 w-3" />
-                Financial Overview
-              </div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl lg:text-4xl">
-                Billing & Payments
-              </h1>
-              <p className="mt-1 text-sm text-emerald-100 sm:text-base">
-                Manage invoices, payments, and insurance information
-              </p>
-            </div>
-            <Link href="/dashboard">
-              <Button variant="ghost" className="w-full sm:w-auto bg-white/15 text-white backdrop-blur-md hover:bg-white/25 border border-white/20 active:scale-95 transition-transform">
-                <ChevronLeft className="mr-2 h-4 w-4" />
-                Back to Dashboard
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
+    <>
+      <style dangerouslySetInnerHTML={{ __html: clayCSS }} />
 
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 space-y-6 sm:space-y-8">
-        {/* ---------- Summary Cards ---------- */}
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 sm:gap-5">
-          {/* Outstanding Balance */}
-          <Card className="group relative col-span-2 overflow-hidden border-0 bg-linear-to-br from-amber-500 to-orange-600 shadow-xl shadow-amber-500/20 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] sm:col-span-1">
-            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 transition-transform duration-500 group-hover:scale-125" aria-hidden="true" />
-            <CardContent className="relative p-4 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-amber-100 sm:text-sm">
-                    Outstanding
-                  </p>
-                  <p className="mt-1 text-2xl font-bold text-white tracking-tight sm:mt-2 sm:text-3xl">
-                    {formatCurrency(outstanding)}
-                  </p>
+      <main className="clay-page" style={{ background: 'var(--bg)', minHeight: '100vh', position: 'relative' }}>
+
+        {/* Background blobs */}
+        <div className="deco-blob" style={{ width: 420, height: 420, background: 'radial-gradient(circle,rgba(16,185,129,.07),transparent 70%)', top: -100, right: -80 }} />
+        <div className="deco-blob" style={{ width: 300, height: 300, background: 'radial-gradient(circle,rgba(99,102,241,.05),transparent 70%)', bottom: 200, left: -70, animationDelay: '4s' }} />
+
+        {/* ── HERO HEADER ── */}
+        <section className="clay-hero">
+          <div className="hero-blob" style={{ width: 280, height: 280, top: -80, right: -60 }} />
+          <div className="hero-blob" style={{ width: 200, height: 200, bottom: -60, left: -40, animationDelay: '3s', opacity: .6 }} />
+          <div className="hero-blob" style={{ width: 120, height: 120, top: '30%', left: '40%', animationDelay: '6s', opacity: .4 }} />
+
+          <div style={{ position: 'relative', zIndex: 1, maxWidth: 1280, margin: '0 auto', padding: '32px 24px 36px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20 }}>
+              <div>
+                <div className="clay-hero-badge">
+                  <Wallet size={13} /> Financial Overview
                 </div>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur transition-transform duration-200 group-hover:scale-110 sm:h-12 sm:w-12">
-                  <Wallet className="h-5 w-5 text-white sm:h-6 sm:w-6" />
-                </div>
-              </div>
-              {overdueCount > 0 && (
-                <p className="mt-3 flex items-center gap-1 text-xs text-amber-100 sm:mt-4 sm:text-sm">
-                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                  {overdueCount} overdue invoice{overdueCount !== 1 ? 's' : ''}
+                <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 34, fontWeight: 700, color: 'white', lineHeight: 1.1, margin: '0 0 6px' }}>
+                  Billing & Payments
+                </h1>
+                <p style={{ fontSize: 14, color: 'rgba(236,253,245,.85)', fontWeight: 600 }}>
+                  Manage invoices, payments, and insurance information
                 </p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Total Paid YTD */}
-          <Card className="group overflow-hidden border-0 shadow-sm ring-1 ring-emerald-100 bg-linear-to-br from-white via-white to-emerald-50/80 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]">
-            <CardContent className="relative p-4 sm:p-6">
-              <div className="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-emerald-50 transition-transform duration-500 group-hover:scale-125 sm:-right-6 sm:-top-6 sm:h-24 sm:w-24" aria-hidden="true" />
-              <div className="relative flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-emerald-900 sm:text-sm">
-                    Total Paid (YTD)
-                  </p>
-                  <p className="mt-1 text-2xl font-bold text-emerald-600 tracking-tight sm:mt-2 sm:text-3xl">
-                    {formatCurrency(totalPaidYTD)}
-                  </p>
-                </div>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/25 transition-transform duration-200 group-hover:scale-110 sm:h-12 sm:w-12">
-                  <CheckCircle2 className="h-5 w-5 text-white sm:h-6 sm:w-6" />
-                </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Payment Methods */}
-          <Card className="group overflow-hidden border-0 shadow-sm ring-1 ring-blue-100 bg-linear-to-br from-white via-white to-blue-50/80 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]">
-            <CardContent className="relative p-4 sm:p-6">
-              <div className="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-blue-50 transition-transform duration-500 group-hover:scale-125 sm:-right-6 sm:-top-6 sm:h-24 sm:w-24" aria-hidden="true" />
-              <div className="relative flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-blue-900 sm:text-sm">
-                    Payment Methods
-                  </p>
-                  <p className="mt-1 text-2xl font-bold text-blue-600 tracking-tight sm:mt-2 sm:text-3xl">
-                    {paymentMethodCount}
-                  </p>
-                </div>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25 transition-transform duration-200 group-hover:scale-110 sm:h-12 sm:w-12">
-                  <CreditCard className="h-5 w-5 text-white sm:h-6 sm:w-6" />
-                </div>
-              </div>
-              <p className="relative mt-3 text-xs font-medium text-blue-600 hover:text-blue-700 cursor-pointer sm:mt-4 sm:text-sm">
-                Manage cards &rarr;
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Total Invoices */}
-          <Card className="group overflow-hidden border-0 shadow-sm ring-1 ring-purple-100 bg-linear-to-br from-white via-white to-purple-50/80 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]">
-            <CardContent className="relative p-4 sm:p-6">
-              <div className="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-purple-50 transition-transform duration-500 group-hover:scale-125 sm:-right-6 sm:-top-6 sm:h-24 sm:w-24" aria-hidden="true" />
-              <div className="relative flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-purple-900 sm:text-sm">
-                    Total Invoices
-                  </p>
-                  <p className="mt-1 text-2xl font-bold text-purple-600 tracking-tight sm:mt-2 sm:text-3xl">
-                    {count || 0}
-                  </p>
-                </div>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-purple-500 to-purple-600 shadow-lg shadow-purple-500/25 transition-transform duration-200 group-hover:scale-110 sm:h-12 sm:w-12">
-                  <Receipt className="h-5 w-5 text-white sm:h-6 sm:w-6" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* ---------- Filters ---------- */}
-        <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200/80 sm:rounded-2xl sm:p-5">
-          <form className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input
-                name="search"
-                placeholder="Search by invoice # or child name..."
-                defaultValue={searchQuery}
-                className="pl-10 rounded-lg ring-1 ring-slate-200 border-0 focus-visible:ring-2 focus-visible:ring-blue-500"
-              />
+              <Link href="/dashboard" className="clay-back-btn">
+                <ChevronLeft size={15} /> Back to Dashboard
+              </Link>
             </div>
-            <Select name="status" defaultValue={statusFilter}>
-              <SelectTrigger className="w-full rounded-lg ring-1 ring-slate-200 border-0 sm:w-45">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="unpaid">Unpaid</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-                <SelectItem value="overdue">Overdue</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="flex gap-2">
-              <Button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95 transition-transform sm:flex-none">
-                <Filter className="h-4 w-4 mr-1.5" />
-                Apply
-              </Button>
-              {(statusFilter !== 'all' || searchQuery) && (
-                <Link href="/billing" className="flex-1 sm:flex-none">
-                  <Button variant="ghost" type="button" className="w-full text-slate-500 hover:text-slate-700 active:scale-95 transition-transform">
-                    Clear
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </form>
-        </div>
-
-        {/* ---------- Invoices List ---------- */}
-        <section className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200/80 sm:rounded-2xl">
-          <div className="border-b border-slate-100 px-4 py-4 sm:px-6">
-            <h2 className="text-base font-bold text-slate-800 sm:text-lg">Invoices</h2>
           </div>
-          {invoices.length > 0 ? (
-            <div className="divide-y divide-slate-100">
-              {invoices.map((invoice) => {
-                const status = statusConfig(invoice.status)
-                const StatusIcon = status.icon
-
-                return (
-                  <div
-                    key={invoice.id}
-                    className="group relative flex flex-col gap-3 px-4 py-4 transition-all duration-150 hover:bg-slate-50/80 active:bg-slate-100/60 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-5"
-                  >
-                    <div className="flex items-start gap-3 min-w-0 sm:gap-4">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 ring-1 ring-emerald-100 transition-transform duration-200 group-hover:scale-105 sm:h-12 sm:w-12">
-                        <Receipt className="h-5 w-5 text-emerald-600 sm:h-6 sm:w-6" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                          <h3 className="text-sm font-bold text-slate-800 sm:text-base">
-                            Invoice #{invoice.invoice_number}
-                          </h3>
-                          <Badge className={`${status.className} border-0 text-[11px] font-semibold sm:text-xs`}>
-                            <StatusIcon className="mr-1 h-3 w-3" />
-                            {status.label}
-                          </Badge>
-                        </div>
-                        <p className="mt-0.5 text-xs text-slate-500 truncate sm:mt-1 sm:text-sm">
-                          {invoice.child?.full_name || 'Unknown Patient'}
-                        </p>
-                        <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-400 sm:mt-2 sm:gap-x-4 sm:text-sm sm:text-slate-500">
-                          <span>Issued: {formatDate(invoice.created_at)}</span>
-                          {invoice.due_date && (
-                            <span>Due: {formatDate(invoice.due_date)}</span>
-                          )}
-                          {invoice.paid_at && (
-                            <span className="text-emerald-600">
-                              Paid: {formatDate(invoice.paid_at)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-3 pl-13 sm:flex-col sm:items-end sm:gap-2 sm:pl-0">
-                      <p className="text-lg font-bold text-slate-800 sm:text-xl">
-                        {formatCurrency(invoice.total)}
-                      </p>
-                      <div className="flex gap-2">
-                        <PDFDownloadButton invoiceId={invoice.id} />
-
-                        {invoice.status === 'unpaid' ||
-                          invoice.status === 'overdue' ? (
-                          <Button
-                            size="sm"
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/20 active:scale-95 transition-all text-xs sm:text-sm"
-                          >
-                            Pay Now
-                            <ArrowUpRight className="ml-1 h-3.5 w-3.5 sm:ml-2 sm:h-4 sm:w-4" />
-                          </Button>
-                        ) : (
-                          <Link href={`/billing/${invoice.id}`}>
-                            <Button variant="ghost" size="sm" className="text-xs sm:text-sm active:scale-95 transition-transform">
-                              Details
-                            </Button>
-                          </Link>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="py-16 text-center sm:py-20">
-              <div className="mx-auto mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 sm:h-20 sm:w-20 sm:rounded-3xl">
-                <Receipt className="h-8 w-8 text-slate-400 sm:h-10 sm:w-10" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-800 sm:text-xl">
-                No invoices found
-              </h3>
-              <p className="mx-auto mt-2 max-w-xs text-sm text-slate-500">
-                {searchQuery || statusFilter !== 'all'
-                  ? 'Try adjusting your filters or clear them above.'
-                  : 'You have no billing history yet.'}
-              </p>
-              {(searchQuery || statusFilter !== 'all') && (
-                <Link href="/billing">
-                  <Button variant="secondary" className="mt-6 active:scale-95 transition-transform">
-                    Clear Filters
-                  </Button>
-                </Link>
-              )}
-            </div>
-          )}
         </section>
 
-        {/* ---------- Pagination ---------- */}
-        {totalPages > 1 && (
-          <div className="flex flex-col items-center justify-between gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200/80 sm:flex-row sm:rounded-2xl">
-            <p className="text-xs text-slate-500 sm:text-sm">
-              Showing <span className="font-semibold text-slate-700">{from + 1}</span> to{' '}
-              <span className="font-semibold text-slate-700">
-                {Math.min(to + 1, count || 0)}
-              </span>{' '}
-              of <span className="font-semibold text-slate-700">{count}</span> invoices
-            </p>
-            <div className="flex gap-2">
-              <Link
-                href={`/billing?page=${currentPage - 1}&status=${statusFilter}&search=${encodeURIComponent(
-                  searchQuery
-                )}`}
-                className={currentPage <= 1 ? 'pointer-events-none opacity-50' : ''}
-                aria-disabled={currentPage <= 1}
-              >
-                <Button variant="secondary" size="sm" disabled={currentPage <= 1} className="rounded-lg ring-1 ring-slate-200 border-0 active:scale-95 transition-transform">
-                  <ChevronLeft className="h-4 w-4" />
-                  <span className="sr-only">Previous page</span>
-                </Button>
-              </Link>
-              <div className="flex items-center px-3 text-sm font-medium text-slate-700">
-                {currentPage} / {totalPages}
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1280, margin: '0 auto', padding: '28px 24px 56px' }}>
+
+          {/* ── STAT CARDS ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(210px,1fr))', gap: 14, marginBottom: 24 }}>
+
+            {/* Outstanding */}
+            <div className="clay-stat" style={{ background: 'linear-gradient(135deg,#FFFBEB,#FDE68A)', padding: '20px 22px', gridColumn: 'span 1' }}>
+              <div className="stat-blob" style={{ width: 110, height: 110, bottom: -30, right: -30 }} />
+              <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 800, color: '#B45309', textTransform: 'uppercase', letterSpacing: 1 }}>Outstanding</p>
+                  <p style={{ fontFamily: 'Fraunces, serif', fontSize: 36, fontWeight: 700, color: '#1E1B4B', lineHeight: 1, margin: '6px 0 8px' }}>{formatCurrency(outstanding)}</p>
+                  {overdueCount > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: '#F43F5E' }}>
+                      <AlertCircle size={12} /> {overdueCount} overdue invoice{overdueCount !== 1 ? 's' : ''}
+                    </div>
+                  )}
+                </div>
+                <div className="clay-ico" style={{ width: 46, height: 46, background: 'linear-gradient(135deg,#F59E0B,#D97706)', color: 'white' }}>
+                  <Wallet size={21} />
+                </div>
               </div>
-              <Link
-                href={`/billing?page=${currentPage + 1}&status=${statusFilter}&search=${encodeURIComponent(
-                  searchQuery
-                )}`}
-                className={
-                  currentPage >= totalPages ? 'pointer-events-none opacity-50' : ''
-                }
-                aria-disabled={currentPage >= totalPages}
-              >
-                <Button variant="secondary" size="sm" disabled={currentPage >= totalPages} className="rounded-lg ring-1 ring-slate-200 border-0 active:scale-95 transition-transform">
-                  <ChevronRight className="h-4 w-4" />
-                  <span className="sr-only">Next page</span>
-                </Button>
-              </Link>
             </div>
+
+            {/* Total Paid YTD */}
+            <div className="clay-stat" style={{ background: 'linear-gradient(135deg,#ECFDF5,#A7F3D0)', padding: '20px 22px' }}>
+              <div className="stat-blob" style={{ width: 100, height: 100, bottom: -26, right: -26 }} />
+              <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 800, color: '#15803D', textTransform: 'uppercase', letterSpacing: 1 }}>Total Paid (YTD)</p>
+                  <p style={{ fontFamily: 'Fraunces, serif', fontSize: 36, fontWeight: 700, color: '#1E1B4B', lineHeight: 1, marginTop: 6 }}>{formatCurrency(totalPaidYTD)}</p>
+                </div>
+                <div className="clay-ico" style={{ width: 46, height: 46, background: 'linear-gradient(135deg,#10B981,#059669)', color: 'white' }}>
+                  <CheckCircle2 size={21} />
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Methods */}
+            <div className="clay-stat" style={{ background: 'linear-gradient(135deg,#EEF2FF,#C7D2FE)', padding: '20px 22px' }}>
+              <div className="stat-blob" style={{ width: 100, height: 100, bottom: -26, right: -26 }} />
+              <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 800, color: '#4F46E5', textTransform: 'uppercase', letterSpacing: 1 }}>Payment Methods</p>
+                  <p style={{ fontFamily: 'Fraunces, serif', fontSize: 36, fontWeight: 700, color: '#1E1B4B', lineHeight: 1, marginTop: 6, marginBottom: 8 }}>{paymentMethodCount}</p>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#6366F1', cursor: 'pointer' }}>Manage cards →</span>
+                </div>
+                <div className="clay-ico" style={{ width: 46, height: 46, background: 'linear-gradient(135deg,#6366F1,#4F46E5)', color: 'white' }}>
+                  <CreditCard size={21} />
+                </div>
+              </div>
+            </div>
+
+            {/* Total Invoices */}
+            <div className="clay-stat" style={{ background: 'linear-gradient(135deg,#EDE9FE,#DDD6FE)', padding: '20px 22px' }}>
+              <div className="stat-blob" style={{ width: 100, height: 100, bottom: -26, right: -26 }} />
+              <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 800, color: '#6D28D9', textTransform: 'uppercase', letterSpacing: 1 }}>Total Invoices</p>
+                  <p style={{ fontFamily: 'Fraunces, serif', fontSize: 36, fontWeight: 700, color: '#1E1B4B', lineHeight: 1, marginTop: 6 }}>{count || 0}</p>
+                </div>
+                <div className="clay-ico" style={{ width: 46, height: 46, background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', color: 'white' }}>
+                  <Receipt size={21} />
+                </div>
+              </div>
+            </div>
+
           </div>
-        )}
-      </div>
-    </main>
+
+          {/* ── FILTER BAR ── */}
+          <div className="clay-filter" style={{ marginBottom: 20 }}>
+            <form style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+              {/* Search */}
+              <div className="clay-search-wrap">
+                <Search size={15} className="clay-search-ico" />
+                <input name="search" placeholder="Search by invoice # or child name…" defaultValue={searchQuery} className="clay-search" style={{ fontFamily: 'Nunito, sans-serif' }} />
+              </div>
+              {/* Status select */}
+              <select name="status" defaultValue={statusFilter} className="clay-select" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                <option value="all">All Statuses</option>
+                <option value="unpaid">Unpaid</option>
+                <option value="paid">Paid</option>
+                <option value="overdue">Overdue</option>
+                <option value="pending">Pending</option>
+              </select>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button type="submit" className="clay-apply">
+                  <Filter size={14} /> Apply
+                </button>
+                {(statusFilter !== 'all' || searchQuery) && (
+                  <Link href="/billing" className="clay-clear">✕ Clear</Link>
+                )}
+              </div>
+            </form>
+          </div>
+
+          {/* ── INVOICE LIST ── */}
+          <div className="clay-list-panel">
+            <div className="clay-list-head">
+              <div className="clay-ico" style={{ width: 36, height: 36, background: 'linear-gradient(135deg,#10B981,#059669)', color: 'white' }}>
+                <Receipt size={16} />
+              </div>
+              <p style={{ fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 700, color: '#1E1B4B' }}>Invoices</p>
+              <span style={{ background: '#ECFDF5', color: '#15803D', borderRadius: 999, padding: '3px 11px', fontSize: 12, fontWeight: 800, marginLeft: 4, boxShadow: '0 2px 0 rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.8)' }}>
+                {count || 0}
+              </span>
+            </div>
+
+            {invoices.length > 0 ? (
+              <div>
+                {invoices.map(invoice => {
+                  const sc = statusCfg(invoice.status)
+                  const StatusIcon = sc.icon
+                  const isUnpaid = invoice.status === 'unpaid' || invoice.status === 'overdue'
+                  return (
+                    <div key={invoice.id} className="clay-invoice-row">
+                      {/* Left: icon + info */}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, flex: 1, minWidth: 0 }}>
+                        <div className="inv-ico" style={{ width: 46, height: 46 }}>
+                          <Receipt size={20} style={{ color: '#10B981' }} />
+                        </div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                            <p style={{ fontWeight: 800, color: '#1E1B4B', fontSize: 14 }}>
+                              Invoice #{invoice.invoice_number}
+                            </p>
+                            <span className="clay-badge" style={{ background: sc.bg, color: sc.color }}>
+                              <StatusIcon size={10} /> {sc.label}
+                            </span>
+                          </div>
+                          <p style={{ fontSize: 13, color: '#9090B0', fontWeight: 600, marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {invoice.child?.full_name || 'Unknown Patient'}
+                          </p>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', fontSize: 11, color: '#9090B0', fontWeight: 600 }}>
+                            <span>Issued: {formatDate(invoice.created_at)}</span>
+                            {invoice.due_date && <span>Due: {formatDate(invoice.due_date)}</span>}
+                            {invoice.paid_at && <span style={{ color: '#10B981' }}>Paid: {formatDate(invoice.paid_at)}</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: amount + actions */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10, flexShrink: 0 }}>
+                        <p style={{ fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 700, color: '#1E1B4B' }}>
+                          {formatCurrency(invoice.total)}
+                        </p>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <PDFDownloadButton invoiceId={invoice.id} />
+                          {isUnpaid ? (
+                            <button className="clay-pay">
+                              Pay Now <ArrowUpRight size={13} />
+                            </button>
+                          ) : (
+                            <Link href={`/billing/${invoice.id}`} className="clay-details">
+                              Details
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="clay-empty">
+                <div className="clay-empty-ico">
+                  <Receipt size={30} style={{ color: '#10B981' }} />
+                </div>
+                <p style={{ fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 700, color: '#1E1B4B' }}>No invoices found</p>
+                <p style={{ fontSize: 13, color: '#9090B0', fontWeight: 600, marginTop: 6, marginBottom: 20, maxWidth: 280, margin: '6px auto 20px' }}>
+                  {searchQuery || statusFilter !== 'all' ? 'Try adjusting your filters or clear them above.' : 'You have no billing history yet.'}
+                </p>
+                {(searchQuery || statusFilter !== 'all') && (
+                  <Link href="/billing" className="clay-apply" style={{ margin: '0 auto', width: 'fit-content' }}>
+                    ✕ Clear Filters
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ── PAGINATION ── */}
+          {totalPages > 1 && (
+            <div className="clay-pagination" style={{ marginTop: 20 }}>
+              <p style={{ fontSize: 13, color: '#9090B0', fontWeight: 600 }}>
+                Showing{' '}
+                <span style={{ fontWeight: 800, color: '#1E1B4B' }}>{from + 1}</span>
+                {' '}to{' '}
+                <span style={{ fontWeight: 800, color: '#1E1B4B' }}>{Math.min(to + 1, count || 0)}</span>
+                {' '}of{' '}
+                <span style={{ fontWeight: 800, color: '#1E1B4B' }}>{count}</span> invoices
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Link
+                  href={`/billing?page=${currentPage - 1}&status=${statusFilter}&search=${encodeURIComponent(searchQuery)}`}
+                  style={{ pointerEvents: currentPage <= 1 ? 'none' : 'auto', opacity: currentPage <= 1 ? .4 : 1 }}
+                >
+                  <button className="clay-page-btn" disabled={currentPage <= 1}>
+                    <ChevronLeft size={16} />
+                  </button>
+                </Link>
+                <div className="clay-page-indicator">{currentPage} / {totalPages}</div>
+                <Link
+                  href={`/billing?page=${currentPage + 1}&status=${statusFilter}&search=${encodeURIComponent(searchQuery)}`}
+                  style={{ pointerEvents: currentPage >= totalPages ? 'none' : 'auto', opacity: currentPage >= totalPages ? .4 : 1 }}
+                >
+                  <button className="clay-page-btn" disabled={currentPage >= totalPages}>
+                    <ChevronRight size={16} />
+                  </button>
+                </Link>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </main>
+    </>
   )
 }

@@ -1,6 +1,3 @@
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/server'
 import { logActivityServer } from '@/lib/activity-logger'
 import { getChildrenByCaregiver, getUpcomingAppointments, getCompletedAppointmentsCount } from '@/lib/db/queries'
@@ -24,20 +21,6 @@ import {
   AlertCircle,
   Clock
 } from 'lucide-react'
-
-type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline' | 'blue' | 'purple' | 'green' | 'gray' | 'red' | 'yellow' | null | undefined
-
-function statusVariant(status: string): BadgeVariant {
-  const map: Record<string, BadgeVariant> = {
-    pending: 'blue',
-    confirmed: 'purple',
-    completed: 'green',
-    cancelled: 'gray',
-    missed: 'red',
-    'in-progress': 'yellow'
-  }
-  return map[status] ?? 'gray'
-}
 
 // UPDATED: Shillings currency formatter
 function formatCurrency(amount: number): string {
@@ -175,28 +158,29 @@ export default async function DashboardPage() {
   const appointmentGroups = groupAppointmentsByDate(appointments)
 
   return (
-    <main className="space-y-4 pb-6 lg:space-y-8 lg:pb-8">
+    <main className="space-y-5 pb-6 lg:space-y-8 lg:pb-8">
       {/* Hero Section */}
-      <section className="relative overflow-hidden rounded-xl bg-linear-to-br from-blue-600 via-blue-500 to-cyan-400 p-4 text-white shadow-lg sm:rounded-2xl sm:p-6 lg:rounded-3xl lg:p-10">
-        <div className="pointer-events-none absolute right-0 top-0 h-32 w-32 rounded-full bg-white/10 blur-3xl motion-safe:animate-pulse sm:h-40 sm:w-40 lg:h-64 lg:w-64" style={{ animationDuration: '4s' }} aria-hidden="true" />
-        <div className="pointer-events-none absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-cyan-300/20 blur-3xl motion-safe:animate-pulse sm:-left-12 sm:-bottom-12 sm:h-48 sm:w-48 lg:-left-20 lg:-bottom-20 lg:h-96 lg:w-96" style={{ animationDuration: '5s' }} aria-hidden="true" />
+      <section className="clay-hero" style={{ background: 'linear-gradient(135deg, #6366F1, #4F46E5, #7C3AED)', padding: 0 }}>
+        {/* Decorative blobs */}
+        <div className="deco-blob" style={{ width: 200, height: 200, top: -40, right: -40, background: 'radial-gradient(circle, rgba(255,255,255,.12), transparent 70%)', animationDelay: '0s' }} aria-hidden="true" />
+        <div className="deco-blob" style={{ width: 300, height: 300, bottom: -80, left: -60, background: 'radial-gradient(circle, rgba(6,182,212,.15), transparent 70%)', animationDelay: '3s' }} aria-hidden="true" />
 
-        <div className="relative">
+        <div className="relative p-5 sm:p-7 lg:p-10">
           {nextAppointment ? (
             <div className="mb-4 sm:mb-6 lg:mb-8">
-              <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 backdrop-blur-sm sm:gap-2 sm:px-3 sm:py-1.5">
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-pulse" />
-                <span className="text-xs font-semibold uppercase tracking-wider text-white">
+              <div className="clay-badge mb-3" style={{ background: 'rgba(255,255,255,.18)', backdropFilter: 'blur(8px)', padding: '5px 14px', boxShadow: 'none' }}>
+                <span className="live-dot h-2 w-2 rounded-full" style={{ background: '#34D399', display: 'inline-block' }} />
+                <span className="text-xs font-extrabold uppercase tracking-widest text-white">
                   {getTimeUntil(nextAppointment.scheduled_for)}
                 </span>
               </div>
 
-              <h1 className="mb-1.5 text-xl font-extrabold tracking-tight text-white sm:mb-2 sm:text-2xl lg:text-4xl">
+              <h1 className="clay-display mb-2 text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
                 {nextAppointment.child?.full_name || 'Upcoming Visit'}
               </h1>
 
               {nextAppointment.scheduled_for && (
-                <p className="text-sm text-white/90 sm:text-base lg:text-lg">
+                <p className="text-sm text-white/85 sm:text-base lg:text-lg" style={{ fontFamily: "'Nunito', sans-serif" }}>
                   {formatDateTime(nextAppointment.scheduled_for, { weekday: true })}
                   {' at '}
                   {formatDateTime(nextAppointment.scheduled_for, { time: true })}
@@ -205,58 +189,58 @@ export default async function DashboardPage() {
 
               {nextAppointment.scheduled_for &&
                 new Date(nextAppointment.scheduled_for).getTime() - new Date().getTime() < 2 * 60 * 60 * 1000 && (
-                  <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-amber-400/90 px-3 py-1 text-xs font-semibold text-amber-950">
+                  <div className="clay-badge mt-3" style={{ background: '#F59E0B', color: '#451A03', padding: '6px 14px', boxShadow: '0 3px 0 rgba(245,158,11,.35), 0 5px 12px rgba(245,158,11,.2)' }}>
                     <Clock className="h-3 w-3" />
-                    Starting soon - Prepare QR code
+                    <span className="text-xs font-extrabold">Starting soon - Prepare QR code</span>
                   </div>
                 )}
             </div>
           ) : (
             <div className="mb-4 sm:mb-6 lg:mb-8">
-              <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 backdrop-blur-sm sm:gap-2 sm:px-3 sm:py-1.5">
-                <span className="text-xs font-semibold uppercase tracking-wider text-white">Quick Actions</span>
+              <div className="clay-badge mb-3" style={{ background: 'rgba(255,255,255,.18)', backdropFilter: 'blur(8px)', padding: '5px 14px', boxShadow: 'none' }}>
+                <span className="text-xs font-extrabold uppercase tracking-widest text-white">Quick Actions</span>
               </div>
 
-              <h1 className="mb-1.5 text-xl font-extrabold tracking-tight text-white sm:mb-2 sm:text-3xl lg:text-4xl">
+              <h1 className="clay-display mb-2 text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
                 Welcome back, {firstName}
               </h1>
 
-              <p className="text-sm text-white/90 sm:text-base lg:text-lg">
+              <p className="text-sm text-white/85 sm:text-base lg:text-lg" style={{ fontFamily: "'Nunito', sans-serif" }}>
                 Ready to schedule your next appointment?
               </p>
             </div>
           )}
 
           {/* Action Buttons */}
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             {nextAppointment ? (
               <>
                 <Link href={`/caregiver-appointments?viewQR=${nextAppointment.id}`} className="w-full sm:w-auto sm:flex-1">
-                  <Button size="lg" className="w-full bg-white text-blue-600 hover:bg-white/95 shadow-lg shadow-blue-900/20 active:scale-95 transition-transform">
-                    <QrCode className="h-4 w-4 mr-2 sm:h-5 sm:w-5" />
-                    <span className="font-semibold text-sm sm:text-base">View QR Code</span>
-                  </Button>
+                  <button className="clay-btn-sec flex w-full items-center justify-center gap-2 py-3.5 px-6 text-sm font-extrabold" style={{ background: 'white', color: '#6366F1' }}>
+                    <QrCode className="h-5 w-5" />
+                    View QR Code
+                  </button>
                 </Link>
                 <Link href="/caregiver-appointments" className="w-full sm:w-auto sm:flex-1">
-                  <Button size="lg" variant="ghost" className="w-full bg-white/15 text-white backdrop-blur-md hover:bg-white/25 border border-white/20 active:scale-95 transition-transform">
-                    <CalendarPlus className="h-4 w-4 mr-2 sm:h-5 sm:w-5" />
-                    <span className="font-semibold text-sm sm:text-base">Book Another</span>
-                  </Button>
+                  <button className="clay-btn-sec flex w-full items-center justify-center gap-2 py-3.5 px-6 text-sm font-extrabold" style={{ background: 'rgba(255,255,255,.15)', color: 'white', borderColor: 'rgba(255,255,255,.25)', backdropFilter: 'blur(8px)' }}>
+                    <CalendarPlus className="h-5 w-5" />
+                    Book Another
+                  </button>
                 </Link>
               </>
             ) : (
               <>
                 <Link href="/caregiver-appointments" className="w-full sm:w-auto sm:flex-1">
-                  <Button size="lg" className="w-full bg-white text-blue-600 hover:bg-white/95 shadow-lg shadow-blue-900/20 active:scale-95 transition-transform">
-                    <CalendarPlus className="h-4 w-4 mr-2 sm:h-5 sm:w-5" />
-                    <span className="font-semibold text-sm sm:text-base">Book Appointment</span>
-                  </Button>
+                  <button className="clay-btn-sec flex w-full items-center justify-center gap-2 py-3.5 px-6 text-sm font-extrabold" style={{ background: 'white', color: '#6366F1' }}>
+                    <CalendarPlus className="h-5 w-5" />
+                    Book Appointment
+                  </button>
                 </Link>
                 <Link href="/patients" className="w-full sm:w-auto sm:flex-1">
-                  <Button size="lg" variant="ghost" className="w-full bg-white/15 text-white backdrop-blur-md hover:bg-white/25 border border-white/20 active:scale-95 transition-transform">
-                    <Baby className="h-4 w-4 mr-2 sm:h-5 sm:w-5" />
-                    <span className="font-semibold text-sm sm:text-base">Add Child</span>
-                  </Button>
+                  <button className="clay-btn-sec flex w-full items-center justify-center gap-2 py-3.5 px-6 text-sm font-extrabold" style={{ background: 'rgba(255,255,255,.15)', color: 'white', borderColor: 'rgba(255,255,255,.25)', backdropFilter: 'blur(8px)' }}>
+                    <Baby className="h-5 w-5" />
+                    Add Child
+                  </button>
                 </Link>
               </>
             )}
@@ -265,200 +249,162 @@ export default async function DashboardPage() {
       </section>
 
       {/* Stats Grid */}
-      <section className="grid gap-3 grid-cols-2 sm:gap-4 lg:grid-cols-4 lg:gap-6">
-        <StatCard
-          icon={Baby}
-          label="Children"
-          value={children.length}
-          subtext={children.length === 0 ? 'Add your first' : `Profile${children.length === 1 ? '' : 's'}`}
-          color="blue"
-        />
-        <StatCard
-          icon={Calendar}
-          label="Upcoming"
-          value={upcomingCount}
-          subtext={upcomingCount === 0 ? 'No visits scheduled' : 'Next 30 days'}
-          color="purple"
-        />
-        <StatCard
-          icon={CheckCircle}
-          label="Completed"
-          value={completedCount}
-          subtext={completedCount === 0 ? 'Start your journey' : 'Total visits'}
-          color="emerald"
-        />
-        {/* UPDATED: Shillings format for outstanding */}
-        <StatCard
-          icon={Receipt}
-          label="Outstanding"
-          value={formatCurrency(outstandingTotal)}
-          subtext={unpaidCount > 0 ? `${unpaidCount} unpaid invoice${unpaidCount !== 1 ? 's' : ''}` : 'All paid up'}
-          color="amber"
-        />
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 14 }}>
+        <StatCard icon={Baby} label="Children" value={children.length} subtext={children.length === 0 ? 'Add your first' : `Profile${children.length === 1 ? '' : 's'}`} color="indigo" />
+        <StatCard icon={Calendar} label="Upcoming" value={upcomingCount} subtext={upcomingCount === 0 ? 'No visits' : 'Next 30 days'} color="purple" />
+        <StatCard icon={CheckCircle} label="Completed" value={completedCount} subtext={completedCount === 0 ? 'Start journey' : 'Total visits'} color="emerald" />
+        <StatCard icon={Receipt} label="Outstanding" value={formatCurrency(outstandingTotal)} subtext={unpaidCount > 0 ? `${unpaidCount} unpaid` : 'All paid up'} color="amber" />
       </section>
 
       {/* Billing Alert */}
       {unpaidCount > 0 && (
-        <section className="rounded-xl border-l-4 border-amber-400 bg-linear-to-r from-amber-50 to-orange-50 p-4 shadow-sm ring-1 ring-amber-200/50 transition-all active:scale-[0.98] sm:p-5 lg:rounded-3xl lg:p-6">
+        <section className="clay-card-static" style={{ borderLeft: '4px solid #F59E0B', background: 'linear-gradient(135deg, #FFFBEB, #FEF3C7)', padding: '20px' }}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-                <AlertCircle className="h-5 w-5 text-amber-600 motion-safe:animate-pulse" />
+              <div className="clay-ico" style={{ width: 42, height: 42, background: 'linear-gradient(135deg, #F59E0B, #D97706)', boxShadow: '0 3px 0 rgba(245,158,11,.3), 0 6px 12px rgba(245,158,11,.2), inset 0 1px 0 rgba(255,255,255,.3)' }}>
+                <AlertCircle className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900">Payment Required</h3>
-                {/* UPDATED: Shillings format */}
-                <p className="text-sm text-slate-600">
+                <h3 className="font-extrabold" style={{ color: 'var(--clay-text-dark)', fontFamily: "'Nunito', sans-serif" }}>Payment Required</h3>
+                <p className="text-sm" style={{ color: 'var(--clay-text-mid)', fontFamily: "'Nunito', sans-serif" }}>
                   You have {unpaidCount} outstanding invoice{unpaidCount !== 1 ? 's' : ''} totaling {formatCurrency(outstandingTotal)}
                 </p>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Link href="/billing" className="flex-1 sm:flex-none">
-                <Button className="w-full bg-amber-600 hover:bg-amber-700">
-                  Pay Now
-                </Button>
-              </Link>
-            </div>
+            <Link href="/billing">
+              <button className="clay-cta clay-cta-amber flex items-center justify-center gap-2 px-8 py-3 text-sm font-extrabold text-white">
+                Pay Now
+              </button>
+            </Link>
           </div>
         </section>
       )}
 
       {/* Appointments Section */}
-      <section className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5 lg:rounded-3xl lg:p-8">
-        <div className="mb-4 flex flex-col gap-2 sm:mb-5 sm:flex-row sm:items-start sm:justify-between sm:gap-4 lg:mb-6">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 sm:text-xl">Your Appointments</h2>
-            <p className="mt-0.5 text-xs text-slate-500 sm:mt-1 sm:text-sm">Manage your family&apos;s healthcare visits</p>
+      <section className="clay-card-static" style={{ padding: 0 }}>
+        <div className="p-5 sm:p-6 lg:p-8">
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="clay-display text-xl font-bold sm:text-2xl" style={{ color: 'var(--clay-text-dark)' }}>Your Appointments</h2>
+              <p className="mt-1 text-sm" style={{ color: 'var(--clay-text-muted)', fontFamily: "'Nunito', sans-serif" }}>Manage your family&apos;s healthcare visits</p>
+            </div>
+            <Link href="/caregiver-appointments">
+              <button className="clay-cta flex items-center gap-2 px-6 py-2.5 text-sm">
+                <Plus className="h-4 w-4" />
+                New Appointment
+              </button>
+            </Link>
           </div>
-          <Link href="/caregiver-appointments" className="w-full sm:w-auto">
-            <Button className="w-full shadow-sm sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              <span className="text-sm sm:text-base">New Appointment</span>
-            </Button>
-          </Link>
-        </div>
 
-        {appointments.length === 0 ? (
-          <EmptyState
-            icon={ClipboardList}
-            title="No appointments yet"
-            description="Ready to schedule your first visit? It only takes a minute to book an appointment for your child."
-            action={
-              <Link href="/caregiver-appointments">
-                <Button size="lg" className="shadow-md">
-                  <CalendarPlus className="h-4 w-4 mr-2 sm:h-5 sm:w-5" />
-                  <span className="text-sm sm:text-base">Schedule First Appointment</span>
-                </Button>
-              </Link>
-            }
-          />
-        ) : (
-          <div className="space-y-6">
-            {appointmentGroups.today.length > 0 && (
-              <AppointmentGroup title="Today" appointments={appointmentGroups.today} isUrgent />
-            )}
-            {appointmentGroups.tomorrow.length > 0 && (
-              <AppointmentGroup title="Tomorrow" appointments={appointmentGroups.tomorrow} />
-            )}
-            {appointmentGroups.thisWeek.length > 0 && (
-              <AppointmentGroup title="This Week" appointments={appointmentGroups.thisWeek} />
-            )}
-            {appointmentGroups.later.length > 0 && (
-              <AppointmentGroup title="Upcoming" appointments={appointmentGroups.later} />
-            )}
-          </div>
-        )}
+          {appointments.length === 0 ? (
+            <EmptyState
+              icon={ClipboardList}
+              title="No appointments yet"
+              description="Ready to schedule your first visit? It only takes a minute to book an appointment for your child."
+              action={
+                <Link href="/caregiver-appointments">
+                  <button className="clay-cta flex items-center gap-2 px-8 py-3 text-sm">
+                    <CalendarPlus className="h-5 w-5" />
+                    Schedule First Appointment
+                  </button>
+                </Link>
+              }
+            />
+          ) : (
+            <div className="space-y-6">
+              {appointmentGroups.today.length > 0 && (
+                <AppointmentGroup title="Today" appointments={appointmentGroups.today} isUrgent />
+              )}
+              {appointmentGroups.tomorrow.length > 0 && (
+                <AppointmentGroup title="Tomorrow" appointments={appointmentGroups.tomorrow} />
+              )}
+              {appointmentGroups.thisWeek.length > 0 && (
+                <AppointmentGroup title="This Week" appointments={appointmentGroups.thisWeek} />
+              )}
+              {appointmentGroups.later.length > 0 && (
+                <AppointmentGroup title="Upcoming" appointments={appointmentGroups.later} />
+              )}
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Billing Summary */}
-      <section className="rounded-xl bg-white shadow-sm ring-1 ring-slate-100 overflow-hidden sm:rounded-2xl lg:rounded-3xl">
-        <div className="bg-linear-to-br from-emerald-500 via-teal-500 to-cyan-500 p-4 sm:p-5 lg:p-6">
+      <section className="clay-card-static" style={{ padding: 0 }}>
+        <div className="clay-hero" style={{ background: 'linear-gradient(135deg, #10B981, #059669, #06B6D4)', padding: '20px', borderRadius: '24px 24px 0 0' }}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 sm:gap-4">
-              <div className="h-10 w-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0 sm:h-12 sm:w-12 lg:h-14 lg:w-14 lg:rounded-2xl">
-                <Receipt className="h-5 w-5 text-white sm:h-6 sm:w-6 lg:h-7 lg:w-7" />
+              <div className="clay-ico" style={{ width: 48, height: 48, background: 'rgba(255,255,255,.2)', backdropFilter: 'blur(8px)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.3)' }}>
+                <Receipt className="h-6 w-6 text-white" />
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="text-lg font-bold text-white sm:text-xl lg:text-2xl">Billing Summary</h2>
-                {/* UPDATED: Shillings format */}
-                <p className="mt-0.5 text-xs text-white/85 sm:mt-1 sm:text-sm lg:text-base">
+                <h2 className="clay-display text-xl font-bold text-white sm:text-2xl">Billing Summary</h2>
+                <p className="mt-0.5 text-sm text-white/85" style={{ fontFamily: "'Nunito', sans-serif" }}>
                   {unpaidCount > 0 ? `${formatCurrency(outstandingTotal)} outstanding` : 'All payments up to date'}
                 </p>
               </div>
             </div>
             <Link href="/billing">
-              <Button variant="secondary" size="sm" className="bg-white/20 text-white border-0 hover:bg-white/30 backdrop-blur-sm">
+              <button className="clay-btn-sec flex items-center gap-1.5 px-4 py-2 text-xs font-extrabold" style={{ background: 'rgba(255,255,255,.2)', color: 'white', borderColor: 'rgba(255,255,255,.25)', backdropFilter: 'blur(8px)' }}>
                 View All
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
+                <ChevronRight className="h-3 w-3" />
+              </button>
             </Link>
           </div>
         </div>
 
-        <div className="p-4 sm:p-5 lg:p-6">
+        <div className="p-5 sm:p-6 lg:p-8">
           {recentInvoices.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {recentInvoices.map((invoice, idx) => (
-                <div key={idx} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
+                <div key={idx} className="clay-row flex items-center justify-between p-3.5" style={{ marginBottom: 6 }}>
                   <div className="flex items-center gap-3">
-                    <div className={`h-2 w-2 rounded-full ${invoice.status === 'paid' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                    <div className="h-3 w-3 rounded-full" style={{ background: invoice.status === 'paid' ? '#10B981' : '#F59E0B', boxShadow: invoice.status === 'paid' ? '0 2px 6px rgba(16,185,129,.4)' : '0 2px 6px rgba(245,158,11,.4)' }} />
                     <div>
-                      <p className="text-sm font-medium text-slate-900">
+                      <p className="text-sm font-bold" style={{ color: 'var(--clay-text-dark)', fontFamily: "'Nunito', sans-serif" }}>
                         {invoice.status === 'paid' ? 'Payment Received' : 'Invoice Issued'}
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs" style={{ color: 'var(--clay-text-muted)' }}>
                         {invoice.created_at ? formatDateTime(invoice.created_at) : 'Unknown date'}
                       </p>
                     </div>
                   </div>
-                  {/* UPDATED: Shillings format */}
-                  <span className={`text-sm font-semibold ${invoice.status === 'paid' ? 'text-emerald-600' : 'text-slate-900'}`}>
+                  <span className="clay-display text-sm font-bold" style={{ color: invoice.status === 'paid' ? '#10B981' : 'var(--clay-text-dark)' }}>
                     {invoice.status === 'paid' ? '+' : ''}{formatCurrency(invoice.total)}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-8">
-              <p className="text-sm text-slate-500">No recent billing activity</p>
+            <div className="py-8 text-center">
+              <p className="text-sm" style={{ color: 'var(--clay-text-muted)', fontFamily: "'Nunito', sans-serif" }}>No recent billing activity</p>
             </div>
           )}
 
-          <Link href="/billing" className="mt-4 block">
-            <Button variant="secondary" className="w-full">
-              <CreditCard className="mr-2 h-4 w-4" />
+          <Link href="/billing" className="mt-5 block">
+            <button className="clay-btn-sec flex w-full items-center justify-center gap-2 py-3 text-sm font-extrabold" style={{ color: 'var(--clay-text-dark)' }}>
+              <CreditCard className="h-4 w-4" />
               Manage Payments & Invoices
-            </Button>
+            </button>
           </Link>
         </div>
       </section>
 
       {/* Tips Section */}
-      <section className="rounded-xl bg-linear-to-r from-slate-50 to-blue-50/40 p-4 shadow-sm ring-1 ring-slate-200/60 sm:p-5 sm:rounded-2xl lg:rounded-3xl lg:p-8">
-        <div className="mb-3 flex items-start justify-between sm:mb-4 lg:mb-5">
+      <section className="clay-inset p-5 sm:p-6 lg:p-8" style={{ position: 'relative' }}>
+        <div className="mb-4 flex items-start justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-900 sm:text-xl">Quick Tips</h2>
-            <p className="mt-0.5 text-xs text-slate-500 sm:text-sm lg:mt-1">Getting the most from your dashboard</p>
+            <h2 className="clay-display text-xl font-bold" style={{ color: 'var(--clay-text-dark)' }}>Quick Tips</h2>
+            <p className="mt-0.5 text-sm" style={{ color: 'var(--clay-text-muted)', fontFamily: "'Nunito', sans-serif" }}>Getting the most from your dashboard</p>
           </div>
-          <div className="h-9 w-9 rounded-lg bg-linear-to-br from-amber-100 to-yellow-100 flex items-center justify-center sm:h-10 sm:w-10 sm:rounded-xl lg:h-12 lg:w-12">
-            <Lightbulb className="h-4 w-4 text-amber-600 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />
+          <div className="clay-ico" style={{ width: 44, height: 44, background: 'linear-gradient(135deg, #F59E0B, #FCD34D)', boxShadow: '0 4px 0 rgba(245,158,11,.25), 0 6px 14px rgba(245,158,11,.15), inset 0 1px 0 rgba(255,255,255,.4)' }}>
+            <Lightbulb className="h-5 w-5 text-white" />
           </div>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
-          <TipCard
-            icon={Bell}
-            title="Never miss a visit"
-            description="Enable appointment reminders to get notified before each visit"
-            color="blue"
-          />
-          <TipCard
-            icon={Ticket}
-            title="Faster check-ins"
-            description="Save QR codes to your phone for quick access at appointments"
-            color="purple"
-          />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <TipCard icon={Bell} title="Never miss a visit" description="Enable appointment reminders to get notified before each visit" color="indigo" />
+          <TipCard icon={Ticket} title="Faster check-ins" description="Save QR codes to your phone for quick access at appointments" color="purple" />
         </div>
       </section>
     </main>
@@ -478,63 +424,27 @@ function StatCard({
   label: string
   value: string | number
   subtext: string
-  color: 'blue' | 'purple' | 'emerald' | 'amber'
+  color: 'indigo' | 'purple' | 'emerald' | 'amber'
 }) {
   const theme = {
-    blue: {
-      gradient: 'from-blue-500 to-blue-600',
-      shadow: 'shadow-blue-500/25',
-      blob: 'bg-blue-100/60',
-      cardBg: 'bg-linear-to-br from-white via-white to-blue-50/80',
-      num: 'text-blue-600',
-      label: 'text-blue-900',
-      sub: 'text-blue-400',
-      ring: 'ring-blue-100',
-    },
-    purple: {
-      gradient: 'from-purple-500 to-purple-600',
-      shadow: 'shadow-purple-500/25',
-      blob: 'bg-purple-100/60',
-      cardBg: 'bg-linear-to-br from-white via-white to-purple-50/80',
-      num: 'text-purple-600',
-      label: 'text-purple-900',
-      sub: 'text-purple-400',
-      ring: 'ring-purple-100',
-    },
-    emerald: {
-      gradient: 'from-emerald-500 to-emerald-600',
-      shadow: 'shadow-emerald-500/25',
-      blob: 'bg-emerald-100/60',
-      cardBg: 'bg-linear-to-br from-white via-white to-emerald-50/80',
-      num: 'text-emerald-600',
-      label: 'text-emerald-900',
-      sub: 'text-emerald-400',
-      ring: 'ring-emerald-100',
-    },
-    amber: {
-      gradient: 'from-amber-500 to-amber-600',
-      shadow: 'shadow-amber-500/25',
-      blob: 'bg-amber-100/60',
-      cardBg: 'bg-linear-to-br from-white via-white to-amber-50/80',
-      num: 'text-amber-600',
-      label: 'text-amber-900',
-      sub: 'text-amber-400',
-      ring: 'ring-amber-100',
-    },
+    indigo: { grad: 'linear-gradient(135deg, #6366F1, #818CF8)', bg: 'linear-gradient(135deg, #EEF2FF, #C7D2FE)', labelColor: '#6366F1', shadow: '0 3px 0 rgba(99,102,241,.25), 0 6px 14px rgba(99,102,241,.15), inset 0 1px 0 rgba(255,255,255,.4)' },
+    purple: { grad: 'linear-gradient(135deg, #8B5CF6, #A78BFA)', bg: 'linear-gradient(135deg, #EDE9FE, #DDD6FE)', labelColor: '#8B5CF6', shadow: '0 3px 0 rgba(139,92,246,.25), 0 6px 14px rgba(139,92,246,.15), inset 0 1px 0 rgba(255,255,255,.4)' },
+    emerald: { grad: 'linear-gradient(135deg, #10B981, #34D399)', bg: 'linear-gradient(135deg, #ECFDF5, #A7F3D0)', labelColor: '#10B981', shadow: '0 3px 0 rgba(16,185,129,.25), 0 6px 14px rgba(16,185,129,.15), inset 0 1px 0 rgba(255,255,255,.4)' },
+    amber: { grad: 'linear-gradient(135deg, #F59E0B, #FBBF24)', bg: 'linear-gradient(135deg, #FFFBEB, #FDE68A)', labelColor: '#F59E0B', shadow: '0 3px 0 rgba(245,158,11,.25), 0 6px 14px rgba(245,158,11,.15), inset 0 1px 0 rgba(255,255,255,.4)' },
   }
   const t = theme[color]
 
   return (
-    <div className={`group relative overflow-hidden rounded-xl ${t.cardBg} p-4 shadow-sm ring-1 ${t.ring} transition-all duration-200 hover:-translate-y-1 hover:shadow-lg active:scale-95 active:shadow-md sm:p-5 lg:rounded-3xl lg:p-8`}>
-      <div className={`absolute -right-4 -top-4 h-20 w-20 rounded-full transition-transform duration-500 group-hover:scale-125 sm:-right-6 sm:-top-6 sm:h-24 sm:w-24 lg:-right-8 lg:-top-8 lg:h-32 lg:w-32 ${t.blob}`} aria-hidden="true" />
-      <div className="relative space-y-2 sm:space-y-3">
-        <div className={`inline-flex h-10 w-10 items-center justify-center rounded-lg bg-linear-to-br ${t.gradient} ${t.shadow} shadow-lg transition-transform duration-200 group-hover:scale-110 group-active:rotate-[-8deg] group-active:scale-110 sm:h-12 sm:w-12 sm:rounded-xl lg:h-14 lg:w-14 lg:rounded-2xl`}>
-          <Icon className="h-5 w-5 text-white sm:h-6 sm:w-6 lg:h-7 lg:w-7" />
+    <div className="clay-stat" style={{ background: t.bg, padding: '18px 20px' }}>
+      <div className="stat-blob" style={{ width: 80, height: 80, right: -15, bottom: -15 }} aria-hidden="true" />
+      <div className="relative space-y-2.5">
+        <div className="clay-ico" style={{ width: 44, height: 44, background: t.grad, boxShadow: t.shadow }}>
+          <Icon className="h-5 w-5 text-white" />
         </div>
-        <div className="space-y-0.5 lg:space-y-1">
-          <p className={`text-xs font-semibold ${t.label} sm:text-xs lg:text-sm`}>{label}</p>
-          <p className={`text-2xl font-bold ${t.num} tracking-tight sm:text-3xl lg:text-4xl`}>{value}</p>
-          <p className={`text-xs font-medium ${t.sub} sm:text-xs lg:text-sm line-clamp-1`}>{subtext}</p>
+        <div>
+          <p className="clay-label" style={{ color: t.labelColor, marginBottom: 2 }}>{label}</p>
+          <p className="clay-display text-2xl font-bold sm:text-3xl" style={{ color: 'var(--clay-text-dark)', lineHeight: 1.1 }}>{value}</p>
+          <p className="text-xs font-bold mt-1" style={{ color: 'var(--clay-text-muted)', fontFamily: "'Nunito', sans-serif" }}>{subtext}</p>
         </div>
       </div>
     </div>
@@ -552,11 +462,11 @@ function AppointmentGroup({
 }) {
   return (
     <div>
-      <h3 className={`text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2 ${isUrgent ? 'text-red-600' : 'text-slate-500'}`}>
+      <h3 className="clay-label" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: isUrgent ? '#DC2626' : 'var(--clay-text-muted)' }}>
         {title}
-        {isUrgent && <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />}
+        {isUrgent && <span className="live-dot" style={{ width: 7, height: 7 }} />}
       </h3>
-      <div className="space-y-2 sm:space-y-3">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {appointments.map((apt) => (
           <AppointmentRow key={apt.id} appointment={apt} />
         ))}
@@ -570,21 +480,21 @@ function AppointmentRow({ appointment: apt }: { appointment: Appointment }) {
   const isPast = ['completed', 'cancelled', 'missed'].includes(apt.status)
 
   return (
-    <div className="group flex flex-col gap-3 rounded-xl bg-white p-3 ring-1 ring-slate-100 transition-all duration-200 hover:ring-blue-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] active:shadow-md sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:rounded-2xl sm:p-4 lg:p-5">
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-blue-50 ring-1 ring-blue-100 sm:h-12 sm:w-12 sm:rounded-xl">
-          <span className="text-base font-bold leading-none text-blue-600 sm:text-lg">
+    <div className="clay-row" style={{ flexDirection: 'column', gap: 10, padding: '14px 16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+        <div className="clay-ico" style={{ width: 46, height: 46, background: 'linear-gradient(135deg, #EEF2FF, #C7D2FE)', borderRadius: 14, flexDirection: 'column', flexShrink: 0, boxShadow: '0 2px 0 rgba(99,102,241,.15), inset 0 1px 0 rgba(255,255,255,.5)' }}>
+          <span className="clay-display" style={{ fontSize: 16, lineHeight: 1, color: '#4F46E5' }}>
             {apt.scheduled_for ? new Date(apt.scheduled_for).getDate() : '?'}
           </span>
-          <span className="text-[9px] font-semibold uppercase tracking-wide text-blue-400 sm:text-[10px]">
+          <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#818CF8', fontFamily: "'Nunito', sans-serif" }}>
             {apt.scheduled_for ? new Date(apt.scheduled_for).toLocaleString('en-US', { month: 'short' }) : ''}
           </span>
         </div>
-        <div className="min-w-0 flex-1 space-y-0.5 sm:space-y-1">
-          <p className="text-sm font-semibold text-slate-800 truncate sm:text-base">
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--clay-text-dark)', fontFamily: "'Nunito', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {apt.child?.full_name || 'Unknown Child'}
           </p>
-          <p className="text-xs text-slate-500 truncate sm:text-sm">
+          <p style={{ fontSize: 12, color: 'var(--clay-text-muted)', fontFamily: "'Nunito', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {apt.scheduled_for
               ? formatDateTime(apt.scheduled_for, { time: true })
               : 'No date scheduled'}
@@ -592,35 +502,26 @@ function AppointmentRow({ appointment: apt }: { appointment: Appointment }) {
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-2 sm:justify-end sm:gap-3">
-        <Badge variant={statusVariant(apt.status)} className="capitalize text-xs transition-colors duration-150">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <span className="clay-badge" style={{ textTransform: 'capitalize' }}>
           {apt.status}
-        </Badge>
+        </span>
 
         {isActionable && (
           <Link href={`/caregiver-appointments?viewQR=${apt.id}`}>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs transition-all duration-200 hover:bg-blue-50 sm:opacity-0 sm:translate-x-1 sm:group-hover:opacity-100 sm:group-hover:translate-x-0"
-            >
-              <span className="hidden sm:inline">QR Code</span>
-              <span className="sm:hidden">QR</span>
-              <ArrowRight className="h-3 w-3 ml-1" />
-            </Button>
+            <button className="clay-btn-sec" style={{ fontSize: 12, padding: '6px 12px', gap: 4 }}>
+              QR Code
+              <ArrowRight className="h-3 w-3" />
+            </button>
           </Link>
         )}
 
         {isPast && (
           <Link href="/caregiver-appointments">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs transition-all duration-200 hover:bg-slate-50 sm:opacity-0 sm:translate-x-1 sm:group-hover:opacity-100 sm:group-hover:translate-x-0"
-            >
+            <button className="clay-btn-sec" style={{ fontSize: 12, padding: '6px 12px', gap: 4 }}>
               Details
-              <ArrowRight className="h-3 w-3 ml-1" />
-            </Button>
+              <ArrowRight className="h-3 w-3" />
+            </button>
           </Link>
         )}
       </div>
@@ -640,12 +541,12 @@ function EmptyState({
   action: React.ReactNode
 }) {
   return (
-    <div className="rounded-xl bg-linear-to-br from-slate-50 to-blue-50/30 p-6 text-center sm:rounded-2xl sm:p-8 lg:p-12">
-      <div className="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-slate-900/5 sm:mb-4 sm:h-16 sm:w-16 lg:mb-5 lg:h-20 lg:w-20 lg:rounded-3xl">
-        <Icon className="h-7 w-7 text-slate-400 sm:h-8 sm:w-8 lg:h-10 lg:w-10" />
+    <div className="clay-inset" style={{ textAlign: 'center', padding: '32px 24px' }}>
+      <div className="clay-empty-ico" style={{ margin: '0 auto 14px' }}>
+        <Icon className="h-8 w-8" style={{ color: 'var(--clay-text-muted)' }} />
       </div>
-      <h3 className="mb-1.5 text-base font-semibold text-slate-900 sm:mb-2 sm:text-lg lg:text-xl">{title}</h3>
-      <p className="mx-auto mb-4 max-w-md text-xs text-slate-600 leading-relaxed sm:mb-5 sm:text-sm lg:mb-6">
+      <h3 className="clay-display" style={{ fontSize: 18, marginBottom: 6, color: 'var(--clay-text-dark)' }}>{title}</h3>
+      <p style={{ fontSize: 13, color: 'var(--clay-text-muted)', maxWidth: 340, margin: '0 auto 18px', lineHeight: 1.6, fontFamily: "'Nunito', sans-serif" }}>
         {description}
       </p>
       {action}
@@ -662,21 +563,22 @@ function TipCard({
   icon: React.ElementType
   title: string
   description: string
-  color: 'blue' | 'purple'
+  color: 'indigo' | 'purple'
 }) {
-  const colors = {
-    blue: 'bg-blue-100 text-blue-600',
-    purple: 'bg-purple-100 text-purple-600'
+  const themes = {
+    indigo: { grad: 'linear-gradient(135deg, #6366F1, #818CF8)', shadow: '0 2px 0 rgba(99,102,241,.2), inset 0 1px 0 rgba(255,255,255,.4)' },
+    purple: { grad: 'linear-gradient(135deg, #8B5CF6, #A78BFA)', shadow: '0 2px 0 rgba(139,92,246,.2), inset 0 1px 0 rgba(255,255,255,.4)' },
   }
+  const t = themes[color]
 
   return (
-    <div className="flex items-start gap-2.5 rounded-xl bg-white/80 p-3 ring-1 ring-slate-100 transition-all duration-200 hover:shadow-sm hover:ring-blue-200 active:scale-[0.97] sm:gap-3 sm:rounded-2xl sm:p-4">
-      <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 sm:h-10 sm:w-10 sm:rounded-xl ${colors[color]}`}>
-        <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+    <div className="clay-row" style={{ alignItems: 'flex-start', gap: 12, padding: '14px 16px' }}>
+      <div className="clay-ico" style={{ width: 38, height: 38, background: t.grad, boxShadow: t.shadow, flexShrink: 0 }}>
+        <Icon className="h-4 w-4 text-white" />
       </div>
-      <div className="min-w-0 flex-1">
-        <p className="font-medium text-slate-900 text-xs mb-0.5 sm:mb-1 sm:text-sm">{title}</p>
-        <p className="text-xs text-slate-600 leading-relaxed">{description}</p>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <p style={{ fontWeight: 700, color: 'var(--clay-text-dark)', fontSize: 13, marginBottom: 2, fontFamily: "'Nunito', sans-serif" }}>{title}</p>
+        <p style={{ fontSize: 12, color: 'var(--clay-text-muted)', lineHeight: 1.6, fontFamily: "'Nunito', sans-serif" }}>{description}</p>
       </div>
     </div>
   )

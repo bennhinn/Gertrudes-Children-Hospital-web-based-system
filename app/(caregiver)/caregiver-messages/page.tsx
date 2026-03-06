@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { logActivity, ActivityActions } from '@/lib/activity-logger'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import {
     MessageSquare,
@@ -305,6 +303,7 @@ export default function MessagesPage() {
 
     // Handle selecting a conversation
     const handleSelectConversation = (conversation: Conversation) => {
+        const recipientName = conversation.staffName || 'Unknown recipient'
         setSelectedConversation(conversation)
         fetchMessages(conversation.id)
         logActivity({
@@ -312,8 +311,8 @@ export default function MessagesPage() {
             action_category: 'chat',
             target_table: 'chat_conversations',
             target_id: conversation.id,
-            resource_name: conversation.staffName,
-            description: `Opened conversation with ${conversation.staffName}`
+            resource_name: recipientName,
+            description: `Opened conversation with ${recipientName}`
         }).catch(() => { })
     }
 
@@ -394,15 +393,19 @@ export default function MessagesPage() {
             // Refresh conversations and select the new one
             await fetchConversations()
 
+            const staffName = data.conversation?.staffName || selectedStaff?.name || 'Unknown'
+
             if (data.conversation) {
-                handleSelectConversation(data.conversation)
+                // Ensure the conversation object has staffName for downstream use
+                const enrichedConv = { ...data.conversation, staffName }
+                handleSelectConversation(enrichedConv)
                 logActivity({
                     action: ActivityActions.CONVERSATION_CREATE,
                     action_category: 'chat',
                     target_table: 'chat_conversations',
                     target_id: data.conversation.id,
-                    resource_name: data.conversation.staffName,
-                    description: `Created conversation with ${data.conversation.staffName}`
+                    resource_name: staffName,
+                    description: `Created conversation with ${staffName}`
                 }).catch(() => { })
             }
         } catch (err) {
@@ -416,30 +419,30 @@ export default function MessagesPage() {
     const getStaffIcon = (type: string) => {
         switch (type) {
             case 'doctor':
-                return <Stethoscope className="h-5 w-5" />
+                return <Stethoscope size={20} />
             case 'lab':
-                return <TestTube className="h-5 w-5" />
+                return <TestTube size={20} />
             case 'pharmacy':
-                return <Pill className="h-5 w-5" />
+                return <Pill size={20} />
             case 'support':
-                return <HelpCircle className="h-5 w-5" />
+                return <HelpCircle size={20} />
             default:
-                return <User className="h-5 w-5" />
+                return <User size={20} />
         }
     }
 
     const getStaffColor = (type: string) => {
         switch (type) {
             case 'doctor':
-                return 'from-blue-500 to-cyan-500'
+                return 'linear-gradient(135deg, #3B82F6, #06B6D4)'
             case 'lab':
-                return 'from-emerald-500 to-teal-500'
+                return 'linear-gradient(135deg, #10B981, #14B8A6)'
             case 'pharmacy':
-                return 'from-purple-500 to-pink-500'
+                return 'linear-gradient(135deg, #A855F7, #EC4899)'
             case 'support':
-                return 'from-amber-500 to-orange-500'
+                return 'linear-gradient(135deg, #F59E0B, #F97316)'
             default:
-                return 'from-slate-500 to-slate-600'
+                return 'linear-gradient(135deg, #64748B, #475569)'
         }
     }
 
@@ -485,7 +488,7 @@ export default function MessagesPage() {
         return parts.map((part, idx) => {
             if (part.startsWith('http://') || part.startsWith('https://')) {
                 return (
-                    <a key={idx} href={part} target="_blank" rel="noopener noreferrer" className="underline text-blue-600">{part}</a>
+                    <a key={idx} href={part} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline', color: 'var(--clay-accent)' }}>{part}</a>
                 )
             }
             return <span key={idx}>{part}</span>
@@ -508,28 +511,24 @@ export default function MessagesPage() {
     // Loading state
     if (loading) {
         return (
-            <div className="space-y-5">
-                {/* Hero skeleton */}
-                <div className="h-32 sm:h-36 rounded-2xl bg-linear-to-br from-blue-100 to-cyan-50 animate-pulse" />
-                {/* Search skeleton */}
-                <div className="h-11 rounded-xl bg-slate-100 animate-pulse" />
-                {/* Filter pills skeleton */}
-                <div className="flex gap-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div className="shimmer" style={{ height: '8.5rem', borderRadius: '1.5rem' }} />
+                <div className="shimmer" style={{ height: '2.75rem', borderRadius: '0.75rem' }} />
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
                     {[...Array(4)].map((_, i) => (
-                        <div key={`f-${i}`} className="h-9 w-20 rounded-full bg-slate-100 animate-pulse" />
+                        <div key={`f-${i}`} className="shimmer" style={{ height: '2.25rem', width: '5rem', borderRadius: '9999px' }} />
                     ))}
                 </div>
-                {/* Conversation skeletons */}
-                <div className="space-y-2.5">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                     {[...Array(5)].map((_, i) => (
-                        <div key={i} className="flex items-center gap-3 p-4 rounded-xl bg-white ring-1 ring-slate-100">
-                            <div className="h-12 w-12 rounded-xl bg-slate-200 animate-pulse shrink-0" />
-                            <div className="flex-1 min-w-0 space-y-2">
-                                <div className="flex justify-between gap-4">
-                                    <div className="h-4 w-28 bg-slate-200 rounded animate-pulse" />
-                                    <div className="h-3 w-12 bg-slate-100 rounded animate-pulse" />
+                        <div key={i} className="clay-card-static" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem' }}>
+                            <div className="shimmer" style={{ height: '3rem', width: '3rem', borderRadius: '0.75rem', flexShrink: 0 }} />
+                            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+                                    <div className="shimmer" style={{ height: '1rem', width: '7rem', borderRadius: '0.25rem' }} />
+                                    <div className="shimmer" style={{ height: '0.75rem', width: '3rem', borderRadius: '0.25rem' }} />
                                 </div>
-                                <div className="h-3.5 w-3/4 bg-slate-100 rounded animate-pulse" />
+                                <div className="shimmer" style={{ height: '0.875rem', width: '75%', borderRadius: '0.25rem' }} />
                             </div>
                         </div>
                     ))}
@@ -541,20 +540,21 @@ export default function MessagesPage() {
     // Error state
     if (error) {
         return (
-            <div className="flex flex-col items-center justify-center py-16">
-                <div className="relative h-18 w-18 rounded-2xl bg-linear-to-br from-red-100 to-rose-50 flex items-center justify-center mb-5 shadow-lg shadow-red-100/50">
-                    <AlertCircle className="h-9 w-9 text-red-500" />
-                    <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-400 animate-pulse" />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 0' }}>
+                <div className="clay-empty-ico" style={{ background: 'linear-gradient(135deg, #FEE2E2, #FFF1F2)', marginBottom: '1.25rem', position: 'relative' }}>
+                    <AlertCircle size={36} style={{ color: '#EF4444' }} />
+                    <div className="live-dot" style={{ position: 'absolute', top: '-0.25rem', right: '-0.25rem', background: '#F87171' }} />
                 </div>
-                <p className="text-slate-900 font-semibold text-lg">{error}</p>
-                <p className="text-sm text-slate-500 mt-1">Please check your connection and try again</p>
-                <Button
+                <p className="clay-display" style={{ color: 'var(--clay-text-dark)', fontSize: '1.125rem' }}>{error}</p>
+                <p style={{ fontSize: '0.875rem', color: 'var(--clay-text-muted)', marginTop: '0.25rem' }}>Please check your connection and try again</p>
+                <button
                     onClick={fetchConversations}
-                    className="mt-5 rounded-xl bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/25 active:scale-95 transition-all"
+                    className="clay-cta"
+                    style={{ marginTop: '1.25rem' }}
                 >
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                    <RefreshCw size={16} style={{ marginRight: '0.5rem' }} />
                     Retry
-                </Button>
+                </button>
             </div>
         )
     }
@@ -562,33 +562,33 @@ export default function MessagesPage() {
     // New Message Modal
     if (showNewMessage) {
         return (
-            <div className="space-y-5">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 {/* Compose header */}
-                <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-blue-600 via-cyan-600 to-teal-500 p-5 sm:p-6">
-                    <div className="absolute -top-8 -right-8 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
-                    <div className="absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-white/10 blur-xl" />
-                    <div className="relative flex items-center gap-3">
+                <div className="clay-hero">
+                    <div className="deco-blob" style={{ top: '-2rem', right: '-2rem', width: '7rem', height: '7rem' }} />
+                    <div className="deco-blob" style={{ bottom: '-1.5rem', left: '-1.5rem', width: '5rem', height: '5rem' }} />
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <button
                             onClick={() => setShowNewMessage(false)}
-                            className="h-10 w-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center hover:bg-white/25 active:scale-95 transition-all"
+                            className="clay-btn-sec"
+                            style={{ height: '2.5rem', width: '2.5rem', borderRadius: '0.75rem', background: 'rgba(255,255,255,0.15)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none' }}
                         >
-                            <ArrowLeft className="h-5 w-5 text-white" />
+                            <ArrowLeft size={20} color="white" />
                         </button>
                         <div>
-                            <h1 className="text-lg sm:text-xl font-bold text-white">New Message</h1>
-                            <p className="text-xs text-white/70 mt-0.5">Compose a new conversation</p>
+                            <h1 className="clay-display" style={{ fontSize: '1.25rem', color: '#fff' }}>New Message</h1>
+                            <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', marginTop: '0.125rem' }}>Compose a new conversation</p>
                         </div>
                     </div>
                 </div>
 
-                <Card className="overflow-hidden ring-1 ring-slate-100 border-0 shadow-sm">
-                    <CardContent className="p-6 space-y-4">
+                <div className="clay-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1.5">To *</label>
+                            <label className="clay-label">To *</label>
                             <select
                                 value={newConversation.staffId}
                                 onChange={(e) => setNewConversation(prev => ({ ...prev, staffId: e.target.value }))}
-                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all bg-white"
+                                className="clay-field"
                             >
                                 <option value="">Select recipient...</option>
                                 {/* Group by Doctors */}
@@ -645,11 +645,11 @@ export default function MessagesPage() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1.5">About Child (Optional)</label>
+                            <label className="clay-label">About Child (Optional)</label>
                             <select
                                 value={newConversation.childId}
                                 onChange={(e) => setNewConversation(prev => ({ ...prev, childId: e.target.value }))}
-                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all bg-white"
+                                className="clay-field"
                             >
                                 <option value="">Select child (if applicable)...</option>
                                 {children.map(child => (
@@ -657,64 +657,64 @@ export default function MessagesPage() {
                                 ))}
                             </select>
                             {children.length === 0 && (
-                                <p className="text-xs text-slate-400 mt-1">No children registered under your account</p>
+                                <p style={{ fontSize: '0.75rem', color: 'var(--clay-text-muted)', marginTop: '0.25rem' }}>No children registered under your account</p>
                             )}
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1.5">Subject</label>
+                            <label className="clay-label">Subject</label>
                             <input
                                 type="text"
                                 value={newConversation.subject}
                                 onChange={(e) => setNewConversation(prev => ({ ...prev, subject: e.target.value }))}
                                 placeholder="Brief description of your inquiry"
-                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                                className="clay-field"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1.5">Message *</label>
+                            <label className="clay-label">Message *</label>
                             <textarea
                                 rows={5}
                                 value={newConversation.message}
                                 onChange={(e) => setNewConversation(prev => ({ ...prev, message: e.target.value }))}
                                 placeholder="Type your message here..."
-                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all resize-none"
+                                className="clay-field" style={{ resize: 'none' }}
                             />
                         </div>
 
-                        <div className="flex gap-3 pt-2">
-                            <Button
-                                variant="secondary"
+                        <div style={{ display: 'flex', gap: '0.75rem', paddingTop: '0.5rem' }}>
+                            <button
                                 onClick={() => setShowNewMessage(false)}
-                                className="flex-1 rounded-xl py-5 active:scale-[0.98] transition-all"
+                                className="clay-btn-sec"
+                                style={{ flex: 1, padding: '0.75rem' }}
                                 disabled={creatingConversation}
                             >
                                 Cancel
-                            </Button>
-                            <Button
+                            </button>
+                            <button
                                 onClick={handleCreateConversation}
                                 disabled={creatingConversation || !newConversation.staffId || !newConversation.message.trim()}
-                                className="flex-1 rounded-xl py-5 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/25 active:scale-95 transition-all"
+                                className="clay-cta"
+                                style={{ flex: 1, padding: '0.75rem' }}
                             >
                                 {creatingConversation ? (
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    <Loader2 size={16} style={{ marginRight: '0.5rem', animation: 'spin 1s linear infinite' }} />
                                 ) : (
-                                    <Send className="h-4 w-4 mr-2" />
+                                    <Send size={16} style={{ marginRight: '0.5rem' }} />
                                 )}
                                 Send Message
-                            </Button>
+                            </button>
                         </div>
-                    </CardContent>
-                </Card>
+                </div>
 
-                <div className="flex items-start gap-3 p-4 rounded-xl bg-linear-to-r from-amber-50 to-orange-50 ring-1 ring-amber-200/60">
-                    <div className="h-9 w-9 rounded-lg bg-linear-to-br from-amber-400 to-orange-400 flex items-center justify-center shrink-0 shadow-sm">
-                        <Clock className="h-4 w-4 text-white" />
+                <div className="clay-card-static" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '1rem', background: 'linear-gradient(135deg, #FFFBEB, #FFF7ED)' }}>
+                    <div className="clay-ico" style={{ background: 'linear-gradient(135deg, #FBBF24, #F97316)', flexShrink: 0 }}>
+                        <Clock size={16} color="white" />
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-amber-900">Expected Response Time</p>
-                        <p className="text-xs sm:text-sm text-amber-700 mt-0.5">Normal inquiries within 24-48 hours. For urgent medical concerns, please call our emergency line.</p>
+                        <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#78350F' }}>Expected Response Time</p>
+                        <p style={{ fontSize: '0.8125rem', color: '#B45309', marginTop: '0.125rem' }}>Normal inquiries within 24-48 hours. For urgent medical concerns, please call our emergency line.</p>
                     </div>
                 </div>
             </div>
@@ -724,74 +724,70 @@ export default function MessagesPage() {
     // Conversation Thread View
     if (selectedConversation) {
         return (
-            <div className="flex flex-col h-[calc(100vh-12rem)] lg:h-[calc(100vh-10rem)]">
+            <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 12rem)' }}>
                 {/* Header */}
-                <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingBottom: '1rem', borderBottom: '1px solid #E5E7EB' }}>
                     <button
                         onClick={() => {
                             setSelectedConversation(null)
                             setMessages([])
                         }}
-                        className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center hover:bg-slate-200 active:scale-95 transition-all"
+                        className="clay-btn-sec"
+                        style={{ height: '2.5rem', width: '2.5rem', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
-                        <ArrowLeft className="h-5 w-5 text-slate-600" />
+                        <ArrowLeft size={20} style={{ color: 'var(--clay-text-muted)' }} />
                     </button>
 
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className={`relative h-11 w-11 rounded-xl bg-linear-to-br ${getStaffColor(selectedConversation.staffType)} flex items-center justify-center text-white shadow-lg shrink-0`}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: 0 }}>
+                        <div className="clay-avatar" style={{ position: 'relative', height: '2.75rem', width: '2.75rem', borderRadius: '0.75rem', background: getStaffColor(selectedConversation.staffType), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}>
                             {getStaffIcon(selectedConversation.staffType)}
-                            <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-white" />
+                            <div className="live-dot" style={{ position: 'absolute', bottom: '-0.125rem', right: '-0.125rem', background: '#34D399', border: '2px solid #fff' }} />
                         </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-slate-900 truncate">{selectedConversation.staffName}</p>
-                            <p className="text-xs text-slate-500 truncate">
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontWeight: 600, color: 'var(--clay-text-dark)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedConversation.staffName}</p>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--clay-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {selectedConversation.subject}
                                 {selectedConversation.childName && ` • About: ${selectedConversation.childName}`}
                             </p>
                         </div>
                     </div>
 
-                    <button className="h-10 w-10 rounded-xl hover:bg-slate-100 active:scale-95 flex items-center justify-center transition-all shrink-0">
-                        <MoreVertical className="h-5 w-5 text-slate-400" />
+                    <button className="clay-btn-sec" style={{ height: '2.5rem', width: '2.5rem', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <MoreVertical size={20} style={{ color: 'var(--clay-text-muted)' }} />
                     </button>
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto py-4 space-y-3">
+                <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 0', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {loadingMessages ? (
-                        <div className="flex flex-col items-center justify-center py-12 gap-3">
-                            <div className="h-10 w-10 rounded-xl bg-linear-to-br from-blue-100 to-cyan-50 flex items-center justify-center">
-                                <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem 0', gap: '0.75rem' }}>
+                            <div className="clay-ico" style={{ background: 'linear-gradient(135deg, #DBEAFE, #ECFDF5)' }}>
+                                <Loader2 size={20} style={{ color: 'var(--clay-accent)', animation: 'spin 1s linear infinite' }} />
                             </div>
-                            <p className="text-sm text-slate-400">Loading messages...</p>
+                            <p style={{ fontSize: '0.875rem', color: 'var(--clay-text-muted)' }}>Loading messages...</p>
                         </div>
                     ) : messages.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-12 text-center">
-                            <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-blue-100 to-cyan-50 flex items-center justify-center mb-4 shadow-sm">
-                                <Sparkles className="h-7 w-7 text-blue-500" />
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem 0', textAlign: 'center' }}>
+                            <div className="clay-empty-ico" style={{ marginBottom: '1rem' }}>
+                                <Sparkles size={28} style={{ color: 'var(--clay-accent)' }} />
                             </div>
-                            <p className="font-medium text-slate-700">Start the conversation</p>
-                            <p className="text-sm text-slate-400 mt-1 max-w-60">Send your first message to begin chatting</p>
+                            <p style={{ fontWeight: 500, color: 'var(--clay-text-dark)' }}>Start the conversation</p>
+                            <p style={{ fontSize: '0.875rem', color: 'var(--clay-text-muted)', marginTop: '0.25rem', maxWidth: '15rem' }}>Send your first message to begin chatting</p>
                         </div>
                     ) : (
                         messages.map((message) => (
                             <div
                                 key={message.id}
-                                className={`flex ${message.senderType === 'caregiver' ? 'justify-end' : 'justify-start'}`}
+                                style={{ display: 'flex', justifyContent: message.senderType === 'caregiver' ? 'flex-end' : 'flex-start' }}
                             >
-                                <div className={`max-w-[80%] sm:max-w-[75%] px-4 py-3 ${message.senderType === 'caregiver'
-                                    ? 'bg-linear-to-r from-blue-500 to-cyan-500 text-white rounded-2xl rounded-br-md shadow-lg shadow-blue-500/15'
-                                    : 'bg-slate-100 text-slate-900 rounded-2xl rounded-bl-md'
-                                    }`}>
-                                    <p className="text-sm leading-relaxed">{renderMessageContent(message.content)}</p>
-                                    <div className={`flex items-center gap-1 mt-1.5 ${message.senderType === 'caregiver' ? 'justify-end' : 'justify-start'
-                                        }`}>
-                                        <span className={`text-[10px] ${message.senderType === 'caregiver' ? 'text-white/70' : 'text-slate-400'
-                                            }`}>
+                                <div className={message.senderType === 'caregiver' ? 'clay-msg-sent' : 'clay-msg-received'}>
+                                    <p style={{ fontSize: '0.875rem', lineHeight: 1.6 }}>{renderMessageContent(message.content)}</p>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.375rem', justifyContent: message.senderType === 'caregiver' ? 'flex-end' : 'flex-start' }}>
+                                        <span style={{ fontSize: '0.625rem', color: message.senderType === 'caregiver' ? 'rgba(255,255,255,0.7)' : 'var(--clay-text-muted)' }}>
                                             {formatMessageTime(message.createdAt)}
                                         </span>
                                         {message.senderType === 'caregiver' && (
-                                            <CheckCheck className={`h-3.5 w-3.5 ${message.isRead ? 'text-white' : 'text-white/50'}`} />
+                                            <CheckCheck size={14} style={{ color: message.isRead ? '#fff' : 'rgba(255,255,255,0.5)' }} />
                                         )}
                                     </div>
                                 </div>
@@ -802,12 +798,12 @@ export default function MessagesPage() {
                 </div>
 
                 {/* Input */}
-                <div className="pt-4 border-t border-slate-100">
-                    <div className="flex items-center gap-2">
-                        <button className="h-11 w-11 rounded-xl bg-slate-100 flex items-center justify-center hover:bg-slate-200 active:scale-95 transition-all shrink-0">
-                            <Paperclip className="h-5 w-5 text-slate-500" />
+                <div style={{ paddingTop: '1rem', borderTop: '1px solid #E5E7EB' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <button className="clay-btn-sec" style={{ height: '2.75rem', width: '2.75rem', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <Paperclip size={20} style={{ color: 'var(--clay-text-muted)' }} />
                         </button>
-                        <div className="flex-1 relative">
+                        <div style={{ flex: 1, position: 'relative' }}>
                             <input
                                 type="text"
                                 value={newMessage}
@@ -815,18 +811,18 @@ export default function MessagesPage() {
                                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
                                 placeholder="Type a message..."
                                 disabled={sending}
-                                className="w-full px-4 py-3 pr-4 rounded-full ring-1 ring-slate-200 border-0 focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:opacity-50 bg-slate-50/80"
+                                className="clay-chat-input"
                             />
                         </div>
                         <button
                             onClick={handleSendMessage}
                             disabled={!newMessage.trim() || sending}
-                            className="h-11 w-11 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/25 hover:shadow-xl active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                            className="clay-send-btn"
                         >
                             {sending ? (
-                                <Loader2 className="h-5 w-5 animate-spin" />
+                                <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
                             ) : (
-                                <Send className="h-5 w-5" />
+                                <Send size={20} />
                             )}
                         </button>
                     </div>
@@ -839,46 +835,45 @@ export default function MessagesPage() {
     const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0)
 
     return (
-        <div className="space-y-5">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             {/* Hero Header */}
-            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-blue-600 via-cyan-600 to-teal-500 p-5 sm:p-7">
-                <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
-                <div className="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-white/10 blur-xl" />
-                <div className="absolute top-4 right-4 h-16 w-16 rounded-full bg-white/5 blur-lg" />
+            <div className="clay-hero">
+                <div className="deco-blob" style={{ top: '-2.5rem', right: '-2.5rem', width: '8rem', height: '8rem' }} />
+                <div className="deco-blob" style={{ bottom: '-2rem', left: '-2rem', width: '6rem', height: '6rem' }} />
+                <div className="deco-blob" style={{ top: '1rem', right: '1rem', width: '4rem', height: '4rem', opacity: 0.3 }} />
 
-                <div className="relative">
-                    <div className="flex items-start justify-between gap-3">
+                <div style={{ position: 'relative' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem' }}>
                         <div>
-                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-sm mb-3">
-                                <MessageSquare className="h-3 w-3 text-white/90" />
-                                <span className="text-[11px] font-medium text-white/90">Messaging</span>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', padding: '0.25rem 0.625rem', borderRadius: '9999px', background: 'rgba(255,255,255,0.15)', marginBottom: '0.75rem' }}>
+                                <MessageSquare size={12} color="rgba(255,255,255,0.9)" />
+                                <span style={{ fontSize: '0.6875rem', fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>Messaging</span>
                             </div>
-                            <h1 className="text-xl sm:text-2xl font-extrabold text-white">Messages</h1>
-                            <p className="text-sm text-white/70 mt-1">Chat with your care team</p>
+                            <h1 className="clay-display" style={{ fontSize: '1.5rem', color: '#fff' }}>Messages</h1>
+                            <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.7)', marginTop: '0.25rem' }}>Chat with your care team</p>
                         </div>
-                        <Button
+                        <button
                             onClick={() => { logActivity({ action: 'opened_new_message_modal', action_category: 'chat', description: 'Opened new message modal' }).catch(() => { }); setShowNewMessage(true) }}
-                            className="rounded-xl bg-white text-blue-600 hover:bg-white/90 shadow-lg shadow-blue-900/20 active:scale-95 transition-all font-semibold"
-                            size="sm"
+                            className="clay-cta"
+                            style={{ background: '#fff', color: 'var(--clay-accent)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.375rem' }}
                         >
-                            <Plus className="h-4 w-4 mr-1.5" />
-                            <span className="hidden sm:inline">Compose</span>
-                            <span className="sm:hidden">New</span>
-                        </Button>
+                            <Plus size={16} />
+                            <span>Compose</span>
+                        </button>
                     </div>
 
                     {/* Quick stats row */}
-                    <div className="flex gap-3 mt-5">
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/15 backdrop-blur-sm">
-                            <Inbox className="h-3.5 w-3.5 text-white/80" />
-                            <span className="text-xs font-semibold text-white">{conversations.length}</span>
-                            <span className="text-[10px] text-white/60">chats</span>
+                    <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.375rem 0.75rem', borderRadius: '0.5rem', background: 'rgba(255,255,255,0.15)' }}>
+                            <Inbox size={14} color="rgba(255,255,255,0.8)" />
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#fff' }}>{conversations.length}</span>
+                            <span style={{ fontSize: '0.625rem', color: 'rgba(255,255,255,0.6)' }}>chats</span>
                         </div>
                         {totalUnread > 0 && (
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/20 backdrop-blur-sm ring-1 ring-white/20">
-                                <div className="h-2 w-2 rounded-full bg-emerald-300 animate-pulse" />
-                                <span className="text-xs font-bold text-white">{totalUnread}</span>
-                                <span className="text-[10px] text-white/60">unread</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.375rem 0.75rem', borderRadius: '0.5rem', background: 'rgba(255,255,255,0.2)' }}>
+                                <div className="live-dot" style={{ height: '0.5rem', width: '0.5rem' }} />
+                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#fff' }}>{totalUnread}</span>
+                                <span style={{ fontSize: '0.625rem', color: 'rgba(255,255,255,0.6)' }}>unread</span>
                             </div>
                         )}
                     </div>
@@ -886,19 +881,20 @@ export default function MessagesPage() {
             </div>
 
             {/* Search */}
-            <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <div style={{ position: 'relative' }}>
+                <Search size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--clay-text-muted)', zIndex: 1 }} />
                 <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search conversations..."
-                    className="w-full pl-11 pr-4 py-2.5 rounded-xl ring-1 ring-slate-200 border-0 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm bg-white"
+                    className="clay-search"
+                    style={{ paddingLeft: '2.75rem' }}
                 />
             </div>
 
             {/* Filters */}
-            <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
+            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
                 {[
                     { key: 'all', label: 'All', icon: Inbox },
                     { key: 'doctors', label: 'Doctors', icon: Stethoscope },
@@ -909,69 +905,64 @@ export default function MessagesPage() {
                     <button
                         key={key}
                         onClick={() => setActiveFilter(key as typeof activeFilter)}
-                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap active:scale-95 transition-all ${activeFilter === key
-                            ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
-                            : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'
-                            }`}
+                        className={activeFilter === key ? 'clay-pill-active' : 'clay-pill'}
                     >
-                        <Icon className="h-3.5 w-3.5" />
+                        <Icon size={14} />
                         {label}
                     </button>
                 ))}
             </div>
 
             {/* Conversations List */}
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {filteredConversations.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-14 text-center">
-                        <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-slate-100 to-slate-50 flex items-center justify-center mb-4 shadow-sm">
-                            <Search className="h-7 w-7 text-slate-400" />
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3.5rem 0', textAlign: 'center' }}>
+                        <div className="clay-empty-ico" style={{ marginBottom: '1rem' }}>
+                            <Search size={28} style={{ color: 'var(--clay-text-muted)' }} />
                         </div>
-                        <p className="text-slate-700 font-semibold">No conversations found</p>
-                        <p className="text-sm text-slate-400 mt-1 max-w-65">Start a new conversation to connect with your care team</p>
-                        <Button
+                        <p style={{ fontWeight: 600, color: 'var(--clay-text-dark)' }}>No conversations found</p>
+                        <p style={{ fontSize: '0.875rem', color: 'var(--clay-text-muted)', marginTop: '0.25rem', maxWidth: '16rem' }}>Start a new conversation to connect with your care team</p>
+                        <button
                             onClick={() => { logActivity({ action: 'opened_new_message_modal', action_category: 'chat', description: 'Opened new message modal (start conversation)' }).catch(() => { }); setShowNewMessage(true) }}
-                            className="mt-5 rounded-xl bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/25 active:scale-95 transition-all"
+                            className="clay-cta"
+                            style={{ marginTop: '1.25rem' }}
                         >
-                            <Plus className="h-4 w-4 mr-2" />
+                            <Plus size={16} style={{ marginRight: '0.5rem' }} />
                             Start Conversation
-                        </Button>
+                        </button>
                     </div>
                 ) : (
                     filteredConversations.map((conversation) => (
                         <button
                             key={conversation.id}
                             onClick={() => handleSelectConversation(conversation)}
-                            className={`group w-full flex items-center gap-3 p-3.5 sm:p-4 rounded-xl bg-white ring-1 transition-all text-left active:scale-[0.98] ${conversation.unreadCount > 0
-                                    ? 'ring-blue-200 shadow-md shadow-blue-100/40 hover:ring-blue-300'
-                                    : 'ring-slate-100 shadow-sm hover:shadow-md hover:ring-slate-200'
-                                }`}
+                            className={conversation.unreadCount > 0 ? 'clay-convo-active' : 'clay-convo'}
                         >
-                            <div className={`relative h-11 w-11 sm:h-12 sm:w-12 rounded-xl bg-linear-to-br ${getStaffColor(conversation.staffType)} flex items-center justify-center text-white shadow-lg shrink-0 group-hover:scale-105 transition-transform`}>
+                            <div className="clay-avatar" style={{ position: 'relative', height: '2.75rem', width: '2.75rem', borderRadius: '0.75rem', background: getStaffColor(conversation.staffType), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}>
                                 {getStaffIcon(conversation.staffType)}
                                 {conversation.unreadCount > 0 && (
-                                    <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-white animate-pulse" />
+                                    <div className="live-dot" style={{ position: 'absolute', top: '-0.25rem', right: '-0.25rem', border: '2px solid #fff' }} />
                                 )}
                             </div>
 
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-2">
-                                    <p className={`text-sm sm:text-base truncate ${conversation.unreadCount > 0 ? 'font-bold text-slate-900' : 'font-semibold text-slate-800'}`}>{conversation.staffName}</p>
-                                    <span className="text-[10px] sm:text-xs text-slate-400 shrink-0">{formatTimestamp(conversation.lastMessageTime)}</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                                    <p style={{ fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: conversation.unreadCount > 0 ? 700 : 600, color: 'var(--clay-text-dark)' }}>{conversation.staffName}</p>
+                                    <span style={{ fontSize: '0.625rem', color: 'var(--clay-text-muted)', flexShrink: 0 }}>{formatTimestamp(conversation.lastMessageTime)}</span>
                                 </div>
-                                <p className={`text-xs sm:text-sm truncate mt-0.5 ${conversation.unreadCount > 0 ? 'text-slate-700 font-medium' : 'text-slate-500'}`}>{conversation.lastMessage}</p>
+                                <p style={{ fontSize: '0.8125rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '0.125rem', color: conversation.unreadCount > 0 ? 'var(--clay-text-dark)' : 'var(--clay-text-muted)', fontWeight: conversation.unreadCount > 0 ? 500 : 400 }}>{conversation.lastMessage}</p>
                                 {conversation.childName && (
-                                    <p className="text-[10px] sm:text-xs text-blue-600 mt-1 truncate">About: {conversation.childName}</p>
+                                    <p style={{ fontSize: '0.6875rem', color: 'var(--clay-accent)', marginTop: '0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>About: {conversation.childName}</p>
                                 )}
                             </div>
 
-                            <div className="flex flex-col items-end gap-1 shrink-0">
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem', flexShrink: 0 }}>
                                 {conversation.unreadCount > 0 && (
-                                    <div className="h-5 min-w-5 px-1.5 rounded-full bg-linear-to-r from-blue-500 to-cyan-500 text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
+                                    <span className="clay-badge" style={{ background: 'var(--clay-accent)', color: '#fff', fontSize: '0.625rem', fontWeight: 700 }}>
                                         {conversation.unreadCount}
-                                    </div>
+                                    </span>
                                 )}
-                                <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-slate-400 transition-colors" />
+                                <ChevronRight size={16} style={{ color: 'var(--clay-text-muted)' }} />
                             </div>
                         </button>
                     ))
@@ -979,13 +970,13 @@ export default function MessagesPage() {
             </div>
 
             {/* Response time info */}
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-linear-to-r from-blue-50 to-cyan-50 ring-1 ring-blue-100/60">
-                <div className="h-9 w-9 rounded-lg bg-linear-to-br from-blue-500 to-cyan-500 flex items-center justify-center shrink-0 shadow-sm">
-                    <Shield className="h-4 w-4 text-white" />
+            <div className="clay-card-static" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '1rem', background: 'linear-gradient(135deg, #EFF6FF, #ECFDF5)' }}>
+                <div className="clay-ico" style={{ background: 'linear-gradient(135deg, #6366F1, #06B6D4)', flexShrink: 0 }}>
+                    <Shield size={16} color="white" />
                 </div>
                 <div>
-                    <p className="text-sm font-semibold text-blue-900">Secure & Confidential</p>
-                    <p className="text-xs sm:text-sm text-blue-700/80 mt-0.5 leading-relaxed">
+                    <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1E3A5F' }}>Secure & Confidential</p>
+                    <p style={{ fontSize: '0.8125rem', color: '#3B82F6', marginTop: '0.125rem', lineHeight: 1.5 }}>
                         Messages are encrypted. Normal response: 24-48 hrs. Urgent: 4 hrs during office hours.
                     </p>
                 </div>

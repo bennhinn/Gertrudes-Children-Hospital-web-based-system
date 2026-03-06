@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import useSWR from 'swr';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Users, Search, RefreshCw, Eye, Pencil, ShieldCheck, Stethoscope, Heart, ClipboardList, FlaskConical, Pill, Truck, HelpCircle } from 'lucide-react';
 
 // ─── Clay Design System ───────────────────────────────────────────────────────
@@ -242,6 +242,8 @@ const fetcher = (url: string) => fetch(url).then(r => { if (!r.ok) throw new Err
 
 interface User { id: string; email: string; full_name: string; role: string; created_at: string; phone?: string; }
 
+const USERS_PER_PAGE = 10;
+
 // ─── Shared field style ───────────────────────────────────────────────────────
 const fieldStyle: React.CSSProperties = {
     borderRadius: 14, border: '1.5px solid #C7D2FE',
@@ -254,6 +256,7 @@ const fieldStyle: React.CSSProperties = {
 export default function UsersPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
+    const [currentPage, setCurrentPage] = useState(1);
     const [viewUser, setViewUser] = useState<User | null>(null);
     const [editUser, setEditUser] = useState<User | null>(null);
     const [editForm, setEditForm] = useState({ full_name: '', email: '', phone: '', role: '' });
@@ -266,6 +269,21 @@ export default function UsersPage() {
         const mr = roleFilter === 'all' || u.role === roleFilter;
         return ms && mr;
     }) || [];
+
+    const totalPages = Math.max(1, Math.ceil(filteredUsers.length / USERS_PER_PAGE));
+    const safeCurrentPage = Math.min(currentPage, totalPages);
+    const startIndex = (safeCurrentPage - 1) * USERS_PER_PAGE;
+    const paginatedUsers = filteredUsers.slice(startIndex, startIndex + USERS_PER_PAGE);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, roleFilter]);
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [currentPage, totalPages]);
 
     const handleEdit = (user: User) => {
         setEditUser(user);
@@ -398,7 +416,7 @@ export default function UsersPage() {
                                 </div>
                             ) : (
                                 <div>
-                                    {filteredUsers.map((user) => {
+                                    {paginatedUsers.map((user) => {
                                         const rc = getRole(user.role);
                                         const initial = user.full_name?.[0]?.toUpperCase() || '?';
                                         return (
@@ -445,6 +463,66 @@ export default function UsersPage() {
                                             </div>
                                         );
                                     })}
+
+                                    {/* Pagination */}
+                                    {filteredUsers.length > USERS_PER_PAGE && (
+                                        <div style={{
+                                            marginTop: 14,
+                                            paddingTop: 14,
+                                            borderTop: '1px solid #EEF2FF',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            gap: 10,
+                                            flexWrap: 'wrap'
+                                        }}>
+                                            <p style={{ fontSize: 12, color: '#9090B0', fontWeight: 700 }}>
+                                                Showing {startIndex + 1}-{Math.min(startIndex + USERS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length}
+                                            </p>
+
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                                <button
+                                                    className="clay-btn-sec"
+                                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                                    disabled={safeCurrentPage === 1}
+                                                    aria-label="Go to previous page"
+                                                    style={{ padding: '6px 12px', fontSize: 12, cursor: safeCurrentPage === 1 ? 'not-allowed' : 'pointer', opacity: safeCurrentPage === 1 ? 0.5 : 1 }}
+                                                >
+                                                    Prev
+                                                </button>
+
+                                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                                    <button
+                                                        key={page}
+                                                        className={`clay-pill ${safeCurrentPage === page ? 'clay-pill-on' : ''}`}
+                                                        onClick={() => setCurrentPage(page)}
+                                                        aria-label={`Go to page ${page}`}
+                                                        aria-current={safeCurrentPage === page ? 'page' : undefined}
+                                                        style={{
+                                                            minWidth: 34,
+                                                            height: 32,
+                                                            fontSize: 12,
+                                                            padding: '0 10px',
+                                                            background: safeCurrentPage === page ? undefined : 'white',
+                                                            color: safeCurrentPage === page ? undefined : '#4C4C72',
+                                                        }}
+                                                    >
+                                                        {page}
+                                                    </button>
+                                                ))}
+
+                                                <button
+                                                    className="clay-btn-sec"
+                                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                                    disabled={safeCurrentPage === totalPages}
+                                                    aria-label="Go to next page"
+                                                    style={{ padding: '6px 12px', fontSize: 12, cursor: safeCurrentPage === totalPages ? 'not-allowed' : 'pointer', opacity: safeCurrentPage === totalPages ? 0.5 : 1 }}
+                                                >
+                                                    Next
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

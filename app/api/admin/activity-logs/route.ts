@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '50');
         const action = searchParams.get('action');
+        const actionCategory = searchParams.get('action_category');
         const targetTable = searchParams.get('target_table');
         const userId = searchParams.get('user_id');
         const startDate = searchParams.get('start_date');
@@ -49,6 +50,7 @@ export async function GET(request: NextRequest) {
             .range(offset, offset + limit - 1);
 
         if (action) query = query.eq('action', action);
+        if (actionCategory) query = query.eq('action_category', actionCategory);
         if (targetTable) query = query.eq('target_table', targetTable);
         if (userId) query = query.eq('user_id', userId);
         if (startDate) query = query.gte('created_at', startDate);

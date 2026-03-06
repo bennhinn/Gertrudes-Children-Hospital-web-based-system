@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { logActivity } from '@/lib/activity-logger'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import { useFAQ } from '@/hooks/UseFAQ'
 import FAQItem from '@/components/faq-item'
@@ -76,36 +74,32 @@ interface Toast {
 function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id: string) => void }) {
   if (toasts.length === 0) return null
   return (
-    <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-sm w-full">
+    <div style={{ position: 'fixed', bottom: 16, right: 16, zIndex: 50, display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 384, width: '100%' }}>
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`rounded-lg shadow-lg p-4 flex items-start gap-3 animate-slide-in-right bg-white border ${toast.type === 'success'
-              ? 'border-emerald-200 bg-emerald-50'
-              : toast.type === 'error'
-                ? 'border-red-200 bg-red-50'
-                : 'border-blue-200 bg-blue-50'
-            }`}
+          className="clay-card-static"
+          style={{
+            padding: 16,
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 12,
+            background: toast.type === 'success' ? 'var(--clay-emerald-s)' : toast.type === 'error' ? 'var(--clay-rose-s)' : 'var(--clay-sky-s)',
+            borderLeft: `4px solid ${toast.type === 'success' ? 'var(--clay-emerald)' : toast.type === 'error' ? 'var(--clay-rose)' : 'var(--clay-sky)'}`,
+          }}
         >
-          <div
-            className={`mt-0.5 ${toast.type === 'success'
-                ? 'text-emerald-600'
-                : toast.type === 'error'
-                  ? 'text-red-600'
-                  : 'text-blue-600'
-              }`}
-          >
-            {toast.type === 'success' && <CheckCircle className="h-5 w-5" />}
-            {toast.type === 'error' && <AlertCircle className="h-5 w-5" />}
-            {toast.type === 'info' && <Info className="h-5 w-5" />}
+          <div style={{ marginTop: 2, color: toast.type === 'success' ? 'var(--clay-emerald)' : toast.type === 'error' ? 'var(--clay-rose)' : 'var(--clay-sky)' }}>
+            {toast.type === 'success' && <CheckCircle style={{ width: 20, height: 20 }} />}
+            {toast.type === 'error' && <AlertCircle style={{ width: 20, height: 20 }} />}
+            {toast.type === 'info' && <Info style={{ width: 20, height: 20 }} />}
           </div>
-          <p className="text-sm text-slate-800 flex-1">{toast.message}</p>
+          <p style={{ fontSize: 14, color: 'var(--clay-text-dark)', flex: 1, margin: 0 }}>{toast.message}</p>
           <button
             onClick={() => onDismiss(toast.id)}
-            className="text-slate-400 hover:text-slate-600"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clay-text-muted)', padding: 0 }}
             aria-label="Dismiss"
           >
-            <X className="h-4 w-4" />
+            <X style={{ width: 16, height: 16 }} />
           </button>
         </div>
       ))}
@@ -134,29 +128,26 @@ function ConfirmationModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-        <div className="p-6">
-          <h3 className="text-lg font-bold text-slate-900 mb-2">{title}</h3>
-          <p className="text-sm text-slate-600">{description}</p>
+    <div className="clay-modal" onClick={onClose}>
+      <div className="clay-card-static" style={{ position: 'relative', width: '100%', maxWidth: 448, overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ padding: 24 }}>
+          <h3 className="clay-display" style={{ fontSize: 18, fontWeight: 700, color: 'var(--clay-text-dark)', marginBottom: 8 }}>{title}</h3>
+          <p style={{ fontSize: 14, color: 'var(--clay-text-mid)', margin: 0 }}>{description}</p>
         </div>
-        <div className="px-6 pb-6 flex gap-3">
-          <Button variant="ghost" onClick={onClose} className="flex-1">
+        <div style={{ padding: '0 24px 24px', display: 'flex', gap: 12 }}>
+          <button className="clay-btn-sec" onClick={onClose} style={{ flex: 1, padding: '12px 20px', fontSize: 14 }}>
             Cancel
-          </Button>
-          <Button
+          </button>
+          <button
             onClick={() => {
               onConfirm()
               onClose()
             }}
-            className={`flex-1 active:scale-95 transition-all ${confirmVariant === 'destructive'
-                ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/25'
-                : 'bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/25'
-              }`}
+            className={`clay-cta ${confirmVariant === 'destructive' ? 'clay-cta-rose' : ''}`}
+            style={{ flex: 1, padding: '12px 20px', fontSize: 14 }}
           >
             {confirmText}
-          </Button>
+          </button>
         </div>
       </div>
     </div>
@@ -450,42 +441,48 @@ export default function SettingsPage() {
         title: 'Profile',
         description: 'Personal information & contact details',
         icon: User,
-        color: 'text-white bg-linear-to-br from-blue-500 to-cyan-500 shadow-lg shadow-blue-500/20'
+        bg: 'var(--clay-indigo-s)',
+        iconColor: 'var(--clay-indigo)'
       },
       {
         id: 'notifications',
         title: 'Notifications',
         description: 'Reminders & alerts preferences',
         icon: Bell,
-        color: 'text-white bg-linear-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/20'
+        bg: 'var(--clay-amber-s)',
+        iconColor: 'var(--clay-amber)'
       },
       {
         id: 'privacy',
         title: 'Privacy & Security',
         description: 'Password, 2FA & data settings',
         icon: Shield,
-        color: 'text-white bg-linear-to-br from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/20'
+        bg: 'var(--clay-emerald-s)',
+        iconColor: 'var(--clay-emerald)'
       },
       {
         id: 'preferences',
         title: 'Preferences',
         description: 'Theme, language & display',
         icon: Palette,
-        color: 'text-white bg-linear-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-500/20'
+        bg: 'var(--clay-purple-s)',
+        iconColor: 'var(--clay-purple)'
       },
       {
         id: 'help',
         title: 'Help & Support',
         description: 'FAQs, contact & feedback',
         icon: HelpCircle,
-        color: 'text-white bg-linear-to-br from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/20'
+        bg: 'var(--clay-cyan-s)',
+        iconColor: 'var(--clay-cyan)'
       },
       {
         id: 'about',
         title: 'About',
         description: 'App version & information',
         icon: Info,
-        color: 'text-white bg-linear-to-br from-slate-600 to-slate-500 shadow-lg shadow-slate-500/20'
+        bg: '#F1F5F9',
+        iconColor: '#475569'
       }
     ],
     []
@@ -494,25 +491,17 @@ export default function SettingsPage() {
   // --- Loading State ---
   if (loading) {
     return (
-      <div className="space-y-5">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         {/* Hero skeleton */}
-        <div className="rounded-2xl bg-linear-to-br from-slate-200 to-slate-100 p-6 animate-pulse">
-          <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-2xl bg-slate-300/50 shrink-0" />
-            <div className="space-y-2 flex-1">
-              <div className="h-5 w-36 bg-slate-300/50 rounded" />
-              <div className="h-3.5 w-48 bg-slate-300/40 rounded" />
-            </div>
-          </div>
-        </div>
+        <div className="clay-hero shimmer" style={{ padding: 24, height: 120 }} />
         {/* Section skeletons */}
-        <div className="space-y-2.5">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="flex items-center gap-3.5 p-4 rounded-xl bg-white ring-1 ring-slate-100">
-              <div className="h-11 w-11 rounded-xl bg-slate-200 animate-pulse shrink-0" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 w-24 bg-slate-200 rounded animate-pulse" />
-                <div className="h-3 w-40 bg-slate-100 rounded animate-pulse" />
+            <div key={i} className="clay-card-static" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 16 }}>
+              <div className="shimmer" style={{ width: 44, height: 44, borderRadius: 16, flexShrink: 0 }} />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div className="shimmer" style={{ width: 96, height: 16, borderRadius: 8 }} />
+                <div className="shimmer" style={{ width: 160, height: 12, borderRadius: 8 }} />
               </div>
             </div>
           ))}
@@ -525,25 +514,27 @@ export default function SettingsPage() {
   if (activeSection === 'profile') {
     return (
       <>
-        <div className="space-y-5">
-          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-blue-600 via-blue-500 to-cyan-500 p-5 sm:p-6">
-            <div className="absolute -top-8 -right-8 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
-            <div className="absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-white/10 blur-xl" />
-            <div className="relative">
-              <button onClick={() => setActiveSection(null)} className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm mb-3 active:scale-95 transition-all" aria-label="Back to settings">
-                <ArrowLeft className="h-4 w-4" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Hero */}
+          <div className="clay-hero" style={{ padding: '20px 24px', background: 'linear-gradient(135deg, #6366F1, #4F46E5)', color: 'white', position: 'relative' }}>
+            <div className="deco-blob" style={{ width: 100, height: 100, top: -30, right: -30, background: 'rgba(255,255,255,.12)' }} />
+            <div className="deco-blob" style={{ width: 70, height: 70, bottom: -20, left: -20, background: 'rgba(255,255,255,.1)' }} />
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setActiveSection(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,.8)', fontSize: 14, marginBottom: 12, background: 'none', border: 'none', cursor: 'pointer' }} aria-label="Back to settings">
+                <ArrowLeft style={{ width: 16, height: 16 }} />
                 <span>Settings</span>
               </button>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white">Profile</h1>
-              <p className="text-sm text-white/70 mt-1">Manage your personal information</p>
+              <h1 className="clay-display" style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Profile</h1>
+              <p style={{ fontSize: 14, color: 'rgba(255,255,255,.7)', marginTop: 4 }}>Manage your personal information</p>
             </div>
           </div>
 
-          <Card className="ring-1 ring-slate-100 border-0 shadow-sm overflow-hidden">
-            <CardContent className="p-6 space-y-6">
+          {/* Profile Card */}
+          <div className="clay-card-static" style={{ padding: 24 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               {/* Profile Photo */}
-              <div className="flex items-center gap-4">
-                <div className="h-20 w-20 rounded-2xl bg-linear-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-blue-500/25 ring-2 ring-blue-400/30">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div className="clay-ico" style={{ width: 72, height: 72, borderRadius: 20, background: 'linear-gradient(135deg, #6366F1, #4F46E5)', fontSize: 22, fontWeight: 800, color: 'white' }}>
                   {user?.fullName
                     .split(' ')
                     .map((n) => n[0])
@@ -552,59 +543,61 @@ export default function SettingsPage() {
                     .slice(0, 2)}
                 </div>
                 <div>
-                  <Button variant="secondary" size="sm" className="rounded-lg">
+                  <button className="clay-btn-sec" style={{ padding: '8px 16px', fontSize: 13 }}>
                     Change Photo
-                  </Button>
-                  <p className="text-xs text-slate-500 mt-1">JPG, PNG. Max 5MB</p>
+                  </button>
+                  <p style={{ fontSize: 12, color: 'var(--clay-text-muted)', marginTop: 4 }}>JPG, PNG. Max 5MB</p>
                 </div>
               </div>
 
               {/* Form Fields */}
-              <div className="space-y-4">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
-                  <label htmlFor="fullName" className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Full Name <span className="text-red-500">*</span>
+                  <label htmlFor="fullName" className="clay-label" style={{ color: 'var(--clay-text-mid)' }}>
+                    Full Name <span style={{ color: 'var(--clay-rose)' }}>*</span>
                   </label>
                   <input
                     id="fullName"
                     type="text"
                     value={profileForm.fullName || ''}
                     onChange={(e) => handleProfileChange('fullName', e.target.value)}
-                    className={`w-full px-4 py-2.5 rounded-xl border ${profileErrors.fullName
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
-                        : 'border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
-                      } outline-none transition-all`}
+                    className="clay-field"
+                    style={{
+                      width: '100%', padding: '10px 16px', fontSize: 14,
+                      borderColor: profileErrors.fullName ? 'var(--clay-rose)' : undefined,
+                    }}
                     aria-invalid={!!profileErrors.fullName}
                     aria-describedby={profileErrors.fullName ? 'fullName-error' : undefined}
                   />
                   {profileErrors.fullName && (
-                    <p id="fullName-error" className="mt-1 text-xs text-red-600">
+                    <p id="fullName-error" style={{ marginTop: 4, fontSize: 12, color: 'var(--clay-rose)' }}>
                       {profileErrors.fullName}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1.5">
+                  <label htmlFor="email" className="clay-label" style={{ color: 'var(--clay-text-mid)' }}>
                     Email Address
                   </label>
-                  <div className="relative">
+                  <div style={{ position: 'relative' }}>
                     <input
                       id="email"
                       type="email"
                       value={user?.email || ''}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed"
+                      className="clay-field"
+                      style={{ width: '100%', padding: '10px 16px', fontSize: 14, background: '#F1F0FB', color: 'var(--clay-text-muted)', cursor: 'not-allowed' }}
                       disabled
                     />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-emerald-600">
-                      <CheckCircle className="h-4 w-4" />
-                      <span className="text-xs font-medium">Verified</span>
+                    <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 4, color: 'var(--clay-emerald)' }}>
+                      <CheckCircle style={{ width: 16, height: 16 }} />
+                      <span style={{ fontSize: 12, fontWeight: 600 }}>Verified</span>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-slate-700 mb-1.5">
+                  <label htmlFor="phone" className="clay-label" style={{ color: 'var(--clay-text-mid)' }}>
                     Phone Number
                   </label>
                   <input
@@ -613,22 +606,23 @@ export default function SettingsPage() {
                     value={profileForm.phone || ''}
                     onChange={(e) => handleProfileChange('phone', e.target.value)}
                     placeholder="+254 7XX XXX XXX"
-                    className={`w-full px-4 py-2.5 rounded-xl border ${profileErrors.phone
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
-                        : 'border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
-                      } outline-none transition-all`}
+                    className="clay-field"
+                    style={{
+                      width: '100%', padding: '10px 16px', fontSize: 14,
+                      borderColor: profileErrors.phone ? 'var(--clay-rose)' : undefined,
+                    }}
                     aria-invalid={!!profileErrors.phone}
                     aria-describedby={profileErrors.phone ? 'phone-error' : undefined}
                   />
                   {profileErrors.phone && (
-                    <p id="phone-error" className="mt-1 text-xs text-red-600">
+                    <p id="phone-error" style={{ marginTop: 4, fontSize: 12, color: 'var(--clay-rose)' }}>
                       {profileErrors.phone}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <label htmlFor="address" className="block text-sm font-medium text-slate-700 mb-1.5">
+                  <label htmlFor="address" className="clay-label" style={{ color: 'var(--clay-text-mid)' }}>
                     Address
                   </label>
                   <textarea
@@ -637,17 +631,18 @@ export default function SettingsPage() {
                     value={profileForm.address || ''}
                     onChange={(e) => handleProfileChange('address', e.target.value)}
                     placeholder="Enter your address"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all resize-none"
+                    className="clay-field"
+                    style={{ width: '100%', padding: '10px 16px', fontSize: 14, resize: 'none' }}
                   />
                 </div>
               </div>
 
               {/* Emergency Contact */}
-              <div className="pt-4 border-t border-slate-100">
-                <h3 className="text-sm font-semibold text-slate-900 mb-4">Emergency Contact</h3>
-                <div className="grid gap-4 sm:grid-cols-2">
+              <div className="clay-inset" style={{ padding: 20 }}>
+                <span className="clay-label" style={{ color: 'var(--clay-text-dark)', fontSize: 13, marginBottom: 16 }}>Emergency Contact</span>
+                <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
                   <div>
-                    <label htmlFor="emergencyName" className="block text-sm font-medium text-slate-700 mb-1.5">
+                    <label htmlFor="emergencyName" className="clay-label" style={{ color: 'var(--clay-text-mid)' }}>
                       Contact Name
                     </label>
                     <input
@@ -656,11 +651,12 @@ export default function SettingsPage() {
                       value={profileForm.emergencyContact?.name || ''}
                       onChange={(e) => handleEmergencyContactChange('name', e.target.value)}
                       placeholder="Full name"
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                      className="clay-field"
+                      style={{ width: '100%', padding: '10px 16px', fontSize: 14 }}
                     />
                   </div>
                   <div>
-                    <label htmlFor="emergencyPhone" className="block text-sm font-medium text-slate-700 mb-1.5">
+                    <label htmlFor="emergencyPhone" className="clay-label" style={{ color: 'var(--clay-text-mid)' }}>
                       Contact Phone
                     </label>
                     <input
@@ -669,28 +665,30 @@ export default function SettingsPage() {
                       value={profileForm.emergencyContact?.phone || ''}
                       onChange={(e) => handleEmergencyContactChange('phone', e.target.value)}
                       placeholder="+254 7XX XXX XXX"
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                      className="clay-field"
+                      style={{ width: '100%', padding: '10px 16px', fontSize: 14 }}
                     />
                   </div>
                 </div>
               </div>
 
-              <Button
+              <button
                 onClick={handleSaveProfile}
                 disabled={profileSaving}
-                className="w-full rounded-xl py-5 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/25 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="clay-cta clay-cta-emerald"
+                style={{ width: '100%', padding: '14px 24px', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
               >
                 {profileSaving ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} />
                     Saving...
                   </>
                 ) : (
                   'Save Changes'
                 )}
-              </Button>
-            </CardContent>
-          </Card>
+              </button>
+            </div>
+          </div>
         </div>
         <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       </>
@@ -701,198 +699,177 @@ export default function SettingsPage() {
   if (activeSection === 'notifications') {
     return (
       <>
-        <div className="space-y-5">
-          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-amber-600 via-amber-500 to-orange-500 p-5 sm:p-6">
-            <div className="absolute -top-8 -right-8 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
-            <div className="absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-white/10 blur-xl" />
-            <div className="relative">
-              <button onClick={() => setActiveSection(null)} className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm mb-3 active:scale-95 transition-all" aria-label="Back to settings">
-                <ArrowLeft className="h-4 w-4" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Hero */}
+          <div className="clay-hero" style={{ padding: '20px 24px', background: 'linear-gradient(135deg, #F59E0B, #D97706)', color: 'white', position: 'relative' }}>
+            <div className="deco-blob" style={{ width: 100, height: 100, top: -30, right: -30, background: 'rgba(255,255,255,.12)' }} />
+            <div className="deco-blob" style={{ width: 70, height: 70, bottom: -20, left: -20, background: 'rgba(255,255,255,.1)' }} />
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setActiveSection(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,.8)', fontSize: 14, marginBottom: 12, background: 'none', border: 'none', cursor: 'pointer' }} aria-label="Back to settings">
+                <ArrowLeft style={{ width: 16, height: 16 }} />
                 <span>Settings</span>
               </button>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white">Notifications</h1>
-              <p className="text-sm text-white/70 mt-1">Manage how you receive updates</p>
+              <h1 className="clay-display" style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Notifications</h1>
+              <p style={{ fontSize: 14, color: 'rgba(255,255,255,.7)', marginTop: 4 }}>Manage how you receive updates</p>
             </div>
           </div>
 
-          <Card className="ring-1 ring-slate-100 border-0 shadow-sm overflow-hidden">
-            <CardContent className="p-0 divide-y divide-slate-100">
-              {/* Push Notifications Master Toggle */}
-              <div className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                    <Smartphone className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-900">Push Notifications</p>
-                    <p className="text-sm text-slate-500">Enable all push notifications</p>
-                  </div>
+          <div className="clay-card-static" style={{ overflow: 'hidden' }}>
+            {/* Push Notifications Master Toggle */}
+            <div style={{ padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--clay-indigo-l)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="clay-ico" style={{ width: 40, height: 40, background: 'var(--clay-sky-s)' }}>
+                  <Smartphone style={{ width: 20, height: 20, color: 'var(--clay-sky)' }} />
                 </div>
-                <button
-                  onClick={() => handleNotificationToggle('pushEnabled')}
-                  className={`relative w-12 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${notifications.pushEnabled ? 'bg-blue-500' : 'bg-slate-200'
-                    }`}
-                  role="switch"
-                  aria-checked={notifications.pushEnabled}
-                  aria-label="Toggle push notifications"
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${notifications.pushEnabled ? 'translate-x-6' : 'translate-x-0'
-                      }`}
-                  />
-                </button>
-              </div>
-
-              {/* Appointment Reminders */}
-              <div className="p-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="h-10 w-10 rounded-xl bg-amber-50 flex items-center justify-center">
-                    <Calendar className="h-5 w-5 text-amber-600" />
-                  </div>
-                  <p className="font-medium text-slate-900">Appointment Reminders</p>
-                </div>
-                <div className="space-y-3 pl-13">
-                  <label className="flex items-center justify-between cursor-pointer">
-                    <span className="text-sm text-slate-600">1 day before</span>
-                    <button
-                      onClick={() => handleNotificationToggle('appointmentReminder1Day')}
-                      className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${notifications.appointmentReminder1Day ? 'bg-blue-500' : 'bg-slate-200'
-                        }`}
-                      role="switch"
-                      aria-checked={notifications.appointmentReminder1Day}
-                    >
-                      <span
-                        className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${notifications.appointmentReminder1Day ? 'translate-x-5' : 'translate-x-0'
-                          }`}
-                      />
-                    </button>
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer">
-                    <span className="text-sm text-slate-600">1 hour before</span>
-                    <button
-                      onClick={() => handleNotificationToggle('appointmentReminder1Hour')}
-                      className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${notifications.appointmentReminder1Hour ? 'bg-blue-500' : 'bg-slate-200'
-                        }`}
-                      role="switch"
-                      aria-checked={notifications.appointmentReminder1Hour}
-                    >
-                      <span
-                        className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${notifications.appointmentReminder1Hour ? 'translate-x-5' : 'translate-x-0'
-                          }`}
-                      />
-                    </button>
-                  </label>
+                <div>
+                  <p style={{ fontWeight: 700, color: 'var(--clay-text-dark)', fontSize: 14, margin: 0 }}>Push Notifications</p>
+                  <p style={{ fontSize: 13, color: 'var(--clay-text-muted)', margin: 0 }}>Enable all push notifications</p>
                 </div>
               </div>
+              <button
+                onClick={() => handleNotificationToggle('pushEnabled')}
+                className="clay-toggle"
+                style={{ width: 48, height: 26, borderRadius: 999, position: 'relative', background: notifications.pushEnabled ? 'var(--clay-indigo)' : '#D1D5DB', cursor: 'pointer', border: 'none' }}
+                role="switch"
+                aria-checked={notifications.pushEnabled}
+                aria-label="Toggle push notifications"
+              >
+                <span className="clay-toggle-knob" style={{ position: 'absolute', top: 3, left: notifications.pushEnabled ? 25 : 3, width: 20, height: 20, borderRadius: '50%', background: 'white' }} />
+              </button>
+            </div>
 
-              {/* Medical Updates */}
-              <div className="p-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-                    <TestTube className="h-5 w-5 text-emerald-600" />
-                  </div>
-                  <p className="font-medium text-slate-900">Medical Updates</p>
+            {/* Appointment Reminders */}
+            <div style={{ padding: 16, borderBottom: '1px solid var(--clay-indigo-l)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                <div className="clay-ico" style={{ width: 40, height: 40, background: 'var(--clay-amber-s)' }}>
+                  <Calendar style={{ width: 20, height: 20, color: 'var(--clay-amber)' }} />
                 </div>
-                <div className="space-y-3 pl-13">
-                  <label className="flex items-center justify-between cursor-pointer">
-                    <span className="text-sm text-slate-600">Lab results ready</span>
-                    <button
-                      onClick={() => handleNotificationToggle('labResultsNotification')}
-                      className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${notifications.labResultsNotification ? 'bg-blue-500' : 'bg-slate-200'
-                        }`}
-                      role="switch"
-                      aria-checked={notifications.labResultsNotification}
-                    >
-                      <span
-                        className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${notifications.labResultsNotification ? 'translate-x-5' : 'translate-x-0'
-                          }`}
-                      />
-                    </button>
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer">
-                    <span className="text-sm text-slate-600">Prescription updates</span>
-                    <button
-                      onClick={() => handleNotificationToggle('prescriptionNotification')}
-                      className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${notifications.prescriptionNotification ? 'bg-blue-500' : 'bg-slate-200'
-                        }`}
-                      role="switch"
-                      aria-checked={notifications.prescriptionNotification}
-                    >
-                      <span
-                        className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${notifications.prescriptionNotification ? 'translate-x-5' : 'translate-x-0'
-                          }`}
-                      />
-                    </button>
-                  </label>
+                <p style={{ fontWeight: 700, color: 'var(--clay-text-dark)', fontSize: 14, margin: 0 }}>Appointment Reminders</p>
+              </div>
+              <div className="clay-inset" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                  <span style={{ fontSize: 13, color: 'var(--clay-text-mid)' }}>1 day before</span>
+                  <button
+                    onClick={() => handleNotificationToggle('appointmentReminder1Day')}
+                    className="clay-toggle"
+                    style={{ width: 40, height: 22, borderRadius: 999, position: 'relative', background: notifications.appointmentReminder1Day ? 'var(--clay-indigo)' : '#D1D5DB', cursor: 'pointer', border: 'none' }}
+                    role="switch"
+                    aria-checked={notifications.appointmentReminder1Day}
+                  >
+                    <span className="clay-toggle-knob" style={{ position: 'absolute', top: 2, left: notifications.appointmentReminder1Day ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: 'white' }} />
+                  </button>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                  <span style={{ fontSize: 13, color: 'var(--clay-text-mid)' }}>1 hour before</span>
+                  <button
+                    onClick={() => handleNotificationToggle('appointmentReminder1Hour')}
+                    className="clay-toggle"
+                    style={{ width: 40, height: 22, borderRadius: 999, position: 'relative', background: notifications.appointmentReminder1Hour ? 'var(--clay-indigo)' : '#D1D5DB', cursor: 'pointer', border: 'none' }}
+                    role="switch"
+                    aria-checked={notifications.appointmentReminder1Hour}
+                  >
+                    <span className="clay-toggle-knob" style={{ position: 'absolute', top: 2, left: notifications.appointmentReminder1Hour ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: 'white' }} />
+                  </button>
+                </label>
+              </div>
+            </div>
+
+            {/* Medical Updates */}
+            <div style={{ padding: 16, borderBottom: '1px solid var(--clay-indigo-l)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                <div className="clay-ico" style={{ width: 40, height: 40, background: 'var(--clay-emerald-s)' }}>
+                  <TestTube style={{ width: 20, height: 20, color: 'var(--clay-emerald)' }} />
+                </div>
+                <p style={{ fontWeight: 700, color: 'var(--clay-text-dark)', fontSize: 14, margin: 0 }}>Medical Updates</p>
+              </div>
+              <div className="clay-inset" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                  <span style={{ fontSize: 13, color: 'var(--clay-text-mid)' }}>Lab results ready</span>
+                  <button
+                    onClick={() => handleNotificationToggle('labResultsNotification')}
+                    className="clay-toggle"
+                    style={{ width: 40, height: 22, borderRadius: 999, position: 'relative', background: notifications.labResultsNotification ? 'var(--clay-indigo)' : '#D1D5DB', cursor: 'pointer', border: 'none' }}
+                    role="switch"
+                    aria-checked={notifications.labResultsNotification}
+                  >
+                    <span className="clay-toggle-knob" style={{ position: 'absolute', top: 2, left: notifications.labResultsNotification ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: 'white' }} />
+                  </button>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                  <span style={{ fontSize: 13, color: 'var(--clay-text-mid)' }}>Prescription updates</span>
+                  <button
+                    onClick={() => handleNotificationToggle('prescriptionNotification')}
+                    className="clay-toggle"
+                    style={{ width: 40, height: 22, borderRadius: 999, position: 'relative', background: notifications.prescriptionNotification ? 'var(--clay-indigo)' : '#D1D5DB', cursor: 'pointer', border: 'none' }}
+                    role="switch"
+                    aria-checked={notifications.prescriptionNotification}
+                  >
+                    <span className="clay-toggle-knob" style={{ position: 'absolute', top: 2, left: notifications.prescriptionNotification ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: 'white' }} />
+                  </button>
+                </label>
+              </div>
+            </div>
+
+            {/* Messages */}
+            <div style={{ padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--clay-indigo-l)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="clay-ico" style={{ width: 40, height: 40, background: 'var(--clay-purple-s)' }}>
+                  <MessageSquare style={{ width: 20, height: 20, color: 'var(--clay-purple)' }} />
+                </div>
+                <div>
+                  <p style={{ fontWeight: 700, color: 'var(--clay-text-dark)', fontSize: 14, margin: 0 }}>New Messages</p>
+                  <p style={{ fontSize: 13, color: 'var(--clay-text-muted)', margin: 0 }}>From doctors & staff</p>
                 </div>
               </div>
+              <button
+                onClick={() => handleNotificationToggle('messageNotification')}
+                className="clay-toggle"
+                style={{ width: 40, height: 22, borderRadius: 999, position: 'relative', background: notifications.messageNotification ? 'var(--clay-indigo)' : '#D1D5DB', cursor: 'pointer', border: 'none' }}
+                role="switch"
+                aria-checked={notifications.messageNotification}
+              >
+                <span className="clay-toggle-knob" style={{ position: 'absolute', top: 2, left: notifications.messageNotification ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: 'white' }} />
+              </button>
+            </div>
 
-              {/* Messages */}
-              <div className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-purple-50 flex items-center justify-center">
-                    <MessageSquare className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-900">New Messages</p>
-                    <p className="text-sm text-slate-500">From doctors & staff</p>
-                  </div>
+            {/* Email */}
+            <div style={{ padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="clay-ico" style={{ width: 40, height: 40, background: 'var(--clay-cyan-s)' }}>
+                  <Mail style={{ width: 20, height: 20, color: 'var(--clay-cyan)' }} />
                 </div>
-                <button
-                  onClick={() => handleNotificationToggle('messageNotification')}
-                  className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${notifications.messageNotification ? 'bg-blue-500' : 'bg-slate-200'
-                    }`}
-                  role="switch"
-                  aria-checked={notifications.messageNotification}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${notifications.messageNotification ? 'translate-x-5' : 'translate-x-0'
-                      }`}
-                  />
-                </button>
-              </div>
-
-              {/* Email */}
-              <div className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-cyan-50 flex items-center justify-center">
-                    <Mail className="h-5 w-5 text-cyan-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-900">Weekly Summary Email</p>
-                    <p className="text-sm text-slate-500">Activity digest every Monday</p>
-                  </div>
+                <div>
+                  <p style={{ fontWeight: 700, color: 'var(--clay-text-dark)', fontSize: 14, margin: 0 }}>Weekly Summary Email</p>
+                  <p style={{ fontSize: 13, color: 'var(--clay-text-muted)', margin: 0 }}>Activity digest every Monday</p>
                 </div>
-                <button
-                  onClick={() => handleNotificationToggle('emailWeeklySummary')}
-                  className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${notifications.emailWeeklySummary ? 'bg-blue-500' : 'bg-slate-200'
-                    }`}
-                  role="switch"
-                  aria-checked={notifications.emailWeeklySummary}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${notifications.emailWeeklySummary ? 'translate-x-5' : 'translate-x-0'
-                      }`}
-                  />
-                </button>
               </div>
-            </CardContent>
-          </Card>
+              <button
+                onClick={() => handleNotificationToggle('emailWeeklySummary')}
+                className="clay-toggle"
+                style={{ width: 40, height: 22, borderRadius: 999, position: 'relative', background: notifications.emailWeeklySummary ? 'var(--clay-indigo)' : '#D1D5DB', cursor: 'pointer', border: 'none' }}
+                role="switch"
+                aria-checked={notifications.emailWeeklySummary}
+              >
+                <span className="clay-toggle-knob" style={{ position: 'absolute', top: 2, left: notifications.emailWeeklySummary ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: 'white' }} />
+              </button>
+            </div>
+          </div>
 
-          <Button
+          <button
             onClick={handleSaveNotifications}
             disabled={notificationsSaving}
-            className="w-full rounded-xl py-5 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/25 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="clay-cta"
+            style={{ width: '100%', padding: '14px 24px', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
           >
             {notificationsSaving ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} />
                 Saving...
               </>
             ) : (
               'Save Preferences'
             )}
-          </Button>
+          </button>
         </div>
         <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       </>
@@ -903,159 +880,153 @@ export default function SettingsPage() {
   if (activeSection === 'privacy') {
     return (
       <>
-        <div className="space-y-5">
-          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-500 to-teal-500 p-5 sm:p-6">
-            <div className="absolute -top-8 -right-8 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
-            <div className="absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-white/10 blur-xl" />
-            <div className="relative">
-              <button onClick={() => setActiveSection(null)} className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm mb-3 active:scale-95 transition-all" aria-label="Back to settings">
-                <ArrowLeft className="h-4 w-4" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Hero */}
+          <div className="clay-hero" style={{ padding: '20px 24px', background: 'linear-gradient(135deg, #10B981, #059669)', color: 'white', position: 'relative' }}>
+            <div className="deco-blob" style={{ width: 100, height: 100, top: -30, right: -30, background: 'rgba(255,255,255,.12)' }} />
+            <div className="deco-blob" style={{ width: 70, height: 70, bottom: -20, left: -20, background: 'rgba(255,255,255,.1)' }} />
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setActiveSection(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,.8)', fontSize: 14, marginBottom: 12, background: 'none', border: 'none', cursor: 'pointer' }} aria-label="Back to settings">
+                <ArrowLeft style={{ width: 16, height: 16 }} />
                 <span>Settings</span>
               </button>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white">Privacy & Security</h1>
-              <p className="text-sm text-white/70 mt-1">Protect your account and data</p>
+              <h1 className="clay-display" style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Privacy & Security</h1>
+              <p style={{ fontSize: 14, color: 'rgba(255,255,255,.7)', marginTop: 4 }}>Protect your account and data</p>
             </div>
           </div>
 
-          <Card className="ring-1 ring-slate-100 border-0 shadow-sm overflow-hidden">
-            <CardHeader className="border-b border-slate-100 pb-4">
-              <CardTitle className="text-base">Account Security</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0 divide-y divide-slate-100">
-              <button
-                className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-                onClick={() => addToast('info', 'Change password coming soon')}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                    <Lock className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-medium text-slate-900">Change Password</p>
-                    <p className="text-sm text-slate-500">Update your password</p>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-slate-300" />
-              </button>
+          {/* Account Security */}
+          <div className="clay-card-static" style={{ overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--clay-indigo-l)' }}>
+              <span className="clay-label" style={{ color: 'var(--clay-text-dark)', fontSize: 13, marginBottom: 0 }}>Account Security</span>
+            </div>
 
-              <div className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-purple-50 flex items-center justify-center">
-                    <Smartphone className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-900">Two-Factor Authentication</p>
-                    <p className="text-sm text-slate-500">Add extra security layer</p>
-                  </div>
+            <button
+              style={{ width: '100%', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', borderBottom: '1px solid var(--clay-indigo-l)', cursor: 'pointer', textAlign: 'left' }}
+              onClick={() => addToast('info', 'Change password coming soon')}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="clay-ico" style={{ width: 40, height: 40, background: 'var(--clay-sky-s)' }}>
+                  <Lock style={{ width: 20, height: 20, color: 'var(--clay-sky)' }} />
                 </div>
-                <button
-                  onClick={handleTwoFactorToggle}
-                  className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${twoFactorEnabled ? 'bg-blue-500' : 'bg-slate-200'
-                    }`}
-                  role="switch"
-                  aria-checked={twoFactorEnabled}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${twoFactorEnabled ? 'translate-x-5' : 'translate-x-0'
-                      }`}
-                  />
-                </button>
+                <div>
+                  <p style={{ fontWeight: 700, color: 'var(--clay-text-dark)', fontSize: 14, margin: 0 }}>Change Password</p>
+                  <p style={{ fontSize: 13, color: 'var(--clay-text-muted)', margin: 0 }}>Update your password</p>
+                </div>
               </div>
+              <ChevronRight style={{ width: 20, height: 20, color: 'var(--clay-text-muted)' }} />
+            </button>
 
-              <div className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-                    <Fingerprint className="h-5 w-5 text-emerald-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-900">Biometric Login</p>
-                    <p className="text-sm text-slate-500">Face ID / Fingerprint</p>
-                  </div>
+            <div style={{ padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--clay-indigo-l)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="clay-ico" style={{ width: 40, height: 40, background: 'var(--clay-purple-s)' }}>
+                  <Smartphone style={{ width: 20, height: 20, color: 'var(--clay-purple)' }} />
                 </div>
-                <button
-                  onClick={handleBiometricToggle}
-                  className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${biometricEnabled ? 'bg-blue-500' : 'bg-slate-200'
-                    }`}
-                  role="switch"
-                  aria-checked={biometricEnabled}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${biometricEnabled ? 'translate-x-5' : 'translate-x-0'
-                      }`}
-                  />
-                </button>
+                <div>
+                  <p style={{ fontWeight: 700, color: 'var(--clay-text-dark)', fontSize: 14, margin: 0 }}>Two-Factor Authentication</p>
+                  <p style={{ fontSize: 13, color: 'var(--clay-text-muted)', margin: 0 }}>Add extra security layer</p>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-slate-100">
-            <CardHeader className="border-b border-slate-100 pb-4">
-              <CardTitle className="text-base">Data & Privacy</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0 divide-y divide-slate-100">
               <button
-                className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-                onClick={() => addToast('info', 'Data download coming soon')}
+                onClick={handleTwoFactorToggle}
+                className="clay-toggle"
+                style={{ width: 40, height: 22, borderRadius: 999, position: 'relative', background: twoFactorEnabled ? 'var(--clay-indigo)' : '#D1D5DB', cursor: 'pointer', border: 'none' }}
+                role="switch"
+                aria-checked={twoFactorEnabled}
               >
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-cyan-50 flex items-center justify-center">
-                    <Download className="h-5 w-5 text-cyan-600" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-medium text-slate-900">Download My Data</p>
-                    <p className="text-sm text-slate-500">Export all your data</p>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-slate-300" />
+                <span className="clay-toggle-knob" style={{ position: 'absolute', top: 2, left: twoFactorEnabled ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: 'white' }} />
               </button>
+            </div>
 
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="w-full p-4 flex items-center justify-between hover:bg-red-50 transition-colors group focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-inset"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-red-50 flex items-center justify-center">
-                    <Trash2 className="h-5 w-5 text-red-600" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-medium text-red-600">Delete Account</p>
-                    <p className="text-sm text-slate-500">Permanently delete your account</p>
-                  </div>
+            <div style={{ padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="clay-ico" style={{ width: 40, height: 40, background: 'var(--clay-emerald-s)' }}>
+                  <Fingerprint style={{ width: 20, height: 20, color: 'var(--clay-emerald)' }} />
                 </div>
-                <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-red-400" />
+                <div>
+                  <p style={{ fontWeight: 700, color: 'var(--clay-text-dark)', fontSize: 14, margin: 0 }}>Biometric Login</p>
+                  <p style={{ fontSize: 13, color: 'var(--clay-text-muted)', margin: 0 }}>Face ID / Fingerprint</p>
+                </div>
+              </div>
+              <button
+                onClick={handleBiometricToggle}
+                className="clay-toggle"
+                style={{ width: 40, height: 22, borderRadius: 999, position: 'relative', background: biometricEnabled ? 'var(--clay-indigo)' : '#D1D5DB', cursor: 'pointer', border: 'none' }}
+                role="switch"
+                aria-checked={biometricEnabled}
+              >
+                <span className="clay-toggle-knob" style={{ position: 'absolute', top: 2, left: biometricEnabled ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: 'white' }} />
               </button>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card className="border-slate-100">
-            <CardContent className="p-0 divide-y divide-slate-100">
-              <button
-                className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-                onClick={() => window.open('/privacy', '_blank')}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center">
-                    <FileText className="h-5 w-5 text-slate-600" />
-                  </div>
-                  <p className="font-medium text-slate-900">Privacy Policy</p>
-                </div>
-                <ExternalLink className="h-4 w-4 text-slate-400" />
-              </button>
+          {/* Data & Privacy */}
+          <div className="clay-card-static" style={{ overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--clay-indigo-l)' }}>
+              <span className="clay-label" style={{ color: 'var(--clay-text-dark)', fontSize: 13, marginBottom: 0 }}>Data & Privacy</span>
+            </div>
 
-              <button
-                className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-                onClick={() => window.open('/terms', '_blank')}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center">
-                    <FileText className="h-5 w-5 text-slate-600" />
-                  </div>
-                  <p className="font-medium text-slate-900">Terms of Service</p>
+            <button
+              style={{ width: '100%', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', borderBottom: '1px solid var(--clay-indigo-l)', cursor: 'pointer', textAlign: 'left' }}
+              onClick={() => addToast('info', 'Data download coming soon')}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="clay-ico" style={{ width: 40, height: 40, background: 'var(--clay-cyan-s)' }}>
+                  <Download style={{ width: 20, height: 20, color: 'var(--clay-cyan)' }} />
                 </div>
-                <ExternalLink className="h-4 w-4 text-slate-400" />
-              </button>
-            </CardContent>
-          </Card>
+                <div>
+                  <p style={{ fontWeight: 700, color: 'var(--clay-text-dark)', fontSize: 14, margin: 0 }}>Download My Data</p>
+                  <p style={{ fontSize: 13, color: 'var(--clay-text-muted)', margin: 0 }}>Export all your data</p>
+                </div>
+              </div>
+              <ChevronRight style={{ width: 20, height: 20, color: 'var(--clay-text-muted)' }} />
+            </button>
+
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              style={{ width: '100%', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="clay-ico" style={{ width: 40, height: 40, background: 'var(--clay-rose-s)' }}>
+                  <Trash2 style={{ width: 20, height: 20, color: 'var(--clay-rose)' }} />
+                </div>
+                <div>
+                  <p style={{ fontWeight: 700, color: 'var(--clay-rose)', fontSize: 14, margin: 0 }}>Delete Account</p>
+                  <p style={{ fontSize: 13, color: 'var(--clay-text-muted)', margin: 0 }}>Permanently delete your account</p>
+                </div>
+              </div>
+              <ChevronRight style={{ width: 20, height: 20, color: 'var(--clay-text-muted)' }} />
+            </button>
+          </div>
+
+          {/* Legal Links */}
+          <div className="clay-card-static" style={{ overflow: 'hidden' }}>
+            <button
+              style={{ width: '100%', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', borderBottom: '1px solid var(--clay-indigo-l)', cursor: 'pointer', textAlign: 'left' }}
+              onClick={() => window.open('/privacy', '_blank')}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="clay-ico" style={{ width: 40, height: 40, background: '#F1F5F9' }}>
+                  <FileText style={{ width: 20, height: 20, color: '#475569' }} />
+                </div>
+                <p style={{ fontWeight: 700, color: 'var(--clay-text-dark)', fontSize: 14, margin: 0 }}>Privacy Policy</p>
+              </div>
+              <ExternalLink style={{ width: 16, height: 16, color: 'var(--clay-text-muted)' }} />
+            </button>
+
+            <button
+              style={{ width: '100%', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+              onClick={() => window.open('/terms', '_blank')}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="clay-ico" style={{ width: 40, height: 40, background: '#F1F5F9' }}>
+                  <FileText style={{ width: 20, height: 20, color: '#475569' }} />
+                </div>
+                <p style={{ fontWeight: 700, color: 'var(--clay-text-dark)', fontSize: 14, margin: 0 }}>Terms of Service</p>
+              </div>
+              <ExternalLink style={{ width: 16, height: 16, color: 'var(--clay-text-muted)' }} />
+            </button>
+          </div>
         </div>
 
         <ConfirmationModal
@@ -1077,104 +1048,83 @@ export default function SettingsPage() {
   if (activeSection === 'preferences') {
     return (
       <>
-        <div className="space-y-5">
-          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-purple-600 via-purple-500 to-pink-500 p-5 sm:p-6">
-            <div className="absolute -top-8 -right-8 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
-            <div className="absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-white/10 blur-xl" />
-            <div className="relative">
-              <button onClick={() => setActiveSection(null)} className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm mb-3 active:scale-95 transition-all" aria-label="Back to settings">
-                <ArrowLeft className="h-4 w-4" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Hero */}
+          <div className="clay-hero" style={{ padding: '20px 24px', background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)', color: 'white', position: 'relative' }}>
+            <div className="deco-blob" style={{ width: 100, height: 100, top: -30, right: -30, background: 'rgba(255,255,255,.12)' }} />
+            <div className="deco-blob" style={{ width: 70, height: 70, bottom: -20, left: -20, background: 'rgba(255,255,255,.1)' }} />
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setActiveSection(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,.8)', fontSize: 14, marginBottom: 12, background: 'none', border: 'none', cursor: 'pointer' }} aria-label="Back to settings">
+                <ArrowLeft style={{ width: 16, height: 16 }} />
                 <span>Settings</span>
               </button>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white">Preferences</h1>
-              <p className="text-sm text-white/70 mt-1">Customize your app experience</p>
+              <h1 className="clay-display" style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Preferences</h1>
+              <p style={{ fontSize: 14, color: 'rgba(255,255,255,.7)', marginTop: 4 }}>Customize your app experience</p>
             </div>
           </div>
 
-          <Card className="ring-1 ring-slate-100 border-0 shadow-sm overflow-hidden">
-            <CardHeader className="border-b border-slate-100 pb-4">
-              <CardTitle className="text-base">Appearance</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4">
-              <p className="text-sm font-medium text-slate-700 mb-3">Theme</p>
-              <div className="grid grid-cols-3 gap-3">
-                <button
-                  onClick={() => setTheme('light')}
-                  className={`p-4 rounded-xl border-2 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme === 'light'
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                  aria-pressed={theme === 'light'}
-                >
-                  <Sun
-                    className={`h-6 w-6 mx-auto mb-2 ${theme === 'light' ? 'text-blue-600' : 'text-slate-400'}`}
-                  />
-                  <p className={`text-sm font-medium ${theme === 'light' ? 'text-blue-600' : 'text-slate-600'}`}>
-                    Light
-                  </p>
-                </button>
-                <button
-                  onClick={() => setTheme('dark')}
-                  className={`p-4 rounded-xl border-2 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme === 'dark'
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                  aria-pressed={theme === 'dark'}
-                >
-                  <Moon
-                    className={`h-6 w-6 mx-auto mb-2 ${theme === 'dark' ? 'text-blue-600' : 'text-slate-400'}`}
-                  />
-                  <p className={`text-sm font-medium ${theme === 'dark' ? 'text-blue-600' : 'text-slate-600'}`}>
-                    Dark
-                  </p>
-                </button>
-                <button
-                  onClick={() => setTheme('system')}
-                  className={`p-4 rounded-xl border-2 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme === 'system'
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                  aria-pressed={theme === 'system'}
-                >
-                  <Smartphone
-                    className={`h-6 w-6 mx-auto mb-2 ${theme === 'system' ? 'text-blue-600' : 'text-slate-400'}`}
-                  />
-                  <p className={`text-sm font-medium ${theme === 'system' ? 'text-blue-600' : 'text-slate-600'}`}>
-                    System
-                  </p>
-                </button>
+          {/* Appearance */}
+          <div className="clay-card-static" style={{ overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--clay-indigo-l)' }}>
+              <span className="clay-label" style={{ color: 'var(--clay-text-dark)', fontSize: 13, marginBottom: 0 }}>Appearance</span>
+            </div>
+            <div style={{ padding: 20 }}>
+              <span className="clay-label" style={{ color: 'var(--clay-text-mid)', marginBottom: 12 }}>Theme</span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                {([
+                  { key: 'light' as const, label: 'Light', Icon: Sun },
+                  { key: 'dark' as const, label: 'Dark', Icon: Moon },
+                  { key: 'system' as const, label: 'System', Icon: Smartphone },
+                ]).map(({ key, label, Icon }) => (
+                  <button
+                    key={key}
+                    onClick={() => setTheme(key)}
+                    className={theme === key ? 'clay-card-static' : 'clay-inset'}
+                    style={{
+                      padding: 16, textAlign: 'center', cursor: 'pointer', border: theme === key ? '2px solid var(--clay-indigo)' : '2px solid transparent',
+                      background: theme === key ? 'var(--clay-indigo-s)' : undefined, borderRadius: 16,
+                    }}
+                    aria-pressed={theme === key}
+                  >
+                    <Icon style={{ width: 24, height: 24, margin: '0 auto 8px', display: 'block', color: theme === key ? 'var(--clay-indigo)' : 'var(--clay-text-muted)' }} />
+                    <p style={{ fontSize: 13, fontWeight: 700, color: theme === key ? 'var(--clay-indigo)' : 'var(--clay-text-mid)', margin: 0 }}>{label}</p>
+                  </button>
+                ))}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card className="border-slate-100">
-            <CardHeader className="border-b border-slate-100 pb-4">
-              <CardTitle className="text-base">Language & Region</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 space-y-4">
+          {/* Language & Region */}
+          <div className="clay-card-static" style={{ overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--clay-indigo-l)' }}>
+              <span className="clay-label" style={{ color: 'var(--clay-text-dark)', fontSize: 13, marginBottom: 0 }}>Language & Region</span>
+            </div>
+            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label htmlFor="language" className="block text-sm font-medium text-slate-700 mb-1.5">
+                <label htmlFor="language" className="clay-label" style={{ color: 'var(--clay-text-mid)' }}>
                   Language
                 </label>
                 <select
                   id="language"
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all bg-white"
+                  className="clay-field"
+                  style={{ width: '100%', padding: '10px 16px', fontSize: 14 }}
                 >
                   <option value="en">English</option>
                   <option value="sw">Swahili</option>
                 </select>
               </div>
               <div>
-                <label htmlFor="dateFormat" className="block text-sm font-medium text-slate-700 mb-1.5">
+                <label htmlFor="dateFormat" className="clay-label" style={{ color: 'var(--clay-text-mid)' }}>
                   Date Format
                 </label>
                 <select
                   id="dateFormat"
                   value={dateFormat}
                   onChange={(e) => setDateFormat(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all bg-white"
+                  className="clay-field"
+                  style={{ width: '100%', padding: '10px 16px', fontSize: 14 }}
                 >
                   <option value="MM/DD/YYYY">MM/DD/YYYY</option>
                   <option value="DD/MM/YYYY">DD/MM/YYYY</option>
@@ -1182,47 +1132,44 @@ export default function SettingsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-3">Time Format</label>
-                <div className="flex gap-3">
+                <span className="clay-label" style={{ color: 'var(--clay-text-mid)', marginBottom: 12 }}>Time Format</span>
+                <div style={{ display: 'flex', gap: 12 }}>
                   <button
                     onClick={() => setTimeFormat('12h')}
-                    className={`flex-1 py-2.5 rounded-xl border-2 font-medium text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${timeFormat === '12h'
-                        ? 'border-blue-500 bg-blue-50 text-blue-600'
-                        : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                      }`}
+                    className={`clay-pill ${timeFormat === '12h' ? 'clay-pill-active' : ''}`}
+                    style={{ flex: 1, padding: '10px 16px', fontSize: 13 }}
                     aria-pressed={timeFormat === '12h'}
                   >
                     12-hour
                   </button>
                   <button
                     onClick={() => setTimeFormat('24h')}
-                    className={`flex-1 py-2.5 rounded-xl border-2 font-medium text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${timeFormat === '24h'
-                        ? 'border-blue-500 bg-blue-50 text-blue-600'
-                        : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                      }`}
+                    className={`clay-pill ${timeFormat === '24h' ? 'clay-pill-active' : ''}`}
+                    style={{ flex: 1, padding: '10px 16px', fontSize: 13 }}
                     aria-pressed={timeFormat === '24h'}
                   >
                     24-hour
                   </button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Button
+          <button
             onClick={handleSavePreferences}
             disabled={preferencesSaving}
-            className="w-full rounded-xl py-5 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/25 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="clay-cta"
+            style={{ width: '100%', padding: '14px 24px', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
           >
             {preferencesSaving ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} />
                 Saving...
               </>
             ) : (
               'Save Preferences'
             )}
-          </Button>
+          </button>
         </div>
         <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       </>
@@ -1233,76 +1180,78 @@ export default function SettingsPage() {
   if (activeSection === 'help') {
     return (
       <>
-        <div className="space-y-5">
-          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-cyan-600 via-cyan-500 to-blue-500 p-5 sm:p-6">
-            <div className="absolute -top-8 -right-8 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
-            <div className="absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-white/10 blur-xl" />
-            <div className="relative">
-              <button onClick={() => setActiveSection(null)} className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm mb-3 active:scale-95 transition-all" aria-label="Back to settings">
-                <ArrowLeft className="h-4 w-4" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Hero */}
+          <div className="clay-hero" style={{ padding: '20px 24px', background: 'linear-gradient(135deg, #06B6D4, #0284C7)', color: 'white', position: 'relative' }}>
+            <div className="deco-blob" style={{ width: 100, height: 100, top: -30, right: -30, background: 'rgba(255,255,255,.12)' }} />
+            <div className="deco-blob" style={{ width: 70, height: 70, bottom: -20, left: -20, background: 'rgba(255,255,255,.1)' }} />
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setActiveSection(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,.8)', fontSize: 14, marginBottom: 12, background: 'none', border: 'none', cursor: 'pointer' }} aria-label="Back to settings">
+                <ArrowLeft style={{ width: 16, height: 16 }} />
                 <span>Settings</span>
               </button>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white">Help & Support</h1>
-              <p className="text-sm text-white/70 mt-1">Get help and provide feedback</p>
+              <h1 className="clay-display" style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Help & Support</h1>
+              <p style={{ fontSize: 14, color: 'rgba(255,255,255,.7)', marginTop: 4 }}>Get help and provide feedback</p>
             </div>
           </div>
 
           {/* FAQ Section */}
-          <Card className="border-slate-100 overflow-hidden">
+          <div className="clay-card-static" style={{ overflow: 'hidden' }}>
             <button
               onClick={() => setShowFAQs(!showFAQs)}
-              className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+              style={{ width: '100%', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
               aria-expanded={showFAQs}
               aria-controls="faq-section"
             >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                  <HelpCircle className="h-5 w-5 text-blue-600" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="clay-ico" style={{ width: 40, height: 40, background: 'var(--clay-sky-s)' }}>
+                  <HelpCircle style={{ width: 20, height: 20, color: 'var(--clay-sky)' }} />
                 </div>
-                <div className="text-left">
-                  <p className="font-medium text-slate-900">Frequently Asked Questions</p>
-                  <p className="text-sm text-slate-500">Find answers to common questions</p>
+                <div>
+                  <p style={{ fontWeight: 700, color: 'var(--clay-text-dark)', fontSize: 14, margin: 0 }}>Frequently Asked Questions</p>
+                  <p style={{ fontSize: 13, color: 'var(--clay-text-muted)', margin: 0 }}>Find answers to common questions</p>
                 </div>
               </div>
-              <ChevronDown
-                className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${showFAQs ? 'rotate-180' : ''}`}
-              />
+              <ChevronDown style={{ width: 20, height: 20, color: 'var(--clay-text-muted)', transition: 'transform 0.2s', transform: showFAQs ? 'rotate(180deg)' : 'rotate(0deg)' }} />
             </button>
 
             {showFAQs && (
-              <div id="faq-section" className="border-t border-slate-100">
+              <div id="faq-section" style={{ borderTop: '1px solid var(--clay-indigo-l)' }}>
                 {/* FAQ Search */}
-                <div className="p-4 bg-slate-50">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <div className="clay-inset" style={{ margin: 16, padding: 12, position: 'relative' }}>
+                  <div style={{ position: 'relative' }}>
+                    <Search style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: 'var(--clay-text-muted)' }} />
                     <input
                       type="text"
                       value={faqSearchQuery}
                       onChange={(e) => setFaqSearchQuery(e.target.value)}
                       placeholder="Search FAQs..."
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm"
+                      className="clay-search"
+                      style={{ width: '100%', padding: '10px 16px 10px 40px', fontSize: 14 }}
                       aria-label="Search frequently asked questions"
                     />
                     {isSearching && (
-                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 animate-spin" />
+                      <Loader2 style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: 'var(--clay-text-muted)', animation: 'spin 1s linear infinite' }} />
                     )}
                   </div>
                 </div>
 
                 {/* FAQ Items */}
-                <div className="divide-y divide-slate-100">
+                <div>
                   {faqLoading ? (
-                    <div className="p-8 flex flex-col items-center justify-center">
-                      <Loader2 className="h-6 w-6 text-blue-500 animate-spin" />
-                      <p className="text-sm text-slate-500 mt-2">Loading FAQs...</p>
+                    <div style={{ padding: 32, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                      <Loader2 style={{ width: 24, height: 24, color: 'var(--clay-indigo)', animation: 'spin 1s linear infinite' }} />
+                      <p style={{ fontSize: 14, color: 'var(--clay-text-muted)', marginTop: 8 }}>Loading FAQs...</p>
                     </div>
                   ) : faqItems.length === 0 ? (
-                    <div className="p-8 text-center">
-                      <HelpCircle className="h-10 w-10 text-slate-300 mx-auto mb-2" />
-                      <p className="text-sm text-slate-500">No FAQs found</p>
+                    <div style={{ padding: 32, textAlign: 'center' }}>
+                      <div className="clay-empty-ico">
+                        <HelpCircle style={{ width: 28, height: 28, color: 'var(--clay-indigo)' }} />
+                      </div>
+                      <p style={{ fontSize: 14, color: 'var(--clay-text-muted)' }}>No FAQs found</p>
                     </div>
                   ) : (
-                    <div className="max-h-100 overflow-y-auto">
+                    <div style={{ maxHeight: 400, overflowY: 'auto' }}>
                       {faqItems.map((item) => (
                         <FAQItem key={item.id} item={item} onMarkHelpful={markHelpful} />
                       ))}
@@ -1311,101 +1260,96 @@ export default function SettingsPage() {
                 </div>
               </div>
             )}
-          </Card>
+          </div>
 
-          <Card className="border-slate-100">
-            <CardHeader className="border-b border-slate-100 pb-4">
-              <CardTitle className="text-base">Contact Support</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0 divide-y divide-slate-100">
-              <a
-                href="mailto:support@gch.co.ke"
-                className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-purple-50 flex items-center justify-center">
-                    <Mail className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-medium text-slate-900">Email Support</p>
-                    <p className="text-sm text-slate-500">support@gch.co.ke</p>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-slate-300" />
-              </a>
+          {/* Contact Support */}
+          <div className="clay-card-static" style={{ overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--clay-indigo-l)' }}>
+              <span className="clay-label" style={{ color: 'var(--clay-text-dark)', fontSize: 13, marginBottom: 0 }}>Contact Support</span>
+            </div>
 
-              <a
-                href="tel:+254123456789"
-                className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-                    <Phone className="h-5 w-5 text-emerald-600" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-medium text-slate-900">Call Support</p>
-                    <p className="text-sm text-slate-500">+254 123 456 789</p>
-                  </div>
+            <a
+              href="mailto:support@gch.co.ke"
+              style={{ display: 'flex', width: '100%', padding: 16, alignItems: 'center', justifyContent: 'space-between', textDecoration: 'none', borderBottom: '1px solid var(--clay-indigo-l)' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="clay-ico" style={{ width: 40, height: 40, background: 'var(--clay-purple-s)' }}>
+                  <Mail style={{ width: 20, height: 20, color: 'var(--clay-purple)' }} />
                 </div>
-                <ChevronRight className="h-5 w-5 text-slate-300" />
-              </a>
-            </CardContent>
-          </Card>
+                <div>
+                  <p style={{ fontWeight: 700, color: 'var(--clay-text-dark)', fontSize: 14, margin: 0 }}>Email Support</p>
+                  <p style={{ fontSize: 13, color: 'var(--clay-text-muted)', margin: 0 }}>support@gch.co.ke</p>
+                </div>
+              </div>
+              <ChevronRight style={{ width: 20, height: 20, color: 'var(--clay-text-muted)' }} />
+            </a>
 
-          <Card className="border-slate-100">
-            <CardHeader className="border-b border-slate-100 pb-4">
-              <CardTitle className="text-base">Feedback</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0 divide-y divide-slate-100">
-              <button
-                onClick={() => setShowFeedbackModal(true)}
-                className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-amber-50 flex items-center justify-center">
-                    <MessageSquare className="h-5 w-5 text-amber-600" />
-                  </div>
-                  <p className="font-medium text-slate-900">Send Feedback</p>
+            <a
+              href="tel:+254123456789"
+              style={{ display: 'flex', width: '100%', padding: 16, alignItems: 'center', justifyContent: 'space-between', textDecoration: 'none' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="clay-ico" style={{ width: 40, height: 40, background: 'var(--clay-emerald-s)' }}>
+                  <Phone style={{ width: 20, height: 20, color: 'var(--clay-emerald)' }} />
                 </div>
-                <ChevronRight className="h-5 w-5 text-slate-300" />
-              </button>
-            </CardContent>
-          </Card>
+                <div>
+                  <p style={{ fontWeight: 700, color: 'var(--clay-text-dark)', fontSize: 14, margin: 0 }}>Call Support</p>
+                  <p style={{ fontSize: 13, color: 'var(--clay-text-muted)', margin: 0 }}>+254 123 456 789</p>
+                </div>
+              </div>
+              <ChevronRight style={{ width: 20, height: 20, color: 'var(--clay-text-muted)' }} />
+            </a>
+          </div>
+
+          {/* Feedback */}
+          <div className="clay-card-static" style={{ overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--clay-indigo-l)' }}>
+              <span className="clay-label" style={{ color: 'var(--clay-text-dark)', fontSize: 13, marginBottom: 0 }}>Feedback</span>
+            </div>
+            <button
+              onClick={() => setShowFeedbackModal(true)}
+              style={{ width: '100%', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="clay-ico" style={{ width: 40, height: 40, background: 'var(--clay-amber-s)' }}>
+                  <MessageSquare style={{ width: 20, height: 20, color: 'var(--clay-amber)' }} />
+                </div>
+                <p style={{ fontWeight: 700, color: 'var(--clay-text-dark)', fontSize: 14, margin: 0 }}>Send Feedback</p>
+              </div>
+              <ChevronRight style={{ width: 20, height: 20, color: 'var(--clay-text-muted)' }} />
+            </button>
+          </div>
 
           {/* Feedback Modal */}
           {showFeedbackModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <div
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                onClick={() => !feedbackSending && setShowFeedbackModal(false)}
-              />
-              <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="clay-modal" onClick={() => !feedbackSending && setShowFeedbackModal(false)}>
+              <div className="clay-card-static" style={{ position: 'relative', width: '100%', maxWidth: 448, overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
                 {feedbackSuccess ? (
-                  <div className="p-8 text-center">
-                    <div className="h-16 w-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
-                      <CheckCircle className="h-8 w-8 text-emerald-600" />
+                  <div style={{ padding: 32, textAlign: 'center' }}>
+                    <div className="clay-ico" style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--clay-emerald-s)', margin: '0 auto 16px' }}>
+                      <CheckCircle style={{ width: 32, height: 32, color: 'var(--clay-emerald)' }} />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">Thank You!</h3>
-                    <p className="text-slate-600">Your feedback has been submitted successfully.</p>
+                    <h3 className="clay-display" style={{ fontSize: 20, fontWeight: 700, color: 'var(--clay-text-dark)', marginBottom: 8 }}>Thank You!</h3>
+                    <p style={{ color: 'var(--clay-text-mid)', fontSize: 14, margin: 0 }}>Your feedback has been submitted successfully.</p>
                   </div>
                 ) : (
                   <>
-                    <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                      <h3 className="text-lg font-bold text-slate-900">Send Feedback</h3>
+                    <div style={{ padding: 16, borderBottom: '1px solid var(--clay-indigo-l)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <h3 className="clay-display" style={{ fontSize: 18, fontWeight: 700, color: 'var(--clay-text-dark)', margin: 0 }}>Send Feedback</h3>
                       <button
                         onClick={() => setShowFeedbackModal(false)}
                         disabled={feedbackSending}
-                        className="h-8 w-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        style={{ width: 32, height: 32, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clay-text-muted)' }}
                         aria-label="Close modal"
                       >
-                        <span className="text-xl text-slate-500">×</span>
+                        <X style={{ width: 18, height: 18 }} />
                       </button>
                     </div>
 
-                    <div className="p-4 space-y-4">
+                    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Feedback Type</label>
-                        <div className="grid grid-cols-2 gap-2">
+                        <span className="clay-label" style={{ color: 'var(--clay-text-mid)', marginBottom: 10 }}>Feedback Type</span>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
                           {[
                             { value: 'suggestion', label: '💡 Suggestion' },
                             { value: 'bug', label: '🐛 Bug Report' },
@@ -1415,10 +1359,8 @@ export default function SettingsPage() {
                             <button
                               key={type.value}
                               onClick={() => setFeedbackType(type.value as any)}
-                              className={`px-3 py-2 rounded-xl text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${feedbackType === type.value
-                                  ? 'bg-blue-100 text-blue-700 border-2 border-blue-500'
-                                  : 'bg-slate-50 text-slate-600 border-2 border-transparent hover:bg-slate-100'
-                                }`}
+                              className={`clay-pill ${feedbackType === type.value ? 'clay-pill-active' : ''}`}
+                              style={{ padding: '8px 12px', fontSize: 13 }}
                               aria-pressed={feedbackType === type.value}
                             >
                               {type.label}
@@ -1428,7 +1370,7 @@ export default function SettingsPage() {
                       </div>
 
                       <div>
-                        <label htmlFor="feedbackContent" className="block text-sm font-medium text-slate-700 mb-2">
+                        <label htmlFor="feedbackContent" className="clay-label" style={{ color: 'var(--clay-text-mid)', marginBottom: 10 }}>
                           Your Feedback
                         </label>
                         <textarea
@@ -1437,35 +1379,37 @@ export default function SettingsPage() {
                           onChange={(e) => setFeedbackContent(e.target.value)}
                           placeholder="Tell us what you think..."
                           rows={4}
-                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-slate-900 placeholder:text-slate-400"
+                          className="clay-field"
+                          style={{ width: '100%', padding: '12px 16px', fontSize: 14, resize: 'none' }}
                           disabled={feedbackSending}
                         />
                       </div>
                     </div>
 
-                    <div className="p-4 border-t border-slate-100 flex gap-3">
-                      <Button
-                        variant="ghost"
+                    <div style={{ padding: 16, borderTop: '1px solid var(--clay-indigo-l)', display: 'flex', gap: 12 }}>
+                      <button
+                        className="clay-btn-sec"
                         onClick={() => setShowFeedbackModal(false)}
                         disabled={feedbackSending}
-                        className="flex-1"
+                        style={{ flex: 1, padding: '12px 20px', fontSize: 14 }}
                       >
                         Cancel
-                      </Button>
-                      <Button
+                      </button>
+                      <button
                         onClick={handleSendFeedback}
                         disabled={feedbackSending || !feedbackContent.trim()}
-                        className="flex-1 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/25 active:scale-95 transition-all disabled:opacity-50"
+                        className="clay-cta"
+                        style={{ flex: 1, padding: '12px 20px', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                       >
                         {feedbackSending ? (
                           <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} />
                             Sending...
                           </>
                         ) : (
                           'Send Feedback'
                         )}
-                      </Button>
+                      </button>
                     </div>
                   </>
                 )}
@@ -1482,68 +1426,67 @@ export default function SettingsPage() {
   if (activeSection === 'about') {
     return (
       <>
-        <div className="space-y-5">
-          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-blue-600 via-cyan-600 to-teal-500 p-5 sm:p-7 text-center">
-            <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
-            <div className="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-white/10 blur-xl" />
-            <div className="relative">
-              <button onClick={() => setActiveSection(null)} className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm mb-4 active:scale-95 transition-all" aria-label="Back to settings">
-                <ArrowLeft className="h-4 w-4" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Hero */}
+          <div className="clay-hero" style={{ padding: '24px 28px', background: 'linear-gradient(135deg, #6366F1, #06B6D4)', color: 'white', textAlign: 'center', position: 'relative' }}>
+            <div className="deco-blob" style={{ width: 120, height: 120, top: -40, right: -40, background: 'rgba(255,255,255,.1)' }} />
+            <div className="deco-blob" style={{ width: 80, height: 80, bottom: -30, left: -30, background: 'rgba(255,255,255,.1)' }} />
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setActiveSection(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,.8)', fontSize: 14, marginBottom: 16, background: 'none', border: 'none', cursor: 'pointer' }} aria-label="Back to settings">
+                <ArrowLeft style={{ width: 16, height: 16 }} />
                 <span>Settings</span>
               </button>
-              <div className="h-20 w-20 mx-auto rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg ring-2 ring-white/20 mb-4">
-                <span className="text-3xl font-bold text-white">GCH</span>
+              <div className="clay-ico" style={{ width: 72, height: 72, borderRadius: 20, background: 'rgba(255,255,255,.2)', margin: '0 auto 16px', backdropFilter: 'blur(8px)' }}>
+                <span style={{ fontSize: 28, fontWeight: 800, color: 'white' }}>GCH</span>
               </div>
-              <h1 className="text-xl font-bold text-white">Gertrude&apos;s Children Hospital</h1>
-              <p className="text-white/70 text-sm">Caregiver App</p>
-              <p className="text-xs text-white/50 mt-2">Version 2.0.0 (Build 145)</p>
-              <div className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-sm text-white text-xs font-medium">
-                <CheckCircle className="h-3.5 w-3.5" />
+              <h1 className="clay-display" style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Gertrude&apos;s Children Hospital</h1>
+              <p style={{ color: 'rgba(255,255,255,.7)', fontSize: 14, marginTop: 4 }}>Caregiver App</p>
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,.5)', marginTop: 8 }}>Version 2.0.0 (Build 145)</p>
+              <span className="clay-badge" style={{ background: 'rgba(255,255,255,.15)', color: 'white', marginTop: 10, display: 'inline-flex', backdropFilter: 'blur(8px)' }}>
+                <CheckCircle style={{ width: 14, height: 14 }} />
                 Up to date
-              </div>
+              </span>
             </div>
           </div>
 
-          <Card className="border-slate-100">
-            <CardContent className="p-0 divide-y divide-slate-100">
-              <div className="p-4 flex items-center justify-between">
-                <span className="text-sm text-slate-600">Device</span>
-                <span className="text-sm font-medium text-slate-900">Web Browser</span>
-              </div>
-              <div className="p-4 flex items-center justify-between">
-                <span className="text-sm text-slate-600">App Size</span>
-                <span className="text-sm font-medium text-slate-900">12.3 MB</span>
-              </div>
-              <button
-                onClick={() => addToast('success', 'Cache cleared')}
-                className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-              >
-                <span className="text-sm text-slate-600">Clear Cache</span>
-                <span className="text-sm font-medium text-blue-600">Clear</span>
-              </button>
-            </CardContent>
-          </Card>
+          {/* Device Info */}
+          <div className="clay-card-static" style={{ overflow: 'hidden' }}>
+            <div className="clay-info-row" style={{ margin: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 13, color: 'var(--clay-text-mid)' }}>Device</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--clay-text-dark)' }}>Web Browser</span>
+            </div>
+            <div className="clay-info-row" style={{ margin: '0 12px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 13, color: 'var(--clay-text-mid)' }}>App Size</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--clay-text-dark)' }}>12.3 MB</span>
+            </div>
+            <button
+              onClick={() => addToast('success', 'Cache cleared')}
+              style={{ width: '100%', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', borderTop: '1px solid var(--clay-indigo-l)', cursor: 'pointer' }}
+            >
+              <span style={{ fontSize: 13, color: 'var(--clay-text-mid)' }}>Clear Cache</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--clay-indigo)' }}>Clear</span>
+            </button>
+          </div>
 
-          <Card className="border-slate-100">
-            <CardContent className="p-0 divide-y divide-slate-100">
-              <button
-                onClick={() => addToast('info', 'What\'s new coming soon')}
-                className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-              >
-                <p className="text-sm font-medium text-slate-900">What&apos;s New</p>
-                <ChevronRight className="h-4 w-4 text-slate-300" />
-              </button>
-              <button
-                onClick={() => addToast('info', 'Licenses coming soon')}
-                className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-              >
-                <p className="text-sm font-medium text-slate-900">Open Source Licenses</p>
-                <ChevronRight className="h-4 w-4 text-slate-300" />
-              </button>
-            </CardContent>
-          </Card>
+          {/* Links */}
+          <div className="clay-card-static" style={{ overflow: 'hidden' }}>
+            <button
+              onClick={() => addToast('info', 'What\'s new coming soon')}
+              style={{ width: '100%', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', borderBottom: '1px solid var(--clay-indigo-l)', cursor: 'pointer' }}
+            >
+              <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--clay-text-dark)', margin: 0 }}>What&apos;s New</p>
+              <ChevronRight style={{ width: 16, height: 16, color: 'var(--clay-text-muted)' }} />
+            </button>
+            <button
+              onClick={() => addToast('info', 'Licenses coming soon')}
+              style={{ width: '100%', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--clay-text-dark)', margin: 0 }}>Open Source Licenses</p>
+              <ChevronRight style={{ width: 16, height: 16, color: 'var(--clay-text-muted)' }} />
+            </button>
+          </div>
 
-          <p className="text-center text-xs text-slate-400">
+          <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--clay-text-muted)' }}>
             © 2026 Gertrude&apos;s Children&apos;s Hospital.
             <br />
             All rights reserved.
@@ -1557,14 +1500,14 @@ export default function SettingsPage() {
   // --- Main Settings View ---
   return (
     <>
-      <div className="space-y-5">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         {/* Hero profile banner */}
-        <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-blue-600 via-cyan-600 to-teal-500 p-5 sm:p-7">
-          <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
-          <div className="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-white/10 blur-xl" />
-          <div className="absolute top-4 right-4 h-16 w-16 rounded-full bg-white/5 blur-lg" />
-          <div className="relative flex items-center gap-4">
-            <div className="h-16 w-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl font-bold text-white shadow-lg ring-2 ring-white/20 shrink-0">
+        <div className="clay-hero" style={{ padding: '20px 28px', background: 'linear-gradient(135deg, #6366F1, #06B6D4)', color: 'white', position: 'relative' }}>
+          <div className="deco-blob" style={{ width: 120, height: 120, top: -40, right: -40, background: 'rgba(255,255,255,.12)' }} />
+          <div className="deco-blob" style={{ width: 80, height: 80, bottom: -30, left: -30, background: 'rgba(255,255,255,.1)' }} />
+          <div className="deco-blob" style={{ width: 60, height: 60, top: 16, right: 16, background: 'rgba(255,255,255,.05)' }} />
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div className="clay-avatar" style={{ width: 60, height: 60, background: 'rgba(255,255,255,.2)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, color: 'white', flexShrink: 0 }}>
               {user?.fullName
                 .split(' ')
                 .map((n) => n[0])
@@ -1572,34 +1515,35 @@ export default function SettingsPage() {
                 .toUpperCase()
                 .slice(0, 2)}
             </div>
-            <div className="min-w-0">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 backdrop-blur-sm mb-1.5">
-                <span className="text-[10px] font-medium text-white/90">Caregiver Account</span>
-              </div>
-              <p className="font-bold text-lg text-white truncate">{user?.fullName}</p>
-              <p className="text-white/70 text-sm truncate">{user?.email}</p>
+            <div style={{ minWidth: 0 }}>
+              <span className="clay-badge" style={{ background: 'rgba(255,255,255,.15)', color: 'rgba(255,255,255,.9)', fontSize: 10, marginBottom: 6, backdropFilter: 'blur(8px)' }}>
+                Caregiver Account
+              </span>
+              <p style={{ fontWeight: 800, fontSize: 18, color: 'white', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.fullName}</p>
+              <p style={{ color: 'rgba(255,255,255,.7)', fontSize: 14, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</p>
             </div>
           </div>
         </div>
 
         {/* Settings Sections */}
-        <div className="space-y-2">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {settingsSections.map((section) => {
             const Icon = section.icon
             return (
               <button
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
-                className="group w-full flex items-center gap-3.5 p-3.5 sm:p-4 rounded-xl bg-white ring-1 ring-slate-100 shadow-sm hover:shadow-md hover:ring-slate-200 active:scale-[0.98] transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="clay-row"
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: 14, border: 'none', cursor: 'pointer', textAlign: 'left' }}
               >
-                <div className={`h-10 w-10 sm:h-11 sm:w-11 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shrink-0 ${section.color}`}>
-                  <Icon className="h-5 w-5" />
+                <div className="clay-ico" style={{ width: 44, height: 44, background: section.bg, flexShrink: 0 }}>
+                  <Icon style={{ width: 20, height: 20, color: section.iconColor }} />
                 </div>
-                <div className="flex-1 text-left min-w-0">
-                  <p className="font-semibold text-slate-900 text-sm sm:text-base">{section.title}</p>
-                  <p className="text-xs sm:text-sm text-slate-500 truncate">{section.description}</p>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontWeight: 700, color: 'var(--clay-text-dark)', fontSize: 14, margin: 0 }}>{section.title}</p>
+                  <p style={{ fontSize: 13, color: 'var(--clay-text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{section.description}</p>
                 </div>
-                <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+                <ChevronRight style={{ width: 20, height: 20, color: 'var(--clay-text-muted)', flexShrink: 0 }} />
               </button>
             )
           })}
@@ -1607,15 +1551,15 @@ export default function SettingsPage() {
 
         {/* Sign Out */}
         <form action="/api/auth/logout" method="POST">
-          <Button
+          <button
             type="button"
-            variant="ghost"
             onClick={() => setShowSignOutConfirm(true)}
-            className="w-full rounded-xl ring-1 ring-red-200 border-0 py-5 text-red-600 hover:bg-red-50 hover:ring-red-300 active:scale-[0.98] transition-all focus:ring-2 focus:ring-red-500"
+            className="clay-cta clay-cta-rose"
+            style={{ width: '100%', padding: '14px 24px', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
           >
-            <LogOut className="h-4 w-4 mr-2" />
+            <LogOut style={{ width: 16, height: 16 }} />
             Sign Out
-          </Button>
+          </button>
         </form>
       </div>
 

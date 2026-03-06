@@ -231,9 +231,10 @@ export default function StaffMessagesPage() {
             }
             handleSelectConversation(newConv)
             // Log conversation creation
+            const recipientName = selectedRecipient?.full_name || 'Unknown recipient'
             logActivity({
                 action: ActivityActions.CONVERSATION_CREATE,
-                description: `Created conversation with ${selectedRecipient?.full_name}`,
+                description: `Created conversation with ${recipientName}`,
                 target_id: data.conversation?.id || null,
                 metadata: { recipientId: selectedRecipient?.id },
             }).catch(() => {})

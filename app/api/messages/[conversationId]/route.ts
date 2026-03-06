@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logChatMessageSent, logMessagesRead } from '@/lib/audit/message-logger'
 
 // GET - Fetch messages for a conversation
 export async function GET(
@@ -59,6 +60,14 @@ if (!hasAccess) {
                 .from('chat_messages')
                 .update({ is_read: true, read_at: new Date().toISOString() })
                 .in('id', unreadIds)
+
+            // Audit: log message read receipts
+            logMessagesRead(supabase, {
+                message_ids: unreadIds,
+                conversation_id: conversationId,
+                reader_id: user.id,
+                request,
+            }).catch(() => {}) // never block message flow for audit
         }
 
         // Transform to camelCase for frontend
@@ -138,6 +147,20 @@ export async function POST(
             console.error('Error creating message:', msgError)
             return NextResponse.json({ error: msgError.message }, { status: 500 })
         }
+
+        // Audit: log the sent message (supplements DB trigger with richer metadata)
+        logChatMessageSent(supabase, {
+            message_id: message.id,
+            conversation_id: conversationId,
+            sender_id: user.id,
+            sender_type: senderType,
+            content: content.trim(),
+            has_attachments: Array.isArray(attachments) && attachments.length > 0,
+            attachment_count: Array.isArray(attachments) ? attachments.length : 0,
+            conversation_type: conversation.conversation_type || 'caregiver_staff',
+            subject: conversation.subject || undefined,
+            request,
+        }).catch(() => {}) // never block message delivery for audit
 
         return NextResponse.json({ message }, { status: 201 })
     } catch (error) {

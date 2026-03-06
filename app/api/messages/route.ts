@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logChatMessageSent } from '@/lib/audit/message-logger'
+import { logActivityServer, ActivityActions } from '@/lib/activity-logger'
 
 // GET - Fetch conversations for the current user
 export async function GET(request: NextRequest) {
@@ -292,7 +294,59 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: msgError.message }, { status: 500 })
         }
 
-        return NextResponse.json({ conversation, message }, { status: 201 })
+        // Resolve the other party's name for the response
+        let recipientName = 'Unknown'
+        if (isStaffStaff && staffId2) {
+            const { data: recipientProfile } = await supabase
+                .from('profiles').select('full_name').eq('id', staffId2).single()
+            recipientName = recipientProfile?.full_name || 'Unknown'
+        } else if (isCaregiver && (staffId || conversation.staff_id)) {
+            const { data: staffProfile } = await supabase
+                .from('profiles').select('full_name').eq('id', staffId || conversation.staff_id).single()
+            recipientName = staffProfile?.full_name || 'Unknown'
+        } else if (!isCaregiver && conversation.caregiver_id) {
+            const { data: caregiverProfile } = await supabase
+                .from('profiles').select('full_name').eq('id', conversation.caregiver_id).single()
+            recipientName = caregiverProfile?.full_name || 'Unknown'
+        }
+
+        // Audit: log conversation creation
+        logActivityServer(supabase, {
+            action: ActivityActions.CONVERSATION_CREATE,
+            target_table: 'chat_conversations',
+            target_id: conversation.id,
+            resource_name: recipientName,
+            description: `New ${conversationData.conversation_type} conversation created with ${recipientName}`,
+            metadata: {
+                conversation_type: conversationData.conversation_type,
+                subject: conversationData.subject,
+                recipient_name: recipientName,
+                source: 'application',
+            },
+        }, { autoUser: true }).catch(() => {})
+
+        // Audit: log the initial message
+        logChatMessageSent(supabase, {
+            message_id: message.id,
+            conversation_id: conversation.id,
+            sender_id: user.id,
+            sender_type: senderType,
+            content: initialMessage,
+            has_attachments: false,
+            conversation_type: conversationData.conversation_type,
+            subject: conversationData.subject || undefined,
+            request,
+        }).catch(() => {})
+
+        // Return enriched conversation with resolved name
+        const enrichedConversation = {
+            ...conversation,
+            staffName: isCaregiver ? recipientName : undefined,
+            caregiverName: !isCaregiver && !isStaffStaff ? recipientName : undefined,
+            otherStaffName: isStaffStaff ? recipientName : undefined,
+        }
+
+        return NextResponse.json({ conversation: enrichedConversation, message }, { status: 201 })
     } catch (error) {
         console.error('Error in POST /api/messages:', error)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
