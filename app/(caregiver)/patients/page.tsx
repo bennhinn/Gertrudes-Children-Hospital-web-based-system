@@ -1,4 +1,4 @@
- 'use client'
+'use client'
 
 import { useState, useEffect, useMemo } from 'react'
 import { logActivity, ActivityActions } from '@/lib/activity-logger'
@@ -101,7 +101,7 @@ export default function PatientsPage() {
         action_category: 'patient',
         target_table: 'children',
         description: `Added child ${fullName}`
-      }).catch(() => {})
+      }).catch(() => { })
 
       // Reset form
       e.currentTarget.reset()
@@ -166,70 +166,79 @@ export default function PatientsPage() {
   function getGenderDetails(gender: string) {
     switch (gender) {
       case 'male':
-        return { color: 'text-blue-600', bg: 'bg-blue-100', icon: '♂' }
+        return { color: 'text-blue-600', bg: 'bg-blue-50', ring: 'ring-blue-200/60', icon: '♂' }
       case 'female':
-        return { color: 'text-pink-600', bg: 'bg-pink-100', icon: '♀' }
+        return { color: 'text-pink-600', bg: 'bg-pink-50', ring: 'ring-pink-200/60', icon: '♀' }
       default:
-        return { color: 'text-purple-600', bg: 'bg-purple-100', icon: '⚧' }
+        return { color: 'text-purple-600', bg: 'bg-purple-50', ring: 'ring-purple-200/60', icon: '⚧' }
     }
   }
 
   return (
-    <main className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 flex items-center gap-2">
-            <Users className="h-7 w-7 text-blue-600" />
-            My Children
-          </h1>
-          <p className="mt-1 text-sm sm:text-base text-slate-600">Manage your children's health profiles</p>
-        </div>
-        <div className="flex gap-3">
-          {!showAddForm && (
+    <main className="space-y-5 sm:space-y-6 lg:space-y-8">
+      {/* Hero Header */}
+      <section className="relative overflow-hidden rounded-2xl bg-linear-to-br from-blue-600 via-blue-700 to-indigo-700 p-5 text-white shadow-lg shadow-blue-600/20 sm:rounded-3xl sm:p-8 lg:p-10">
+        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5 motion-safe:animate-pulse sm:h-56 sm:w-56" aria-hidden="true" />
+        <div className="absolute -bottom-6 -left-6 h-28 w-28 rounded-full bg-white/5 motion-safe:animate-pulse [animation-delay:1s] sm:h-40 sm:w-40" aria-hidden="true" />
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-blue-100 backdrop-blur-sm">
+              <Users className="h-3 w-3" />
+              Children Profiles
+            </div>
+            <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl lg:text-4xl">
+              My Children
+            </h1>
+            <p className="mt-1 text-sm text-blue-100 sm:text-base">
+              Manage your children&apos;s health profiles
+            </p>
+          </div>
+          <div className="flex gap-3">
+            {!showAddForm && (
+              <Button
+                onClick={() => { logActivity({ action: 'opened_add_child_form', action_category: 'patient', description: 'Opened add child form' }).catch(() => { }); setShowAddForm(true) }}
+                className="flex-1 sm:flex-none bg-white text-blue-600 hover:bg-white/95 shadow-lg shadow-blue-900/20 active:scale-95 transition-transform text-sm sm:text-base font-semibold"
+              >
+                <UserPlus className="h-4 w-4 mr-1.5" />
+                Add New Child
+              </Button>
+            )}
             <Button
-              onClick={() => { logActivity({ action: 'opened_add_child_form', action_category: 'patient', description: 'Opened add child form' }).catch(() => {}); setShowAddForm(true) }}
-              className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg text-sm sm:text-base transition-all duration-300"
+              onClick={() => router.push('/dashboard')}
+              variant="ghost"
+              className="flex-1 sm:flex-none bg-white/15 text-white backdrop-blur-md hover:bg-white/25 border border-white/20 active:scale-95 transition-transform text-sm sm:text-base"
             >
-              <UserPlus className="h-4 w-4 mr-1.5" />
-              Add New Child
+              <LayoutDashboard className="h-4 w-4 mr-1.5" />
+              Dashboard
             </Button>
-          )}
-          <Button
-            onClick={() => router.push('/dashboard')}
-            variant="secondary"
-            className="flex-1 sm:flex-none border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-800 text-sm sm:text-base"
-          >
-            <LayoutDashboard className="h-4 w-4 mr-1.5" />
-            Dashboard
-          </Button>
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* Quick Stats Bar */}
       {children.length > 0 && !showAddForm && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Card className="border border-slate-200 shadow-sm bg-white">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <Baby className="h-5 w-5 text-blue-600" />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+          <Card className="group border-0 shadow-sm ring-1 ring-blue-100 bg-linear-to-br from-white via-white to-blue-50/80 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]">
+            <CardContent className="p-4 flex items-center gap-3 sm:gap-4">
+              <div className="h-11 w-11 shrink-0 rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25 flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
+                <Baby className="h-5 w-5 text-white" />
               </div>
               <div>
-                <p className="text-sm text-slate-600">Total Children</p>
-                <p className="text-2xl font-bold text-slate-800">{children.length}</p>
+                <p className="text-xs font-semibold text-blue-900 sm:text-sm">Total Children</p>
+                <p className="text-2xl font-bold text-blue-600 tracking-tight">{children.length}</p>
               </div>
             </CardContent>
           </Card>
-          <Card className="border border-slate-200 shadow-sm bg-white">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                <Calendar className="h-5 w-5 text-emerald-600" />
+          <Card className="group border-0 shadow-sm ring-1 ring-emerald-100 bg-linear-to-br from-white via-white to-emerald-50/80 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]">
+            <CardContent className="p-4 flex items-center gap-3 sm:gap-4">
+              <div className="h-11 w-11 shrink-0 rounded-xl bg-linear-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/25 flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
+                <Calendar className="h-5 w-5 text-white" />
               </div>
               <div>
-                <p className="text-sm text-slate-600">Book Appointment</p>
-                <Button 
-                  variant="secondary" 
-                  className="p-0 h-auto text-base font-semibold text-emerald-700 hover:text-emerald-800"
+                <p className="text-xs font-semibold text-emerald-900 sm:text-sm">Book Appointment</p>
+                <Button
+                  variant="ghost"
+                  className="p-0 h-auto text-base font-bold text-emerald-600 hover:text-emerald-700 active:scale-95 transition-transform"
                   onClick={() => router.push('/caregiver-appointments')}
                 >
                   Schedule now →
@@ -237,17 +246,17 @@ export default function PatientsPage() {
               </div>
             </CardContent>
           </Card>
-          <Card 
-            className="border border-slate-200 shadow-sm bg-white hover:bg-slate-50 cursor-pointer transition-colors"
+          <Card
+            className="group border-0 shadow-sm ring-1 ring-purple-100 bg-linear-to-br from-white via-white to-purple-50/80 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]"
             onClick={() => router.push('/caregiver-health-records')}
           >
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
-                <FileCheck className="h-5 w-5 text-purple-600" />
+            <CardContent className="p-4 flex items-center gap-3 sm:gap-4">
+              <div className="h-11 w-11 shrink-0 rounded-xl bg-linear-to-br from-purple-500 to-purple-600 shadow-lg shadow-purple-500/25 flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
+                <FileCheck className="h-5 w-5 text-white" />
               </div>
               <div>
-                <p className="text-sm text-slate-600">Health Records</p>
-                <p className="text-lg font-semibold text-purple-700 hover:text-purple-800 cursor-pointer">
+                <p className="text-xs font-semibold text-purple-900 sm:text-sm">Health Records</p>
+                <p className="text-base font-bold text-purple-600">
                   View All →
                 </p>
               </div>
@@ -258,8 +267,8 @@ export default function PatientsPage() {
 
       {/* Add Child Form */}
       {showAddForm && (
-        <Card className="border border-slate-200 shadow-lg bg-white">
-          <CardHeader className="border-b border-slate-200 bg-white pb-4">
+        <Card className="border-0 shadow-lg ring-1 ring-slate-200 bg-white overflow-hidden">
+          <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
             <div className="flex items-center gap-3">
               <Button
                 type="button"
@@ -390,10 +399,10 @@ export default function PatientsPage() {
               </div>
 
               <div className="flex gap-3 pt-4 border-t border-slate-200">
-                <Button 
-                  type="submit" 
-                  disabled={loading} 
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md transition-all duration-300"
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md active:scale-95 transition-all duration-300"
                 >
                   {loading ? (
                     <>
@@ -414,7 +423,7 @@ export default function PatientsPage() {
                     setError(null)
                   }}
                   variant="secondary"
-                  className="flex-1 border-slate-300 text-slate-700 hover:bg-slate-50"
+                  className="flex-1 border-slate-300 text-slate-700 hover:bg-slate-50 active:scale-95 transition-transform"
                 >
                   Cancel
                 </Button>
@@ -424,49 +433,45 @@ export default function PatientsPage() {
         </Card>
       )}
 
-      {/* Search Section */}
+      {/* Search */}
       {children.length > 0 && !showAddForm && (
-        <Card className="border border-slate-200 shadow-sm bg-white">
-          <CardContent className="p-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search by name, gender, blood type, allergies..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-slate-300 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-            {searchQuery && (
-              <p className="mt-2 text-sm text-slate-500">
-                Found {filteredChildren.length} of {children.length} children matching &quot;{searchQuery}&quot;
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 sm:h-5 sm:w-5" />
+          <input
+            type="text"
+            placeholder="Search by name, gender, blood type, allergies..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full rounded-xl bg-white pl-11 pr-11 py-3 text-sm shadow-sm ring-1 ring-slate-200 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow sm:rounded-2xl sm:py-3.5 sm:pl-12 sm:text-base"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 active:scale-90 transition-all"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+          {searchQuery && (
+            <p className="mt-2 pl-1 text-sm text-slate-500">
+              Found {filteredChildren.length} of {children.length} children matching &quot;{searchQuery}&quot;
+            </p>
+          )}
+        </div>
       )}
 
       {/* Children List */}
       {children.length === 0 && !showAddForm ? (
-        <Card className="border border-slate-200 shadow-lg bg-white">
-          <CardContent className="py-12 sm:py-16 text-center">
-            <div className="mx-auto mb-4 inline-flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-full bg-blue-50">
-              <Baby className="h-10 w-10 sm:h-12 sm:w-12 text-blue-600" />
+        <Card className="border-0 shadow-sm ring-1 ring-slate-100 bg-white">
+          <CardContent className="py-14 sm:py-20 text-center">
+            <div className="mx-auto mb-5 inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25 sm:h-24 sm:w-24 sm:rounded-3xl">
+              <Baby className="h-10 w-10 text-white sm:h-12 sm:w-12" />
             </div>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-800">No Children Added Yet</h2>
-            <p className="mt-2 text-sm sm:text-base text-slate-600">Add your first child to start booking appointments and managing health records</p>
+            <h2 className="text-xl font-bold text-slate-800 sm:text-2xl">No Children Added Yet</h2>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-slate-500 sm:text-base">Add your first child to start booking appointments and managing health records</p>
             <Button
               onClick={() => setShowAddForm(true)}
-              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
+              className="mt-6 bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg active:scale-95 transition-all"
             >
               <UserPlus className="h-4 w-4 mr-1.5" />
               Add Your First Child
@@ -474,58 +479,58 @@ export default function PatientsPage() {
           </CardContent>
         </Card>
       ) : filteredChildren.length === 0 && !showAddForm ? (
-        <Card className="border border-slate-200 shadow-lg bg-white">
-          <CardContent className="py-12 sm:py-16 text-center">
-            <div className="mx-auto mb-4 inline-flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-slate-100">
-              <Search className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400" />
+        <Card className="border-0 shadow-sm ring-1 ring-slate-100 bg-white">
+          <CardContent className="py-14 sm:py-20 text-center">
+            <div className="mx-auto mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 sm:h-20 sm:w-20 sm:rounded-3xl">
+              <Search className="h-8 w-8 text-slate-400 sm:h-10 sm:w-10" />
             </div>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-800">No Matching Children</h2>
-            <p className="mt-2 text-sm sm:text-base text-slate-600">Try adjusting your search term</p>
+            <h2 className="text-xl font-bold text-slate-800 sm:text-2xl">No Matching Children</h2>
+            <p className="mx-auto mt-2 max-w-xs text-sm text-slate-500 sm:text-base">Try adjusting your search term</p>
             <Button
               onClick={() => setSearchQuery('')}
-              className="mt-4 bg-slate-200 text-slate-700 hover:bg-slate-300"
+              className="mt-6 bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95 transition-all ring-1 ring-slate-200"
             >
               Clear Search
             </Button>
           </CardContent>
         </Card>
       ) : !showAddForm && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6">
           {filteredChildren.map((child) => {
             const genderDetails = getGenderDetails(child.gender)
             return (
               <Card
                 key={child.id}
-                className="border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 bg-white hover:bg-slate-50"
+                className="group/card overflow-hidden border-0 shadow-sm ring-1 ring-slate-200/80 bg-white transition-all duration-200 hover:ring-blue-200 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]"
               >
-                <CardContent className="p-4 sm:p-6">
+                <CardContent className="p-4 sm:p-5 lg:p-6">
                   {/* Header with Icon */}
-                  <div className="mb-4 flex items-start justify-between gap-2">
-                    <div className={`flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full ${genderDetails.bg}`}>
-                      <span className={`text-lg sm:text-xl font-bold ${genderDetails.color}`}>
+                  <div className="mb-3 flex items-start justify-between gap-2">
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ring-1 ${genderDetails.bg} ${genderDetails.ring} transition-transform duration-200 group-hover/card:scale-105 sm:h-12 sm:w-12`}>
+                      <span className={`text-base font-bold sm:text-lg ${genderDetails.color}`}>
                         {genderDetails.icon}
                       </span>
                     </div>
-                    <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs font-medium">
-                      {calculateAge(child.date_of_birth)} {calculateAge(child.date_of_birth) === 1 ? 'year' : 'years'} old
+                    <Badge className="shrink-0 rounded-full border-0 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-600 ring-1 ring-blue-200/60 sm:px-2.5 sm:py-1 sm:text-xs">
+                      {calculateAge(child.date_of_birth)} {calculateAge(child.date_of_birth) === 1 ? 'yr' : 'yrs'} old
                     </Badge>
                   </div>
 
                   {/* Child Info */}
                   <div className="space-y-2">
-                    <h3 className="text-base sm:text-lg font-bold text-slate-800 truncate">{child.full_name}</h3>
+                    <h3 className="text-sm font-bold text-slate-800 truncate sm:text-base">{child.full_name}</h3>
 
-                    <div className="space-y-1.5 text-xs sm:text-sm text-slate-600">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-3 w-3 text-slate-400" />
-                        <span>{formatDate(child.date_of_birth)}</span>
+                    <div className="space-y-1 text-xs text-slate-500 sm:space-y-1.5 sm:text-sm">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="h-3 w-3 shrink-0 text-slate-400" />
+                        <span className="truncate">{formatDate(child.date_of_birth)}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${genderDetails.bg} ${genderDetails.color} font-medium`}>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium ${genderDetails.bg} ${genderDetails.color} sm:text-xs`}>
                           {child.gender.charAt(0).toUpperCase() + child.gender.slice(1)}
                         </span>
                         {child.blood_type && (
-                          <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700 font-medium">
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-red-50 text-red-600 ring-1 ring-red-100 sm:text-xs">
                             {child.blood_type}
                           </span>
                         )}
@@ -534,23 +539,23 @@ export default function PatientsPage() {
 
                     {/* Additional Info */}
                     {(child.allergies || child.medical_notes) && (
-                      <div className="mt-4 space-y-2">
+                      <div className="mt-3 space-y-2 sm:mt-4">
                         {child.allergies && (
-                          <div className="rounded-lg bg-red-50 p-3 border border-red-100">
-                            <div className="flex items-center gap-1.5 mb-1">
-                              <AlertTriangle className="h-3 w-3 text-red-700" />
-                              <p className="text-xs font-medium text-red-700">Allergies</p>
+                          <div className="rounded-lg bg-red-50 p-2.5 ring-1 ring-red-100 sm:rounded-xl sm:p-3">
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              <AlertTriangle className="h-3 w-3 shrink-0 text-red-600" />
+                              <p className="text-[11px] font-semibold text-red-700 sm:text-xs">Allergies</p>
                             </div>
-                            <p className="text-xs text-red-600 line-clamp-2">{formatAllergies(child.allergies)}</p>
+                            <p className="text-[11px] text-red-600 line-clamp-1 sm:text-xs sm:line-clamp-2">{formatAllergies(child.allergies)}</p>
                           </div>
                         )}
                         {child.medical_notes && (
-                          <div className="rounded-lg bg-blue-50 p-3 border border-blue-100">
-                            <div className="flex items-center gap-1.5 mb-1">
-                              <FileText className="h-3 w-3 text-blue-700" />
-                              <p className="text-xs font-medium text-blue-700">Medical Notes</p>
+                          <div className="rounded-lg bg-blue-50 p-2.5 ring-1 ring-blue-100 sm:rounded-xl sm:p-3">
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              <FileText className="h-3 w-3 shrink-0 text-blue-600" />
+                              <p className="text-[11px] font-semibold text-blue-700 sm:text-xs">Medical Notes</p>
                             </div>
-                            <p className="text-xs text-blue-600 line-clamp-2">{child.medical_notes}</p>
+                            <p className="text-[11px] text-blue-600 line-clamp-1 sm:text-xs sm:line-clamp-2">{child.medical_notes}</p>
                           </div>
                         )}
                       </div>
@@ -558,24 +563,24 @@ export default function PatientsPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="mt-4 pt-4 border-t border-slate-200">
-                    <div className="flex gap-2">
+                  <div className="mt-3 pt-3 border-t border-slate-100 sm:mt-4 sm:pt-4">
+                    <div className="grid grid-cols-2 gap-2">
                       <Button
                         size="sm"
                         onClick={() => router.push('/caregiver-appointments')}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-600/20 active:scale-95 transition-all text-xs sm:text-sm"
                       >
-                        <Calendar className="h-4 w-4 mr-1.5" />
-                        Book Appointment
+                        <Calendar className="h-3.5 w-3.5 shrink-0 mr-1" />
+                        <span className="truncate">Book</span>
                       </Button>
                       <Button
                         size="sm"
                         variant="secondary"
-                        className="flex-1 border-slate-300 text-slate-700 hover:bg-slate-50"
+                        className="w-full text-slate-700 hover:bg-slate-50 ring-1 ring-slate-200 active:scale-95 transition-all text-xs sm:text-sm"
                         onClick={() => router.push(`/caregiver-health-records?childId=${child.id}`)}
                       >
-                        <FileCheck className="h-4 w-4 mr-1.5" />
-                        Health Records
+                        <FileCheck className="h-3.5 w-3.5 shrink-0 mr-1" />
+                        <span className="truncate">Records</span>
                       </Button>
                     </div>
                   </div>

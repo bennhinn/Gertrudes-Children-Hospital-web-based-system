@@ -39,7 +39,8 @@ import {
   Search,
   Loader2,
   AlertCircle,
-  X
+  X,
+  ArrowLeft
 } from 'lucide-react'
 
 // --- Types ---
@@ -79,22 +80,20 @@ function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`rounded-lg shadow-lg p-4 flex items-start gap-3 animate-slide-in-right bg-white border ${
-            toast.type === 'success'
+          className={`rounded-lg shadow-lg p-4 flex items-start gap-3 animate-slide-in-right bg-white border ${toast.type === 'success'
               ? 'border-emerald-200 bg-emerald-50'
               : toast.type === 'error'
-              ? 'border-red-200 bg-red-50'
-              : 'border-blue-200 bg-blue-50'
-          }`}
+                ? 'border-red-200 bg-red-50'
+                : 'border-blue-200 bg-blue-50'
+            }`}
         >
           <div
-            className={`mt-0.5 ${
-              toast.type === 'success'
+            className={`mt-0.5 ${toast.type === 'success'
                 ? 'text-emerald-600'
                 : toast.type === 'error'
-                ? 'text-red-600'
-                : 'text-blue-600'
-            }`}
+                  ? 'text-red-600'
+                  : 'text-blue-600'
+              }`}
           >
             {toast.type === 'success' && <CheckCircle className="h-5 w-5" />}
             {toast.type === 'error' && <AlertCircle className="h-5 w-5" />}
@@ -151,11 +150,10 @@ function ConfirmationModal({
               onConfirm()
               onClose()
             }}
-            className={`flex-1 ${
-              confirmVariant === 'destructive'
-                ? 'bg-red-600 hover:bg-red-700 text-white'
-                : 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600'
-            }`}
+            className={`flex-1 active:scale-95 transition-all ${confirmVariant === 'destructive'
+                ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/25'
+                : 'bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/25'
+              }`}
           >
             {confirmText}
           </Button>
@@ -237,7 +235,7 @@ export default function SettingsPage() {
 
   // Log that caregiver opened settings
   useEffect(() => {
-    logActivity({ action: 'caregiver_settings_view', action_category: 'system', description: 'Viewed settings page' }).catch(() => {})
+    logActivity({ action: 'caregiver_settings_view', action_category: 'system', description: 'Viewed settings page' }).catch(() => { })
   }, [])
 
   useEffect(() => {
@@ -428,7 +426,7 @@ export default function SettingsPage() {
       addToast('success', 'Thank you for your feedback!')
 
       // Log feedback submission
-      logActivity({ action: 'caregiver_feedback_send', action_category: 'other', description: `Feedback sent: ${feedbackType}`, metadata: { type: feedbackType } }).catch(() => {})
+      logActivity({ action: 'caregiver_feedback_send', action_category: 'other', description: `Feedback sent: ${feedbackType}`, metadata: { type: feedbackType } }).catch(() => { })
 
       setTimeout(() => {
         setShowFeedbackModal(false)
@@ -452,42 +450,42 @@ export default function SettingsPage() {
         title: 'Profile',
         description: 'Personal information & contact details',
         icon: User,
-        color: 'text-blue-600 bg-blue-50'
+        color: 'text-white bg-linear-to-br from-blue-500 to-cyan-500 shadow-lg shadow-blue-500/20'
       },
       {
         id: 'notifications',
         title: 'Notifications',
         description: 'Reminders & alerts preferences',
         icon: Bell,
-        color: 'text-amber-600 bg-amber-50'
+        color: 'text-white bg-linear-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/20'
       },
       {
         id: 'privacy',
         title: 'Privacy & Security',
         description: 'Password, 2FA & data settings',
         icon: Shield,
-        color: 'text-emerald-600 bg-emerald-50'
+        color: 'text-white bg-linear-to-br from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/20'
       },
       {
         id: 'preferences',
         title: 'Preferences',
         description: 'Theme, language & display',
         icon: Palette,
-        color: 'text-purple-600 bg-purple-50'
+        color: 'text-white bg-linear-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-500/20'
       },
       {
         id: 'help',
         title: 'Help & Support',
         description: 'FAQs, contact & feedback',
         icon: HelpCircle,
-        color: 'text-cyan-600 bg-cyan-50'
+        color: 'text-white bg-linear-to-br from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/20'
       },
       {
         id: 'about',
         title: 'About',
         description: 'App version & information',
         icon: Info,
-        color: 'text-slate-600 bg-slate-100'
+        color: 'text-white bg-linear-to-br from-slate-600 to-slate-500 shadow-lg shadow-slate-500/20'
       }
     ],
     []
@@ -496,11 +494,27 @@ export default function SettingsPage() {
   // --- Loading State ---
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="h-8 w-32 bg-slate-200 rounded-lg animate-pulse" />
-        <div className="grid gap-4">
+      <div className="space-y-5">
+        {/* Hero skeleton */}
+        <div className="rounded-2xl bg-linear-to-br from-slate-200 to-slate-100 p-6 animate-pulse">
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 rounded-2xl bg-slate-300/50 shrink-0" />
+            <div className="space-y-2 flex-1">
+              <div className="h-5 w-36 bg-slate-300/50 rounded" />
+              <div className="h-3.5 w-48 bg-slate-300/40 rounded" />
+            </div>
+          </div>
+        </div>
+        {/* Section skeletons */}
+        <div className="space-y-2.5">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-20 bg-slate-100 rounded-xl animate-pulse" />
+            <div key={i} className="flex items-center gap-3.5 p-4 rounded-xl bg-white ring-1 ring-slate-100">
+              <div className="h-11 w-11 rounded-xl bg-slate-200 animate-pulse shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-24 bg-slate-200 rounded animate-pulse" />
+                <div className="h-3 w-40 bg-slate-100 rounded animate-pulse" />
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -511,26 +525,25 @@ export default function SettingsPage() {
   if (activeSection === 'profile') {
     return (
       <>
-        <div className="space-y-6">
-          <button
-            onClick={() => setActiveSection(null)}
-            className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-2 py-1"
-            aria-label="Back to settings"
-          >
-            <ChevronRight className="h-4 w-4 rotate-180" />
-            Back to Settings
-          </button>
-
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Profile</h1>
-            <p className="text-slate-500 mt-1">Manage your personal information</p>
+        <div className="space-y-5">
+          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-blue-600 via-blue-500 to-cyan-500 p-5 sm:p-6">
+            <div className="absolute -top-8 -right-8 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
+            <div className="absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-white/10 blur-xl" />
+            <div className="relative">
+              <button onClick={() => setActiveSection(null)} className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm mb-3 active:scale-95 transition-all" aria-label="Back to settings">
+                <ArrowLeft className="h-4 w-4" />
+                <span>Settings</span>
+              </button>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-white">Profile</h1>
+              <p className="text-sm text-white/70 mt-1">Manage your personal information</p>
+            </div>
           </div>
 
-          <Card className="border-slate-100">
+          <Card className="ring-1 ring-slate-100 border-0 shadow-sm overflow-hidden">
             <CardContent className="p-6 space-y-6">
               {/* Profile Photo */}
               <div className="flex items-center gap-4">
-                <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
+                <div className="h-20 w-20 rounded-2xl bg-linear-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-blue-500/25 ring-2 ring-blue-400/30">
                   {user?.fullName
                     .split(' ')
                     .map((n) => n[0])
@@ -557,11 +570,10 @@ export default function SettingsPage() {
                     type="text"
                     value={profileForm.fullName || ''}
                     onChange={(e) => handleProfileChange('fullName', e.target.value)}
-                    className={`w-full px-4 py-2.5 rounded-xl border ${
-                      profileErrors.fullName
+                    className={`w-full px-4 py-2.5 rounded-xl border ${profileErrors.fullName
                         ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
                         : 'border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
-                    } outline-none transition-all`}
+                      } outline-none transition-all`}
                     aria-invalid={!!profileErrors.fullName}
                     aria-describedby={profileErrors.fullName ? 'fullName-error' : undefined}
                   />
@@ -601,11 +613,10 @@ export default function SettingsPage() {
                     value={profileForm.phone || ''}
                     onChange={(e) => handleProfileChange('phone', e.target.value)}
                     placeholder="+254 7XX XXX XXX"
-                    className={`w-full px-4 py-2.5 rounded-xl border ${
-                      profileErrors.phone
+                    className={`w-full px-4 py-2.5 rounded-xl border ${profileErrors.phone
                         ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
                         : 'border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
-                    } outline-none transition-all`}
+                      } outline-none transition-all`}
                     aria-invalid={!!profileErrors.phone}
                     aria-describedby={profileErrors.phone ? 'phone-error' : undefined}
                   />
@@ -667,7 +678,7 @@ export default function SettingsPage() {
               <Button
                 onClick={handleSaveProfile}
                 disabled={profileSaving}
-                className="w-full rounded-xl py-5 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full rounded-xl py-5 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/25 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {profileSaving ? (
                   <>
@@ -690,22 +701,21 @@ export default function SettingsPage() {
   if (activeSection === 'notifications') {
     return (
       <>
-        <div className="space-y-6">
-          <button
-            onClick={() => setActiveSection(null)}
-            className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-2 py-1"
-            aria-label="Back to settings"
-          >
-            <ChevronRight className="h-4 w-4 rotate-180" />
-            Back to Settings
-          </button>
-
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Notifications</h1>
-            <p className="text-slate-500 mt-1">Manage how you receive updates</p>
+        <div className="space-y-5">
+          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-amber-600 via-amber-500 to-orange-500 p-5 sm:p-6">
+            <div className="absolute -top-8 -right-8 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
+            <div className="absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-white/10 blur-xl" />
+            <div className="relative">
+              <button onClick={() => setActiveSection(null)} className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm mb-3 active:scale-95 transition-all" aria-label="Back to settings">
+                <ArrowLeft className="h-4 w-4" />
+                <span>Settings</span>
+              </button>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-white">Notifications</h1>
+              <p className="text-sm text-white/70 mt-1">Manage how you receive updates</p>
+            </div>
           </div>
 
-          <Card className="border-slate-100">
+          <Card className="ring-1 ring-slate-100 border-0 shadow-sm overflow-hidden">
             <CardContent className="p-0 divide-y divide-slate-100">
               {/* Push Notifications Master Toggle */}
               <div className="p-4 flex items-center justify-between">
@@ -720,17 +730,15 @@ export default function SettingsPage() {
                 </div>
                 <button
                   onClick={() => handleNotificationToggle('pushEnabled')}
-                  className={`relative w-12 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    notifications.pushEnabled ? 'bg-blue-500' : 'bg-slate-200'
-                  }`}
+                  className={`relative w-12 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${notifications.pushEnabled ? 'bg-blue-500' : 'bg-slate-200'
+                    }`}
                   role="switch"
                   aria-checked={notifications.pushEnabled}
                   aria-label="Toggle push notifications"
                 >
                   <span
-                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                      notifications.pushEnabled ? 'translate-x-6' : 'translate-x-0'
-                    }`}
+                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${notifications.pushEnabled ? 'translate-x-6' : 'translate-x-0'
+                      }`}
                   />
                 </button>
               </div>
@@ -748,16 +756,14 @@ export default function SettingsPage() {
                     <span className="text-sm text-slate-600">1 day before</span>
                     <button
                       onClick={() => handleNotificationToggle('appointmentReminder1Day')}
-                      className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        notifications.appointmentReminder1Day ? 'bg-blue-500' : 'bg-slate-200'
-                      }`}
+                      className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${notifications.appointmentReminder1Day ? 'bg-blue-500' : 'bg-slate-200'
+                        }`}
                       role="switch"
                       aria-checked={notifications.appointmentReminder1Day}
                     >
                       <span
-                        className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                          notifications.appointmentReminder1Day ? 'translate-x-5' : 'translate-x-0'
-                        }`}
+                        className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${notifications.appointmentReminder1Day ? 'translate-x-5' : 'translate-x-0'
+                          }`}
                       />
                     </button>
                   </label>
@@ -765,16 +771,14 @@ export default function SettingsPage() {
                     <span className="text-sm text-slate-600">1 hour before</span>
                     <button
                       onClick={() => handleNotificationToggle('appointmentReminder1Hour')}
-                      className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        notifications.appointmentReminder1Hour ? 'bg-blue-500' : 'bg-slate-200'
-                      }`}
+                      className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${notifications.appointmentReminder1Hour ? 'bg-blue-500' : 'bg-slate-200'
+                        }`}
                       role="switch"
                       aria-checked={notifications.appointmentReminder1Hour}
                     >
                       <span
-                        className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                          notifications.appointmentReminder1Hour ? 'translate-x-5' : 'translate-x-0'
-                        }`}
+                        className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${notifications.appointmentReminder1Hour ? 'translate-x-5' : 'translate-x-0'
+                          }`}
                       />
                     </button>
                   </label>
@@ -794,16 +798,14 @@ export default function SettingsPage() {
                     <span className="text-sm text-slate-600">Lab results ready</span>
                     <button
                       onClick={() => handleNotificationToggle('labResultsNotification')}
-                      className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        notifications.labResultsNotification ? 'bg-blue-500' : 'bg-slate-200'
-                      }`}
+                      className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${notifications.labResultsNotification ? 'bg-blue-500' : 'bg-slate-200'
+                        }`}
                       role="switch"
                       aria-checked={notifications.labResultsNotification}
                     >
                       <span
-                        className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                          notifications.labResultsNotification ? 'translate-x-5' : 'translate-x-0'
-                        }`}
+                        className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${notifications.labResultsNotification ? 'translate-x-5' : 'translate-x-0'
+                          }`}
                       />
                     </button>
                   </label>
@@ -811,16 +813,14 @@ export default function SettingsPage() {
                     <span className="text-sm text-slate-600">Prescription updates</span>
                     <button
                       onClick={() => handleNotificationToggle('prescriptionNotification')}
-                      className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        notifications.prescriptionNotification ? 'bg-blue-500' : 'bg-slate-200'
-                      }`}
+                      className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${notifications.prescriptionNotification ? 'bg-blue-500' : 'bg-slate-200'
+                        }`}
                       role="switch"
                       aria-checked={notifications.prescriptionNotification}
                     >
                       <span
-                        className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                          notifications.prescriptionNotification ? 'translate-x-5' : 'translate-x-0'
-                        }`}
+                        className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${notifications.prescriptionNotification ? 'translate-x-5' : 'translate-x-0'
+                          }`}
                       />
                     </button>
                   </label>
@@ -840,16 +840,14 @@ export default function SettingsPage() {
                 </div>
                 <button
                   onClick={() => handleNotificationToggle('messageNotification')}
-                  className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    notifications.messageNotification ? 'bg-blue-500' : 'bg-slate-200'
-                  }`}
+                  className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${notifications.messageNotification ? 'bg-blue-500' : 'bg-slate-200'
+                    }`}
                   role="switch"
                   aria-checked={notifications.messageNotification}
                 >
                   <span
-                    className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                      notifications.messageNotification ? 'translate-x-5' : 'translate-x-0'
-                    }`}
+                    className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${notifications.messageNotification ? 'translate-x-5' : 'translate-x-0'
+                      }`}
                   />
                 </button>
               </div>
@@ -867,16 +865,14 @@ export default function SettingsPage() {
                 </div>
                 <button
                   onClick={() => handleNotificationToggle('emailWeeklySummary')}
-                  className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    notifications.emailWeeklySummary ? 'bg-blue-500' : 'bg-slate-200'
-                  }`}
+                  className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${notifications.emailWeeklySummary ? 'bg-blue-500' : 'bg-slate-200'
+                    }`}
                   role="switch"
                   aria-checked={notifications.emailWeeklySummary}
                 >
                   <span
-                    className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                      notifications.emailWeeklySummary ? 'translate-x-5' : 'translate-x-0'
-                    }`}
+                    className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${notifications.emailWeeklySummary ? 'translate-x-5' : 'translate-x-0'
+                      }`}
                   />
                 </button>
               </div>
@@ -886,7 +882,7 @@ export default function SettingsPage() {
           <Button
             onClick={handleSaveNotifications}
             disabled={notificationsSaving}
-            className="w-full rounded-xl py-5 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-xl py-5 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/25 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {notificationsSaving ? (
               <>
@@ -907,22 +903,21 @@ export default function SettingsPage() {
   if (activeSection === 'privacy') {
     return (
       <>
-        <div className="space-y-6">
-          <button
-            onClick={() => setActiveSection(null)}
-            className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-2 py-1"
-            aria-label="Back to settings"
-          >
-            <ChevronRight className="h-4 w-4 rotate-180" />
-            Back to Settings
-          </button>
-
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Privacy & Security</h1>
-            <p className="text-slate-500 mt-1">Protect your account and data</p>
+        <div className="space-y-5">
+          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-500 to-teal-500 p-5 sm:p-6">
+            <div className="absolute -top-8 -right-8 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
+            <div className="absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-white/10 blur-xl" />
+            <div className="relative">
+              <button onClick={() => setActiveSection(null)} className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm mb-3 active:scale-95 transition-all" aria-label="Back to settings">
+                <ArrowLeft className="h-4 w-4" />
+                <span>Settings</span>
+              </button>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-white">Privacy & Security</h1>
+              <p className="text-sm text-white/70 mt-1">Protect your account and data</p>
+            </div>
           </div>
 
-          <Card className="border-slate-100">
+          <Card className="ring-1 ring-slate-100 border-0 shadow-sm overflow-hidden">
             <CardHeader className="border-b border-slate-100 pb-4">
               <CardTitle className="text-base">Account Security</CardTitle>
             </CardHeader>
@@ -955,16 +950,14 @@ export default function SettingsPage() {
                 </div>
                 <button
                   onClick={handleTwoFactorToggle}
-                  className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    twoFactorEnabled ? 'bg-blue-500' : 'bg-slate-200'
-                  }`}
+                  className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${twoFactorEnabled ? 'bg-blue-500' : 'bg-slate-200'
+                    }`}
                   role="switch"
                   aria-checked={twoFactorEnabled}
                 >
                   <span
-                    className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                      twoFactorEnabled ? 'translate-x-5' : 'translate-x-0'
-                    }`}
+                    className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${twoFactorEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
                   />
                 </button>
               </div>
@@ -981,16 +974,14 @@ export default function SettingsPage() {
                 </div>
                 <button
                   onClick={handleBiometricToggle}
-                  className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    biometricEnabled ? 'bg-blue-500' : 'bg-slate-200'
-                  }`}
+                  className={`relative w-10 h-5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${biometricEnabled ? 'bg-blue-500' : 'bg-slate-200'
+                    }`}
                   role="switch"
                   aria-checked={biometricEnabled}
                 >
                   <span
-                    className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                      biometricEnabled ? 'translate-x-5' : 'translate-x-0'
-                    }`}
+                    className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${biometricEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
                   />
                 </button>
               </div>
@@ -1086,22 +1077,21 @@ export default function SettingsPage() {
   if (activeSection === 'preferences') {
     return (
       <>
-        <div className="space-y-6">
-          <button
-            onClick={() => setActiveSection(null)}
-            className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-2 py-1"
-            aria-label="Back to settings"
-          >
-            <ChevronRight className="h-4 w-4 rotate-180" />
-            Back to Settings
-          </button>
-
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Preferences</h1>
-            <p className="text-slate-500 mt-1">Customize your app experience</p>
+        <div className="space-y-5">
+          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-purple-600 via-purple-500 to-pink-500 p-5 sm:p-6">
+            <div className="absolute -top-8 -right-8 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
+            <div className="absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-white/10 blur-xl" />
+            <div className="relative">
+              <button onClick={() => setActiveSection(null)} className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm mb-3 active:scale-95 transition-all" aria-label="Back to settings">
+                <ArrowLeft className="h-4 w-4" />
+                <span>Settings</span>
+              </button>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-white">Preferences</h1>
+              <p className="text-sm text-white/70 mt-1">Customize your app experience</p>
+            </div>
           </div>
 
-          <Card className="border-slate-100">
+          <Card className="ring-1 ring-slate-100 border-0 shadow-sm overflow-hidden">
             <CardHeader className="border-b border-slate-100 pb-4">
               <CardTitle className="text-base">Appearance</CardTitle>
             </CardHeader>
@@ -1110,11 +1100,10 @@ export default function SettingsPage() {
               <div className="grid grid-cols-3 gap-3">
                 <button
                   onClick={() => setTheme('light')}
-                  className={`p-4 rounded-xl border-2 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    theme === 'light'
+                  className={`p-4 rounded-xl border-2 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme === 'light'
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-slate-200 hover:border-slate-300'
-                  }`}
+                    }`}
                   aria-pressed={theme === 'light'}
                 >
                   <Sun
@@ -1126,11 +1115,10 @@ export default function SettingsPage() {
                 </button>
                 <button
                   onClick={() => setTheme('dark')}
-                  className={`p-4 rounded-xl border-2 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    theme === 'dark'
+                  className={`p-4 rounded-xl border-2 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme === 'dark'
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-slate-200 hover:border-slate-300'
-                  }`}
+                    }`}
                   aria-pressed={theme === 'dark'}
                 >
                   <Moon
@@ -1142,11 +1130,10 @@ export default function SettingsPage() {
                 </button>
                 <button
                   onClick={() => setTheme('system')}
-                  className={`p-4 rounded-xl border-2 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    theme === 'system'
+                  className={`p-4 rounded-xl border-2 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme === 'system'
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-slate-200 hover:border-slate-300'
-                  }`}
+                    }`}
                   aria-pressed={theme === 'system'}
                 >
                   <Smartphone
@@ -1199,22 +1186,20 @@ export default function SettingsPage() {
                 <div className="flex gap-3">
                   <button
                     onClick={() => setTimeFormat('12h')}
-                    className={`flex-1 py-2.5 rounded-xl border-2 font-medium text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      timeFormat === '12h'
+                    className={`flex-1 py-2.5 rounded-xl border-2 font-medium text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${timeFormat === '12h'
                         ? 'border-blue-500 bg-blue-50 text-blue-600'
                         : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                    }`}
+                      }`}
                     aria-pressed={timeFormat === '12h'}
                   >
                     12-hour
                   </button>
                   <button
                     onClick={() => setTimeFormat('24h')}
-                    className={`flex-1 py-2.5 rounded-xl border-2 font-medium text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      timeFormat === '24h'
+                    className={`flex-1 py-2.5 rounded-xl border-2 font-medium text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${timeFormat === '24h'
                         ? 'border-blue-500 bg-blue-50 text-blue-600'
                         : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                    }`}
+                      }`}
                     aria-pressed={timeFormat === '24h'}
                   >
                     24-hour
@@ -1227,7 +1212,7 @@ export default function SettingsPage() {
           <Button
             onClick={handleSavePreferences}
             disabled={preferencesSaving}
-            className="w-full rounded-xl py-5 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-xl py-5 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/25 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {preferencesSaving ? (
               <>
@@ -1248,19 +1233,18 @@ export default function SettingsPage() {
   if (activeSection === 'help') {
     return (
       <>
-        <div className="space-y-6">
-          <button
-            onClick={() => setActiveSection(null)}
-            className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-2 py-1"
-            aria-label="Back to settings"
-          >
-            <ChevronRight className="h-4 w-4 rotate-180" />
-            Back to Settings
-          </button>
-
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Help & Support</h1>
-            <p className="text-slate-500 mt-1">Get help and provide feedback</p>
+        <div className="space-y-5">
+          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-cyan-600 via-cyan-500 to-blue-500 p-5 sm:p-6">
+            <div className="absolute -top-8 -right-8 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
+            <div className="absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-white/10 blur-xl" />
+            <div className="relative">
+              <button onClick={() => setActiveSection(null)} className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm mb-3 active:scale-95 transition-all" aria-label="Back to settings">
+                <ArrowLeft className="h-4 w-4" />
+                <span>Settings</span>
+              </button>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-white">Help & Support</h1>
+              <p className="text-sm text-white/70 mt-1">Get help and provide feedback</p>
+            </div>
           </div>
 
           {/* FAQ Section */}
@@ -1318,7 +1302,7 @@ export default function SettingsPage() {
                       <p className="text-sm text-slate-500">No FAQs found</p>
                     </div>
                   ) : (
-                    <div className="max-h-[400px] overflow-y-auto">
+                    <div className="max-h-100 overflow-y-auto">
                       {faqItems.map((item) => (
                         <FAQItem key={item.id} item={item} onMarkHelpful={markHelpful} />
                       ))}
@@ -1431,11 +1415,10 @@ export default function SettingsPage() {
                             <button
                               key={type.value}
                               onClick={() => setFeedbackType(type.value as any)}
-                              className={`px-3 py-2 rounded-xl text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                feedbackType === type.value
+                              className={`px-3 py-2 rounded-xl text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${feedbackType === type.value
                                   ? 'bg-blue-100 text-blue-700 border-2 border-blue-500'
                                   : 'bg-slate-50 text-slate-600 border-2 border-transparent hover:bg-slate-100'
-                              }`}
+                                }`}
                               aria-pressed={feedbackType === type.value}
                             >
                               {type.label}
@@ -1472,7 +1455,7 @@ export default function SettingsPage() {
                       <Button
                         onClick={handleSendFeedback}
                         disabled={feedbackSending || !feedbackContent.trim()}
-                        className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 disabled:opacity-50"
+                        className="flex-1 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/25 active:scale-95 transition-all disabled:opacity-50"
                       >
                         {feedbackSending ? (
                           <>
@@ -1499,26 +1482,25 @@ export default function SettingsPage() {
   if (activeSection === 'about') {
     return (
       <>
-        <div className="space-y-6">
-          <button
-            onClick={() => setActiveSection(null)}
-            className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-2 py-1"
-            aria-label="Back to settings"
-          >
-            <ChevronRight className="h-4 w-4 rotate-180" />
-            Back to Settings
-          </button>
-
-          <div className="text-center py-6">
-            <div className="h-20 w-20 mx-auto rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/25 mb-4">
-              <span className="text-3xl font-bold text-white">GCH</span>
-            </div>
-            <h1 className="text-xl font-bold text-slate-900">Gertrude&apos;s Children Hospital</h1>
-            <p className="text-slate-500">Caregiver App</p>
-            <p className="text-sm text-slate-400 mt-2">Version 2.0.0 (Build 145)</p>
-            <div className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-medium">
-              <CheckCircle className="h-3.5 w-3.5" />
-              Up to date
+        <div className="space-y-5">
+          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-blue-600 via-cyan-600 to-teal-500 p-5 sm:p-7 text-center">
+            <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+            <div className="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-white/10 blur-xl" />
+            <div className="relative">
+              <button onClick={() => setActiveSection(null)} className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm mb-4 active:scale-95 transition-all" aria-label="Back to settings">
+                <ArrowLeft className="h-4 w-4" />
+                <span>Settings</span>
+              </button>
+              <div className="h-20 w-20 mx-auto rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg ring-2 ring-white/20 mb-4">
+                <span className="text-3xl font-bold text-white">GCH</span>
+              </div>
+              <h1 className="text-xl font-bold text-white">Gertrude&apos;s Children Hospital</h1>
+              <p className="text-white/70 text-sm">Caregiver App</p>
+              <p className="text-xs text-white/50 mt-2">Version 2.0.0 (Build 145)</p>
+              <div className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-sm text-white text-xs font-medium">
+                <CheckCircle className="h-3.5 w-3.5" />
+                Up to date
+              </div>
             </div>
           </div>
 
@@ -1575,33 +1557,30 @@ export default function SettingsPage() {
   // --- Main Settings View ---
   return (
     <>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
-          <p className="text-slate-500 mt-1">Manage your account and preferences</p>
-        </div>
-
-        {/* User Card */}
-        <Card className="border-slate-100 overflow-hidden">
-          <CardContent className="p-0">
-            <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-6 text-white">
-              <div className="flex items-center gap-4">
-                <div className="h-16 w-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl font-bold shadow-lg">
-                  {user?.fullName
-                    .split(' ')
-                    .map((n) => n[0])
-                    .join('')
-                    .toUpperCase()
-                    .slice(0, 2)}
-                </div>
-                <div>
-                  <p className="font-bold text-lg">{user?.fullName}</p>
-                  <p className="text-white/80 text-sm">{user?.email}</p>
-                </div>
-              </div>
+      <div className="space-y-5">
+        {/* Hero profile banner */}
+        <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-blue-600 via-cyan-600 to-teal-500 p-5 sm:p-7">
+          <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-white/10 blur-xl" />
+          <div className="absolute top-4 right-4 h-16 w-16 rounded-full bg-white/5 blur-lg" />
+          <div className="relative flex items-center gap-4">
+            <div className="h-16 w-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl font-bold text-white shadow-lg ring-2 ring-white/20 shrink-0">
+              {user?.fullName
+                .split(' ')
+                .map((n) => n[0])
+                .join('')
+                .toUpperCase()
+                .slice(0, 2)}
             </div>
-          </CardContent>
-        </Card>
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 backdrop-blur-sm mb-1.5">
+                <span className="text-[10px] font-medium text-white/90">Caregiver Account</span>
+              </div>
+              <p className="font-bold text-lg text-white truncate">{user?.fullName}</p>
+              <p className="text-white/70 text-sm truncate">{user?.email}</p>
+            </div>
+          </div>
+        </div>
 
         {/* Settings Sections */}
         <div className="space-y-2">
@@ -1611,16 +1590,16 @@ export default function SettingsPage() {
               <button
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
-                className="w-full flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="group w-full flex items-center gap-3.5 p-3.5 sm:p-4 rounded-xl bg-white ring-1 ring-slate-100 shadow-sm hover:shadow-md hover:ring-slate-200 active:scale-[0.98] transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <div className={`h-11 w-11 rounded-xl flex items-center justify-center ${section.color}`}>
+                <div className={`h-10 w-10 sm:h-11 sm:w-11 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shrink-0 ${section.color}`}>
                   <Icon className="h-5 w-5" />
                 </div>
-                <div className="flex-1 text-left">
-                  <p className="font-semibold text-slate-900">{section.title}</p>
-                  <p className="text-sm text-slate-500">{section.description}</p>
+                <div className="flex-1 text-left min-w-0">
+                  <p className="font-semibold text-slate-900 text-sm sm:text-base">{section.title}</p>
+                  <p className="text-xs sm:text-sm text-slate-500 truncate">{section.description}</p>
                 </div>
-                <ChevronRight className="h-5 w-5 text-slate-300" />
+                <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all shrink-0" />
               </button>
             )
           })}
@@ -1632,7 +1611,7 @@ export default function SettingsPage() {
             type="button"
             variant="ghost"
             onClick={() => setShowSignOutConfirm(true)}
-            className="w-full rounded-xl border border-red-200 py-5 text-red-600 hover:bg-red-50 hover:border-red-300 transition-all focus:ring-2 focus:ring-red-500"
+            className="w-full rounded-xl ring-1 ring-red-200 border-0 py-5 text-red-600 hover:bg-red-50 hover:ring-red-300 active:scale-[0.98] transition-all focus:ring-2 focus:ring-red-500"
           >
             <LogOut className="h-4 w-4 mr-2" />
             Sign Out
