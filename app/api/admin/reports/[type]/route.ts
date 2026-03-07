@@ -21,20 +21,23 @@ function generateCSV(headers: string[], rows: any[]): string {
 // Helper function to get date range
 function getDateRange(period: string): { start: Date; end: Date } {
     const end = new Date();
-    let start = new Date();
+    end.setHours(23, 59, 59, 999);
+
+    let start = new Date(end);
+    start.setHours(0, 0, 0, 0);
 
     switch (period) {
         case 'week':
-            start.setDate(end.getDate() - 7);
+            start.setDate(start.getDate() - 6);
             break;
         case 'month':
-            start.setMonth(end.getMonth() - 1);
+            start.setDate(start.getDate() - 29);
             break;
         case 'year':
-            start.setFullYear(end.getFullYear() - 1);
+            start.setDate(start.getDate() - 364);
             break;
         default:
-            start.setDate(end.getDate() - 7);
+            start.setDate(start.getDate() - 6);
     }
 
     return { start, end };
@@ -104,38 +107,74 @@ export async function GET(
 
             case 'appointments':
                 reportTitle = 'Appointment Analytics Report';
-                const { data: appointments } = await supabase
+                const { data: appointments, error: appointmentsError } = await supabase
                     .from('appointments')
-                    .select(`
-                        *,
-                        children:child_id (first_name, last_name),
-                        doctors:doctor_id (users:user_id (full_name))
-                    `)
-                    .gte('created_at', start.toISOString())
-                    .lte('created_at', end.toISOString())
+                    .select('id, child_id, doctor_id, scheduled_for, created_at, status, notes')
+                    .or(`scheduled_for.gte.${start.toISOString()},created_at.gte.${start.toISOString()}`)
                     .order('created_at', { ascending: false });
 
+                if (appointmentsError) {
+                    return NextResponse.json({ error: appointmentsError.message }, { status: 500 });
+                }
+
+                const periodAppointments = (appointments || []).filter((a: any) => {
+                    const eventDateRaw = a.scheduled_for || a.created_at;
+                    if (!eventDateRaw) {
+                        return false;
+                    }
+
+                    const eventDate = new Date(eventDateRaw);
+                    return !Number.isNaN(eventDate.getTime()) && eventDate >= start && eventDate <= end;
+                });
+
+                const childIds = [...new Set(periodAppointments.map((a: any) => a.child_id).filter(Boolean))];
+                const doctorIds = [...new Set(periodAppointments.map((a: any) => a.doctor_id).filter(Boolean))];
+
+                const [appointmentChildrenResult, appointmentDoctorProfilesResult] = await Promise.all([
+                    childIds.length
+                        ? supabase.from('children').select('id, full_name').in('id', childIds)
+                        : Promise.resolve({ data: [], error: null } as any),
+                    doctorIds.length
+                        ? supabase.from('profiles').select('id, full_name').in('id', doctorIds)
+                        : Promise.resolve({ data: [], error: null } as any),
+                ]);
+
+                if (appointmentChildrenResult.error) {
+                    return NextResponse.json({ error: appointmentChildrenResult.error.message }, { status: 500 });
+                }
+                if (appointmentDoctorProfilesResult.error) {
+                    return NextResponse.json({ error: appointmentDoctorProfilesResult.error.message }, { status: 500 });
+                }
+
+                const childNameById = new Map((appointmentChildrenResult.data || []).map((c: any) => [c.id, c.full_name || 'N/A']));
+                const doctorNameById = new Map((appointmentDoctorProfilesResult.data || []).map((d: any) => [d.id, d.full_name || 'N/A']));
+
                 const appointmentStats = {
-                    total: appointments?.length || 0,
-                    completed: appointments?.filter(a => a.status === 'completed').length || 0,
-                    cancelled: appointments?.filter(a => a.status === 'cancelled').length || 0,
-                    pending: appointments?.filter(a => a.status === 'pending').length || 0,
-                    scheduled: appointments?.filter(a => a.status === 'scheduled').length || 0,
+                    total: periodAppointments.length,
+                    completed: periodAppointments.filter((a: any) => a.status === 'completed').length,
+                    cancelled: periodAppointments.filter((a: any) => a.status === 'cancelled').length,
+                    pending: periodAppointments.filter((a: any) => ['pending', 'confirmed', 'checked_in'].includes(a.status)).length,
+                    scheduled: periodAppointments.filter((a: any) => a.status === 'confirmed').length,
                 };
 
                 reportData = {
                     title: reportTitle,
                     period: { start: start.toISOString(), end: end.toISOString() },
                     stats: appointmentStats,
-                    appointments: appointments?.map(a => ({
-                        id: a.id,
-                        date: a.appointment_date,
-                        time: a.appointment_time,
-                        status: a.status,
-                        patient: a.children ? `${a.children.first_name} ${a.children.last_name}` : 'N/A',
-                        doctor: a.doctors?.users?.full_name || 'N/A',
-                        reason: a.reason || 'N/A'
-                    })) || []
+                    appointments: periodAppointments.map((a: any) => {
+                        const eventDate = new Date(a.scheduled_for || a.created_at);
+                        return {
+                            id: a.id,
+                            date: !Number.isNaN(eventDate.getTime()) ? eventDate.toISOString().split('T')[0] : 'N/A',
+                            time: !Number.isNaN(eventDate.getTime())
+                                ? eventDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                : 'N/A',
+                            status: a.status,
+                            patient: childNameById.get(a.child_id) || 'N/A',
+                            doctor: doctorNameById.get(a.doctor_id) || 'N/A',
+                            reason: a.notes || 'N/A'
+                        };
+                    })
                 };
 
                 csvHeaders = ['id', 'date', 'time', 'status', 'patient', 'doctor', 'reason'];
@@ -144,26 +183,49 @@ export async function GET(
 
             case 'staff_performance':
                 reportTitle = 'Staff Performance Report';
-                const { data: doctors } = await supabase
+                const { data: doctors, error: doctorsError } = await supabase
                     .from('doctors')
-                    .select(`
-                        id,
-                        specialty,
-                        users:user_id (full_name, email)
-                    `);
+                    .select('id, specialty');
 
-                const { data: doctorAppointments } = await supabase
+                if (doctorsError) {
+                    return NextResponse.json({ error: doctorsError.message }, { status: 500 });
+                }
+
+                const { data: doctorAppointments, error: doctorAppointmentsError } = await supabase
                     .from('appointments')
-                    .select('doctor_id, status')
-                    .gte('created_at', start.toISOString())
-                    .lte('created_at', end.toISOString());
+                    .select('doctor_id, status, scheduled_for, created_at')
+                    .or(`scheduled_for.gte.${start.toISOString()},created_at.gte.${start.toISOString()}`);
+
+                if (doctorAppointmentsError) {
+                    return NextResponse.json({ error: doctorAppointmentsError.message }, { status: 500 });
+                }
+
+                const periodDoctorAppointments = (doctorAppointments || []).filter((a: any) => {
+                    const eventDateRaw = a.scheduled_for || a.created_at;
+                    if (!eventDateRaw) {
+                        return false;
+                    }
+
+                    const eventDate = new Date(eventDateRaw);
+                    return !Number.isNaN(eventDate.getTime()) && eventDate >= start && eventDate <= end;
+                });
+
+                const staffDoctorIds = [...new Set((doctors || []).map((d: any) => d.id).filter(Boolean))];
+                const { data: staffProfiles, error: staffProfilesError } = staffDoctorIds.length
+                    ? await supabase.from('profiles').select('id, full_name').in('id', staffDoctorIds)
+                    : { data: [], error: null } as any;
+
+                if (staffProfilesError) {
+                    return NextResponse.json({ error: staffProfilesError.message }, { status: 500 });
+                }
+
+                const staffNameById = new Map((staffProfiles || []).map((p: any) => [p.id, p.full_name || 'Unknown']));
 
                 const doctorStats = doctors?.map((doc: any) => {
-                    const docAppts = doctorAppointments?.filter(a => a.doctor_id === doc.id) || [];
-                    const user = Array.isArray(doc.users) ? doc.users[0] : doc.users;
+                    const docAppts = periodDoctorAppointments?.filter(a => a.doctor_id === doc.id) || [];
                     return {
-                        name: user?.full_name || 'Unknown',
-                        email: user?.email || 'N/A',
+                        name: staffNameById.get(doc.id) || 'Unknown',
+                        email: 'N/A',
                         specialty: doc.specialty || 'General',
                         totalAppointments: docAppts.length,
                         completed: docAppts.filter(a => a.status === 'completed').length,

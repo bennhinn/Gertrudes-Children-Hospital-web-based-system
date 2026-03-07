@@ -311,23 +311,23 @@ interface AuditLog {
 interface SystemStats { totalUsers: number; activeToday: number; totalAppointments: number; dbSize: string; }
 
 const ROLE_PERMISSIONS = {
-  admin:          { label: 'Administrator', bg: '#EDE9FE', color: '#6D28D9', strip: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', permissions: ['Full system access', 'User management', 'Reports', 'Settings', 'Audit logs'] },
-  doctor:         { label: 'Doctor',        bg: '#DBEAFE', color: '#1D4ED8', strip: 'linear-gradient(135deg,#3B82F6,#1D4ED8)', permissions: ['View patients', 'Create consultations', 'Prescribe medications', 'Order lab tests'] },
-  receptionist:   { label: 'Receptionist',  bg: '#DCFCE7', color: '#15803D', strip: 'linear-gradient(135deg,#10B981,#059669)', permissions: ['Check-in patients', 'Schedule appointments', 'View queue', 'Patient registration'] },
-  lab_technician: { label: 'Lab Technician',bg: '#FEF9C3', color: '#A16207', strip: 'linear-gradient(135deg,#F59E0B,#D97706)', permissions: ['View lab orders', 'Process samples', 'Enter results', 'Mark completed'] },
-  pharmacist:     { label: 'Pharmacist',    bg: '#CFFAFE', color: '#0E7490', strip: 'linear-gradient(135deg,#06B6D4,#0284C7)', permissions: ['View prescriptions', 'Dispense medications', 'Manage inventory'] },
-  caregiver:      { label: 'Caregiver',     bg: '#FCE7F3', color: '#BE185D', strip: 'linear-gradient(135deg,#EC4899,#BE185D)', permissions: ['View own patients', 'Book appointments', 'View records'] },
-  supplier:       { label: 'Supplier',      bg: '#FFEDD5', color: '#C2410C', strip: 'linear-gradient(135deg,#F97316,#EA580C)', permissions: ['View orders', 'Update inventory', 'Manage medications'] },
+  admin: { label: 'Administrator', bg: '#EDE9FE', color: '#6D28D9', strip: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', permissions: ['Full system access', 'User management', 'Reports', 'Settings', 'Audit logs'] },
+  doctor: { label: 'Doctor', bg: '#DBEAFE', color: '#1D4ED8', strip: 'linear-gradient(135deg,#3B82F6,#1D4ED8)', permissions: ['View patients', 'Create consultations', 'Prescribe medications', 'Order lab tests'] },
+  receptionist: { label: 'Receptionist', bg: '#DCFCE7', color: '#15803D', strip: 'linear-gradient(135deg,#10B981,#059669)', permissions: ['Check-in patients', 'Schedule appointments', 'View queue', 'Patient registration'] },
+  lab_technician: { label: 'Lab Technician', bg: '#FEF9C3', color: '#A16207', strip: 'linear-gradient(135deg,#F59E0B,#D97706)', permissions: ['View lab orders', 'Process samples', 'Enter results', 'Mark completed'] },
+  pharmacist: { label: 'Pharmacist', bg: '#CFFAFE', color: '#0E7490', strip: 'linear-gradient(135deg,#06B6D4,#0284C7)', permissions: ['View prescriptions', 'Dispense medications', 'Manage inventory'] },
+  caregiver: { label: 'Caregiver', bg: '#FCE7F3', color: '#BE185D', strip: 'linear-gradient(135deg,#EC4899,#BE185D)', permissions: ['View own patients', 'Book appointments', 'View records'] },
+  supplier: { label: 'Supplier', bg: '#FFEDD5', color: '#C2410C', strip: 'linear-gradient(135deg,#F97316,#EA580C)', permissions: ['View orders', 'Update inventory', 'Manage medications'] },
 };
 
 const WORKING_HOURS = [
-  { day: 'Monday',    open: '08:00', close: '18:00', enabled: true },
-  { day: 'Tuesday',   open: '08:00', close: '18:00', enabled: true },
+  { day: 'Monday', open: '08:00', close: '18:00', enabled: true },
+  { day: 'Tuesday', open: '08:00', close: '18:00', enabled: true },
   { day: 'Wednesday', open: '08:00', close: '18:00', enabled: true },
-  { day: 'Thursday',  open: '08:00', close: '18:00', enabled: true },
-  { day: 'Friday',    open: '08:00', close: '18:00', enabled: true },
-  { day: 'Saturday',  open: '09:00', close: '14:00', enabled: true },
-  { day: 'Sunday',    open: '00:00', close: '00:00', enabled: false },
+  { day: 'Thursday', open: '08:00', close: '18:00', enabled: true },
+  { day: 'Friday', open: '08:00', close: '18:00', enabled: true },
+  { day: 'Saturday', open: '09:00', close: '14:00', enabled: true },
+  { day: 'Sunday', open: '00:00', close: '00:00', enabled: false },
 ];
 
 // ─── Reusable subcomponents ───────────────────────────────────────────────────
@@ -404,17 +404,17 @@ export default function AdminSettingsPage() {
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const tabs: { id: string; label: string; icon: LucideIcon }[] = [
-    { id: 'general',      label: 'General',      icon: Building2 },
-    { id: 'appointments', label: 'Appointments',  icon: Calendar },
-    { id: 'working-hours',label: 'Hours',         icon: Clock },
-    { id: 'roles',        label: 'Roles',         icon: Users },
-    { id: 'notifications',label: 'Notifications', icon: Bell },
-    { id: 'security',     label: 'Security',      icon: Lock },
-    { id: 'audit',        label: 'Audit',         icon: ClipboardList },
-    { id: 'system',       label: 'System',        icon: Monitor },
-    { id: 'integrations', label: 'Integrations',  icon: Link2 },
-    { id: 'backup',       label: 'Backup',        icon: Database },
-    { id: 'maintenance',  label: 'Maintenance',   icon: Wrench },
+    { id: 'general', label: 'General', icon: Building2 },
+    { id: 'appointments', label: 'Appointments', icon: Calendar },
+    { id: 'working-hours', label: 'Hours', icon: Clock },
+    { id: 'roles', label: 'Roles', icon: Users },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'security', label: 'Security', icon: Lock },
+    { id: 'audit', label: 'Audit', icon: ClipboardList },
+    { id: 'system', label: 'System', icon: Monitor },
+    { id: 'integrations', label: 'Integrations', icon: Link2 },
+    { id: 'backup', label: 'Backup', icon: Database },
+    { id: 'maintenance', label: 'Maintenance', icon: Wrench },
   ];
 
   const tabIconColors: Record<string, string> = {
@@ -470,9 +470,9 @@ export default function AdminSettingsPage() {
 
   function getActionStyle(action: string): { bg: string; color: string } {
     if (action.includes('CREATE') || action.includes('INSERT')) return { bg: '#DCFCE7', color: '#15803D' };
-    if (action.includes('UPDATE') || action.includes('EDIT'))   return { bg: '#DBEAFE', color: '#1D4ED8' };
+    if (action.includes('UPDATE') || action.includes('EDIT')) return { bg: '#DBEAFE', color: '#1D4ED8' };
     if (action.includes('DELETE') || action.includes('REMOVE')) return { bg: '#FFE4E6', color: '#BE123C' };
-    if (action.includes('LOGIN')  || action.includes('AUTH'))   return { bg: '#EDE9FE', color: '#6D28D9' };
+    if (action.includes('LOGIN') || action.includes('AUTH')) return { bg: '#EDE9FE', color: '#6D28D9' };
     return { bg: '#F1F5F9', color: '#475569' };
   }
 
@@ -563,7 +563,7 @@ export default function AdminSettingsPage() {
                     <div className="clay-panel-body">
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
                         {[
-                          { l: 'Clinic Name', v: 'Good Childhood Hospital' },
+                          { l: 'Clinic Name', v: 'Gertrudes Children Hospital' },
                           { l: 'Short Name / Code', v: 'GCH' },
                           { l: 'Contact Email', v: 'contact@gch.com', t: 'email' },
                           { l: 'Support Email', v: 'support@gch.com', t: 'email' },

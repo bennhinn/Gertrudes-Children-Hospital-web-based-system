@@ -262,7 +262,7 @@ const clayVars = `
 `;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const fetcher = (url: string) => fetch(url).then((res) => {
+const fetcher = (url: string) => fetch(url, { cache: 'no-store' }).then((res) => {
     if (!res.ok) throw new Error('Failed to fetch');
     return res.json();
 });
@@ -283,6 +283,7 @@ interface ActivityLog {
     action: string;
     action_type: string;
     resource_type: string;
+    target_table: string;
     description: string;
     created_at: string;
 }
@@ -570,7 +571,7 @@ function ActivityLogsSection() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <div className="flex items-center gap-2 flex-wrap">
                                 <span className="clay-badge" style={{ background: cs.bg, color: cs.color }}>{log.action_type}</span>
-                                <span className="clay-badge" style={{ background: '#EEF2FF', color: '#6366F1' }}>{log.resource_type}</span>
+                                <span className="clay-badge" style={{ background: '#EEF2FF', color: '#6366F1' }}>{log.resource_type || log.target_table || 'system'}</span>
                             </div>
                             <p style={{ fontSize: 13, color: '#1E1B4B', marginTop: 4, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{log.description}</p>
                             <div style={{ display: 'flex', gap: 8, marginTop: 4, fontSize: 11, color: '#9090B0', fontWeight: 600 }}>
@@ -592,11 +593,23 @@ export default function ReportsPage() {
     const [viewingReport, setViewingReport] = useState<{ type: string; title: string } | null>(null);
     const [activeTab, setActiveTab] = useState<'reports' | 'activity'>('reports');
 
-    const { data: stats, error: statsError, isLoading: statsLoading } = useSWR('/api/admin/stats', fetcher);
-    const { data: appointmentData, error: appointmentError } = useSWR('/api/admin/analytics/appointments', fetcher);
-    const { data: revenueData, error: revenueError } = useSWR('/api/admin/analytics/revenue', fetcher);
-    const { data: demographicsData, error: demographicsError } = useSWR('/api/admin/analytics/demographics', fetcher);
+    const { data: stats, error: statsError, isLoading: statsLoading } = useSWR(`/api/admin/stats?period=${selectedPeriod}`, fetcher);
+    const { data: appointmentData, error: appointmentError } = useSWR(`/api/admin/analytics/appointments?period=${selectedPeriod}`, fetcher);
+    const { data: revenueData, error: revenueError } = useSWR(`/api/admin/analytics/revenue?period=${selectedPeriod}`, fetcher);
+    const { data: demographicsData, error: demographicsError } = useSWR(`/api/admin/analytics/demographics?period=${selectedPeriod}`, fetcher);
     const { data: generatedReports } = useSWR('/api/admin/reports?limit=10', fetcher);
+
+    const appointmentRateLabel =
+        selectedPeriod === 'year'
+            ? 'vs previous 365 days'
+            : selectedPeriod === 'month'
+                ? 'vs previous 30 days'
+                : 'vs previous 7 days';
+
+    const periodTitle = selectedPeriod === 'year' ? 'This Year' : selectedPeriod === 'month' ? 'This Month' : 'This Week';
+    const appointmentSubtitle = selectedPeriod === 'year' ? 'Monthly trend (last 12 months)' : selectedPeriod === 'month' ? 'Daily trend (last 30 days)' : 'Daily trend (last 7 days)';
+    const revenueSubtitle = selectedPeriod === 'year' ? 'Paid revenue (last 12 months)' : selectedPeriod === 'month' ? 'Paid revenue (last 30 days)' : 'Paid revenue (last 7 days)';
+    const demographicsSubtitle = `Patient distribution (${periodTitle.toLowerCase()})`;
 
     const COLORS = ['#6366F1', '#8B5CF6', '#10B981', '#F59E0B', '#F43F5E'];
 
@@ -742,18 +755,18 @@ export default function ReportsPage() {
                             {/* ── CHARTS ROW ──────────────────────────────── */}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16, marginBottom: 28 }}>
 
-                                {/* Weekly Appointments */}
+                                {/* Appointments Trend */}
                                 <div className="clay-chart">
                                     <div style={{ padding: '20px 24px 4px', borderBottom: '1px solid #EEF2FF' }}>
-                                        <p style={{ fontFamily: 'Fraunces, serif', fontSize: 18, fontWeight: 700, color: '#1E1B4B' }}>Weekly Appointments</p>
-                                        <p style={{ fontSize: 12, color: '#9090B0', fontWeight: 600 }}>Last 7 days</p>
+                                        <p style={{ fontFamily: 'Fraunces, serif', fontSize: 18, fontWeight: 700, color: '#1E1B4B' }}>Appointments Trend</p>
+                                        <p style={{ fontSize: 12, color: '#9090B0', fontWeight: 600 }}>{appointmentSubtitle}</p>
                                     </div>
                                     <div style={{ padding: '16px 8px 16px' }}>
                                         {appointmentError ? <ChartError /> : !appointmentData ? <ChartLoader /> : (
                                             <ResponsiveContainer width="100%" height={280}>
                                                 <BarChart data={appointmentData}>
                                                     <CartesianGrid strokeDasharray="3 3" stroke="#EEF2FF" />
-                                                    <XAxis dataKey="day" stroke="#9090B0" tick={{ fontSize: 11, fontWeight: 700, fontFamily: 'Nunito' }} />
+                                                    <XAxis dataKey="label" stroke="#9090B0" tick={{ fontSize: 11, fontWeight: 700, fontFamily: 'Nunito' }} />
                                                     <YAxis stroke="#9090B0" tick={{ fontSize: 11, fontWeight: 700, fontFamily: 'Nunito' }} />
                                                     <Tooltip contentStyle={{ borderRadius: 16, border: 'none', boxShadow: '0 8px 0 rgba(0,0,0,0.1), 0 12px 32px rgba(0,0,0,0.12)', fontFamily: 'Nunito', fontWeight: 600 }} />
                                                     <Legend wrapperStyle={{ fontFamily: 'Nunito', fontWeight: 700, fontSize: 12 }} />
@@ -769,14 +782,14 @@ export default function ReportsPage() {
                                 <div className="clay-chart">
                                     <div style={{ padding: '20px 24px 4px', borderBottom: '1px solid #EEF2FF' }}>
                                         <p style={{ fontFamily: 'Fraunces, serif', fontSize: 18, fontWeight: 700, color: '#1E1B4B' }}>Revenue Trend</p>
-                                        <p style={{ fontSize: 12, color: '#9090B0', fontWeight: 600 }}>Last 6 months</p>
+                                        <p style={{ fontSize: 12, color: '#9090B0', fontWeight: 600 }}>{revenueSubtitle}</p>
                                     </div>
                                     <div style={{ padding: '16px 8px 16px' }}>
                                         {revenueError ? <ChartError /> : !revenueData ? <ChartLoader /> : (
                                             <ResponsiveContainer width="100%" height={280}>
                                                 <LineChart data={revenueData}>
                                                     <CartesianGrid strokeDasharray="3 3" stroke="#EEF2FF" />
-                                                    <XAxis dataKey="month" stroke="#9090B0" tick={{ fontSize: 11, fontWeight: 700, fontFamily: 'Nunito' }} />
+                                                    <XAxis dataKey="label" stroke="#9090B0" tick={{ fontSize: 11, fontWeight: 700, fontFamily: 'Nunito' }} />
                                                     <YAxis stroke="#9090B0" tick={{ fontSize: 11, fontWeight: 700, fontFamily: 'Nunito' }} />
                                                     <Tooltip contentStyle={{ borderRadius: 16, border: 'none', boxShadow: '0 8px 0 rgba(0,0,0,0.1), 0 12px 32px rgba(0,0,0,0.12)', fontFamily: 'Nunito', fontWeight: 600 }} formatter={(v: any) => `KSh ${v.toLocaleString()}`} />
                                                     <Line type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={3} dot={{ fill: '#10B981', r: 6, strokeWidth: 3, stroke: 'white' }} activeDot={{ r: 8, fill: '#10B981' }} />
@@ -790,7 +803,7 @@ export default function ReportsPage() {
                                 <div className="clay-chart">
                                     <div style={{ padding: '20px 24px 4px', borderBottom: '1px solid #EEF2FF' }}>
                                         <p style={{ fontFamily: 'Fraunces, serif', fontSize: 18, fontWeight: 700, color: '#1E1B4B' }}>Demographics by Age</p>
-                                        <p style={{ fontSize: 12, color: '#9090B0', fontWeight: 600 }}>Patient distribution</p>
+                                        <p style={{ fontSize: 12, color: '#9090B0', fontWeight: 600 }}>{demographicsSubtitle}</p>
                                     </div>
                                     <div style={{ padding: '16px 8px 16px' }}>
                                         {demographicsError ? <ChartError /> : !demographicsData ? <ChartLoader /> : (
@@ -827,7 +840,7 @@ export default function ReportsPage() {
                                                     <p style={{ fontFamily: 'Fraunces, serif', fontSize: 28, fontWeight: 700, color: '#1E1B4B', lineHeight: 1, margin: '2px 0' }}>
                                                         {statsLoading ? '…' : stats?.appointmentGrowth || '+0%'}
                                                     </p>
-                                                    <p style={{ fontSize: 11, color: '#9090B0', fontWeight: 600 }}>vs last week</p>
+                                                    <p style={{ fontSize: 11, color: '#9090B0', fontWeight: 600 }}>{appointmentRateLabel}</p>
                                                 </div>
                                             </div>
                                             <div className="clay-insight" style={{ background: 'linear-gradient(135deg, #DCFCE7, #A7F3D0)', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>

@@ -17,7 +17,7 @@ export default function AnimatedHero() {
                 aria-hidden
             />
 
-            <div className="absolute inset-0 z-10 bg-black/35" />
+            <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/60 via-black/35 to-black/35" />
 
             <motion.div
                 className="relative z-20 mx-auto max-w-4xl text-center"
