@@ -670,33 +670,30 @@ export default function DoctorQueuePage() {
             <div className="flex flex-wrap items-center gap-2">
                 <button
                     onClick={() => setFilter('all')}
-                    className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all ${
-                        filter === 'all'
+                    className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all ${filter === 'all'
                             ? 'bg-purple-600 text-white shadow-md shadow-purple-200'
                             : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'
-                    }`}
+                        }`}
                 >
                     <Users className="h-4 w-4" />
                     All ({queue.length})
                 </button>
                 <button
                     onClick={() => setFilter('waiting')}
-                    className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all ${
-                        filter === 'waiting'
+                    className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all ${filter === 'waiting'
                             ? 'bg-amber-500 text-white shadow-md shadow-amber-200'
                             : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'
-                    }`}
+                        }`}
                 >
                     <Clock className="h-4 w-4" />
                     Waiting ({waitingCount})
                 </button>
                 <button
                     onClick={() => setFilter('in_consultation')}
-                    className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all ${
-                        filter === 'in_consultation'
+                    className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all ${filter === 'in_consultation'
                             ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
                             : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'
-                    }`}
+                        }`}
                 >
                     <Activity className="h-4 w-4" />
                     In Consultation ({inConsultCount})
@@ -768,19 +765,17 @@ export default function DoctorQueuePage() {
                                 return (
                                     <div
                                         key={patient.id}
-                                        className={`group relative transition-all hover:bg-slate-50/80 ${
-                                            isActive ? 'bg-purple-50/50' : ''
-                                        }`}
+                                        className={`group relative transition-all hover:bg-slate-50/80 ${isActive ? 'bg-purple-50/50' : ''
+                                            }`}
                                     >
                                         <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
                                             <div className="flex items-start gap-4 sm:items-center">
                                                 {/* Queue Number Badge */}
                                                 <div
-                                                    className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl text-xl font-bold shadow-sm ${
-                                                        patient.status === 'in_consultation'
+                                                    className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl text-xl font-bold shadow-sm ${patient.status === 'in_consultation'
                                                             ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white'
                                                             : 'bg-gradient-to-br from-amber-500 to-orange-500 text-white'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     #{patient.queue_number}
                                                 </div>

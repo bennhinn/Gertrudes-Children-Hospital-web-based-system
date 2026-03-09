@@ -242,7 +242,7 @@ export default function PharmacyInventoryPage() {
       action: ActivityActions.SUPPLY_ORDER_CREATE || 'supply_order_create',
       description: `Opened restock order modal for ${medication.name}`,
       metadata: { medicationId: medication.id },
-    }).catch(() => {})
+    }).catch(() => { })
   }
 
   async function submitOrder() {
@@ -274,7 +274,7 @@ export default function PharmacyInventoryPage() {
         action: ActivityActions.SUPPLY_ORDER_CREATE || 'supply_order_create',
         description: `Placed supply order ${selectedMedication?.name}`,
         metadata: { medicationId: selectedMedication?.id, poNumber: poNumber },
-      }).catch(() => {})
+      }).catch(() => { })
     } catch (error: any) {
       alert(error.message)
     } finally {
@@ -299,7 +299,7 @@ export default function PharmacyInventoryPage() {
         description: `Marked order ${order.id} as delivered`,
         target_id: order.id,
         metadata: { medicationId: order.medication_id, quantity: order.quantity },
-      }).catch(() => {})
+      }).catch(() => { })
     } catch (error: any) {
       alert(error.message)
     } finally {
@@ -350,7 +350,7 @@ export default function PharmacyInventoryPage() {
           medication_id: selectedMedicationIdForAdd || null,
           quantity: stockToAdd,
         },
-      }).catch(() => {})
+      }).catch(() => { })
     } catch (error: any) {
       alert(error.message)
     } finally {
@@ -407,7 +407,7 @@ export default function PharmacyInventoryPage() {
         description: `Created supplier invoice ${invoiceNumber} for order ${order.id}`,
         target_id: order.id,
         metadata: { invoiceNumber },
-      }).catch(() => {})
+      }).catch(() => { })
     } catch (err: any) {
       alert(`Failed to create invoice: ${err.message}`)
     } finally {
@@ -474,12 +474,12 @@ export default function PharmacyInventoryPage() {
       alert('✅ Payment recorded! Receipt generated.')
       await loadData()
       setShowSupplierPaymentModal(false)
-        // Log supplier payment
-        logActivity({
-          action: ActivityActions.PAYMENT_CREATE,
-          description: `Processed supplier payment for invoice ${selectedInvoice?.invoice_number}`,
-          metadata: { amount: supplierPaymentAmount, invoiceId: selectedInvoice?.id },
-        }).catch(() => {})
+      // Log supplier payment
+      logActivity({
+        action: ActivityActions.PAYMENT_CREATE,
+        description: `Processed supplier payment for invoice ${selectedInvoice?.invoice_number}`,
+        metadata: { amount: supplierPaymentAmount, invoiceId: selectedInvoice?.id },
+      }).catch(() => { })
     } catch (err: any) {
       alert(`Payment failed: ${err.message}`)
     } finally {
@@ -739,9 +739,8 @@ export default function PharmacyInventoryPage() {
                                   <div className="text-center px-2 py-1 rounded bg-slate-100">
                                     <p className="text-[10px] text-slate-500">Stock Now</p>
                                     <p
-                                      className={`text-sm font-bold ${
-                                        log.remaining_stock < 20 ? 'text-red-600' : 'text-emerald-600'
-                                      }`}
+                                      className={`text-sm font-bold ${log.remaining_stock < 20 ? 'text-red-600' : 'text-emerald-600'
+                                        }`}
                                     >
                                       {log.remaining_stock}
                                     </p>
@@ -830,8 +829,8 @@ export default function PharmacyInventoryPage() {
                                       invoice.payment_status === 'paid'
                                         ? 'bg-emerald-100 text-emerald-700'
                                         : invoice.payment_status === 'partially_paid'
-                                        ? 'bg-amber-100 text-amber-700'
-                                        : 'bg-red-100 text-red-700'
+                                          ? 'bg-amber-100 text-amber-700'
+                                          : 'bg-red-100 text-red-700'
                                     }
                                   >
                                     {invoice.payment_status.toUpperCase()}
