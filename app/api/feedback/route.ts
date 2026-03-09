@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logActivityServer } from '@/lib/activity-logger'
 
 // POST - Submit feedback
 export async function POST(request: NextRequest) {
@@ -33,6 +34,18 @@ export async function POST(request: NextRequest) {
             console.error('Error inserting feedback:', insertError)
             return NextResponse.json({ error: 'Failed to submit feedback' }, { status: 500 })
         }
+
+        // Log feedback submission
+        await logActivityServer(supabase, {
+            user_id: user.id,
+            action: 'feedback_submit',
+            action_type: 'create',
+            action_category: 'other',
+            target_table: 'feedback',
+            target_id: feedback.id,
+            description: `User submitted ${type || 'general'} feedback`,
+            metadata: { feedback_type: type || 'general' },
+        })
 
         return NextResponse.json({
             success: true,

@@ -2,6 +2,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logActivityServer, ActivityActions } from '@/lib/activity-logger';
 
 export async function GET() {
     try {
@@ -44,7 +45,7 @@ export async function GET() {
         const staffWithDetails = await Promise.all(
             (staffProfiles || []).map(async (profile) => {
                 const { data: authUser } = await supabase.auth.admin.getUserById(profile.id);
-                
+
                 const staffMember: any = {
                     id: profile.id,
                     user_id: profile.id,
@@ -66,7 +67,7 @@ export async function GET() {
                         .select('specialty, bio') // FIX: Changed from specialization to specialty to match your schema
                         .eq('id', profile.id) // FIX: Changed from user_id to id
                         .single();
-                    
+
                     if (doctor) {
                         staffMember.specialization = doctor.specialty;
                     }
@@ -219,9 +220,20 @@ export async function POST(request: Request) {
             }
         }
 
-        return NextResponse.json({ 
+        // Log staff creation
+        await logActivityServer(supabase, {
+            user_id: user.id,
+            action: ActivityActions.USER_REGISTER,
+            target_table: 'profiles',
+            target_id: newUser.user.id,
+            resource_name: full_name,
+            description: `Admin created staff member: ${full_name} (${staffRole})`,
+            metadata: { staff_role: staffRole, email },
+        });
+
+        return NextResponse.json({
             message: 'Staff member created successfully',
-            user_id: newUser.user.id 
+            user_id: newUser.user.id
         }, { status: 201 });
 
     } catch (error) {

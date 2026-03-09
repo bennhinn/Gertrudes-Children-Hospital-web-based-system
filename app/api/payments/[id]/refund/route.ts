@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { processRefund } from '@/lib/mock-payment-gateway';
+import { logActivityServer, ActivityActions } from '@/lib/activity-logger';
 
 export interface RefundRequest {
   amount: number;
@@ -191,6 +192,16 @@ export async function POST(
           },
         });
 
+        // Log refund to audit trail
+        await logActivityServer(supabase, {
+          user_id: user.id,
+          action: ActivityActions.PAYMENT_REFUND,
+          target_table: 'payment_refunds',
+          target_id: refundRecord.id,
+          description: `Refund of ${body.amount} processed for payment ${paymentId}`,
+          metadata: { payment_id: paymentId, refund_amount: body.amount, reason: body.reason, refund_number: refundResult.refundNumber },
+        });
+
         return NextResponse.json({
           success: true,
           message: 'Refund processed successfully',
@@ -220,6 +231,16 @@ export async function POST(
         );
       }
     }
+
+    // Log refund request to audit trail
+    await logActivityServer(supabase, {
+      user_id: user.id,
+      action: ActivityActions.PAYMENT_REFUND,
+      target_table: 'payment_refunds',
+      target_id: refundRecord.id,
+      description: `Refund request of ${body.amount} submitted for payment ${paymentId}`,
+      metadata: { payment_id: paymentId, refund_amount: body.amount, reason: body.reason, status: 'pending' },
+    });
 
     // If pending approval (caregiver initiated)
     return NextResponse.json({

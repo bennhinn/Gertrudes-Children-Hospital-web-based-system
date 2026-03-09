@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logActivityServer } from '@/lib/activity-logger'
 
 // -----------------------------------------------------------------
 // TYPES
@@ -220,25 +221,25 @@ export async function GET() {
       const prescriptionData = items.length > 0
         ? items
         : [{
-            id: `synthetic-${pres.id}`,
-            medication_name: pres.medication_name,
-            generic_name: null,
-            dosage: pres.dosage,
-            frequency: pres.frequency,
-            duration: pres.duration,
-            quantity: pres.quantity,
-            instructions: pres.instructions,
-            medication: pres.medication_id
-              ? [{
-                  id: pres.medication_id,
-                  name: pres.medication_name,
-                  form: null,
-                  strength: pres.dosage,
-                  category: null,
-                  stock: null
-                }]
-              : null
-          }]
+          id: `synthetic-${pres.id}`,
+          medication_name: pres.medication_name,
+          generic_name: null,
+          dosage: pres.dosage,
+          frequency: pres.frequency,
+          duration: pres.duration,
+          quantity: pres.quantity,
+          instructions: pres.instructions,
+          medication: pres.medication_id
+            ? [{
+              id: pres.medication_id,
+              name: pres.medication_name,
+              form: null,
+              strength: pres.dosage,
+              category: null,
+              stock: null
+            }]
+            : null
+        }]
 
       for (const item of prescriptionData) {
         let endDate: Date | undefined
@@ -449,6 +450,17 @@ export async function GET() {
       children: childrenResponse.length,
       labResults: transformedLabResults.length,
       prescriptions: transformedPrescriptions.length
+    })
+
+    // Log health records access
+    await logActivityServer(supabase, {
+      user_id: user.id,
+      action: 'health_records_view',
+      action_type: 'view',
+      action_category: 'patient',
+      target_table: 'health_records',
+      description: `Caregiver viewed health records for ${childrenResponse.length} children`,
+      metadata: { children_count: childrenResponse.length, lab_results_count: transformedLabResults.length, prescriptions_count: transformedPrescriptions.length },
     })
 
     return NextResponse.json(response)

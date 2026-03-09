@@ -108,6 +108,68 @@ export default function DoctorQueuePage() {
         return patient.child || patient.appointment?.child || null
     }
 
+    // ---------- HELPER: resolve or create active consultation ----------
+    const resolveActiveConsultation = useCallback(async (patient: QueuePatient, currentDoctorId?: string | null) => {
+        const supabase = createClient()
+        const child = getPatientChild(patient)
+
+        if (!child?.id && !patient.appointment?.id) {
+            throw new Error('Missing patient reference for consultation')
+        }
+
+        // Prefer exact appointment match first to avoid ambiguity for repeat visits.
+        if (patient.appointment?.id) {
+            const { data: byAppointment, error: appointmentError } = await supabase
+                .from('consultations')
+                .select('id, started_at')
+                .eq('appointment_id', patient.appointment.id)
+                .is('completed_at', null)
+                .order('started_at', { ascending: false })
+                .limit(1)
+
+            if (appointmentError) {
+                console.error('Error fetching consultation by appointment:', appointmentError)
+            } else if (byAppointment && byAppointment.length > 0) {
+                return byAppointment[0]
+            }
+        }
+
+        // Fallback to latest open consultation by child.
+        if (child?.id) {
+            const { data: byChild, error: childError } = await supabase
+                .from('consultations')
+                .select('id, started_at')
+                .eq('child_id', child.id)
+                .is('completed_at', null)
+                .order('started_at', { ascending: false })
+                .limit(1)
+
+            if (childError) {
+                console.error('Error fetching consultation by child:', childError)
+            } else if (byChild && byChild.length > 0) {
+                return byChild[0]
+            }
+        }
+
+        // No open consultation found, create one.
+        const { data: newConsult, error: createError } = await supabase
+            .from('consultations')
+            .insert({
+                doctor_id: currentDoctorId || doctorId,
+                child_id: child?.id,
+                appointment_id: patient.appointment?.id,
+                started_at: new Date().toISOString(),
+            })
+            .select('id')
+            .single()
+
+        if (createError || !newConsult) {
+            throw new Error(createError?.message || 'Failed to create consultation')
+        }
+
+        return newConsult
+    }, [doctorId])
+
     // ---------- LOAD QUEUE ----------
     const loadQueue = useCallback(async () => {
         try {
@@ -176,49 +238,13 @@ export default function DoctorQueuePage() {
             const inConsult = myQueue.find(p => p.status === 'in_consultation')
             if (inConsult) {
                 setActivePatient(inConsult)
-                const child = getPatientChild(inConsult)
 
-                // 🔥 FIXED: Find consultation by child_id OR appointment_id with better error handling
                 try {
-                    let consultQuery = supabase
-                        .from('consultations')
-                        .select('id')
-                        .is('completed_at', null)
-
-                    if (child?.id) {
-                        consultQuery = consultQuery.eq('child_id', child.id)
-                    } else if (inConsult.appointment?.id) {
-                        consultQuery = consultQuery.eq('appointment_id', inConsult.appointment.id)
-                    }
-
-                    const { data: consult, error: consultError } = await consultQuery.maybeSingle()
-                    
-                    if (consultError) {
-                        console.error('Error fetching consultation:', consultError)
-                    } else if (consult) {
-                        setActiveConsultation(consult)
-                    } else {
-                        // No consultation found - create one
-                        console.log('No active consultation found, creating new one...')
-                        const { data: newConsult, error: createError } = await supabase
-                            .from('consultations')
-                            .insert({
-                                doctor_id: doctorData?.id,
-                                child_id: child?.id,
-                                appointment_id: inConsult.appointment?.id,
-                                started_at: new Date().toISOString(),
-                            })
-                            .select()
-                            .single()
-
-                        if (createError) {
-                            console.error('Error creating consultation:', createError)
-                        } else if (newConsult) {
-                            setActiveConsultation(newConsult)
-                        }
-                    }
+                    const consult = await resolveActiveConsultation(inConsult, doctorData?.id)
+                    setActiveConsultation({ id: consult.id })
                 } catch (err) {
                     console.error('Error in consultation lookup:', err)
+                    setActiveConsultation(null)
                 }
             }
         } catch (error) {
@@ -226,7 +252,7 @@ export default function DoctorQueuePage() {
         } finally {
             setLoading(false)
         }
-    }, [])
+    }, [resolveActiveConsultation])
 
     useEffect(() => {
         loadQueue()
@@ -311,11 +337,6 @@ export default function DoctorQueuePage() {
             return
         }
 
-        if (!activeConsultation) {
-            alert('No active consultation found. Please try refreshing the page.')
-            return
-        }
-
         if (!diagnosis.trim()) {
             alert('Please enter a diagnosis.')
             return
@@ -323,6 +344,18 @@ export default function DoctorQueuePage() {
 
         try {
             const supabase = createClient()
+            let consultationId = activeConsultation?.id
+
+            // Self-heal stale UI state: resolve or create an active consultation on demand.
+            if (!consultationId) {
+                const resolved = await resolveActiveConsultation(activePatient, doctorId)
+                consultationId = resolved.id
+                setActiveConsultation({ id: resolved.id })
+            }
+
+            if (!consultationId) {
+                throw new Error('No active consultation found for this patient')
+            }
 
             // 1. Update consultation with clinical data
             const { error: updateError } = await supabase
@@ -334,7 +367,7 @@ export default function DoctorQueuePage() {
                     follow_up_date: followUpDate || null,
                     notes: activePatient.notes,
                 })
-                .eq('id', activeConsultation.id)
+                .eq('id', consultationId)
 
             if (updateError) throw updateError
 

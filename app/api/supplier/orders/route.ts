@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { logActivityServer } from '@/lib/activity-logger'
 
 export async function GET() {
   const cookieStore = await cookies()
@@ -104,6 +105,16 @@ export async function PATCH(req: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  // Log supply order status update
+  await logActivityServer(supabase, {
+    user_id: user.id,
+    action: status === 'delivered' ? 'delivery_receive' : 'supply_order_update',
+    target_table: 'supply_orders',
+    target_id: orderId,
+    description: `Supplier updated order ${orderId} status to ${status}`,
+    metadata: { order_id: orderId, new_status: status },
+  })
 
   return NextResponse.json({ success: true })
 }

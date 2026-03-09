@@ -28,7 +28,7 @@ interface Medication {
   name: string
   description: string | null
   stock: number
-  selling_price: number  // ← fetched from medications table
+  selling_price?: number | null
 }
 
 interface PrescriptionItem {
@@ -102,13 +102,39 @@ export default function QuickPrescriptionModal({
 
   async function loadMedications() {
     const supabase = createClient()
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('medications')
       .select('id, name, description, stock, selling_price')
-      .gt('stock', 0)
       .order('name')
 
-    if (data) setMedications(data)
+    if (!error && data) {
+      setMedications(
+        data.map((med: any) => ({
+          ...med,
+          selling_price: med.selling_price ?? 0,
+        }))
+      )
+      return
+    }
+
+    // Fallback for environments where selling_price doesn't exist.
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from('medications')
+      .select('id, name, description, stock')
+      .order('name')
+
+    if (fallbackError) {
+      console.error('Error loading medications from inventory:', fallbackError)
+      setMedications([])
+      return
+    }
+
+    setMedications(
+      (fallbackData || []).map((med: any) => ({
+        ...med,
+        selling_price: 0,
+      }))
+    )
   }
 
   function handleMedicationSelect(medicationId: string) {
@@ -378,7 +404,7 @@ export default function QuickPrescriptionModal({
                     ) : (
                       medications.map((med) => (
                         <SelectItem key={med.id} value={med.id}>
-                          {med.name} (KSh {med.selling_price}) – Stock: {med.stock}
+                          {med.name} (KSh {Number(med.selling_price || 0).toFixed(2)}) - Stock: {med.stock}
                         </SelectItem>
                       ))
                     )}

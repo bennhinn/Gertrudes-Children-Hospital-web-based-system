@@ -2,6 +2,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logActivityServer, ActivityActions } from '@/lib/activity-logger';
 
 export async function PATCH(
     request: Request,
@@ -125,6 +126,17 @@ export async function PATCH(
                 staffMember.license_number = doctor.license_number;
             }
         }
+
+        // Log staff update
+        await logActivityServer(supabase, {
+            user_id: user.id,
+            action: ActivityActions.USER_ROLE_UPDATE,
+            target_table: 'profiles',
+            target_id: params.id,
+            resource_name: staffMember.profile.full_name,
+            description: `Admin updated staff member: ${staffMember.profile.full_name || params.id}`,
+            metadata: { updated_fields: Object.keys(body) },
+        });
 
         return NextResponse.json(staffMember);
     } catch (error) {

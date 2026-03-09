@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { logActivityServer } from '@/lib/activity-logger';
+import { logActivityServer, ActivityActions } from '@/lib/activity-logger';
 
 export async function PATCH(
     request: Request,
@@ -92,11 +92,12 @@ export async function PATCH(
             user_id: user.id,
             user_email: user.email,
             user_role: role,
-            action: 'user_updated',
-            target_table: 'user',
+            action: newRole ? ActivityActions.USER_ROLE_UPDATE : 'user_updated',
+            target_table: 'profiles',
             target_id: params.id,
-            description: `User updated: ${completeUser.email}`,
-            metadata: { updated_fields: Object.keys(body) },
+            resource_name: completeUser.full_name,
+            description: `User updated: ${completeUser.email}${newRole ? ` (role changed to ${newRole})` : ''}`,
+            metadata: { updated_fields: Object.keys(body), new_role: newRole },
         });
 
         return NextResponse.json(completeUser);

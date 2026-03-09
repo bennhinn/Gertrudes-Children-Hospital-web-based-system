@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { logActivityClient, ActivityActions } from '@/lib/activity-logger'
 import { Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -77,6 +78,14 @@ export default function LoginPage() {
       }
       const redirectPath = roleRedirects[userRole] || '/dashboard'
 
+      // Log successful login
+      logActivityClient({
+        action: ActivityActions.USER_LOGIN,
+        target_table: 'auth',
+        description: `User ${email} logged in successfully`,
+        metadata: { login_method: 'email_password', role: userRole },
+      })
+
       router.push(redirectPath)
       router.refresh()
     } catch {
@@ -95,7 +104,7 @@ export default function LoginPage() {
           style={{ backgroundImage: "url('/images/locations/sign-in.jpg')" }}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-black/20 to-black/30 lg:bg-gradient-to-br lg:from-black/20 lg:via-transparent lg:to-black/10" />
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.6 }}
@@ -108,21 +117,21 @@ export default function LoginPage() {
         {/* Right Section - Login Form */}
         <div className="relative z-10 flex min-h-dvh w-full flex-col items-center justify-center px-5 py-8 sm:px-8 lg:basis-2/5 lg:flex-none lg:bg-white lg:py-12">
           {/* Glass card container for mobile, transparent on desktop */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
             className="w-full max-w-sm rounded-2xl bg-white/85 p-6 shadow-2xl backdrop-blur-xl sm:p-8 lg:rounded-none lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none"
           >
             {/* Logo */}
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5, type: "spring", stiffness: 200 }}
               className="mb-8 flex justify-center lg:mb-10"
             >
               <Link href="/">
-                <motion.span 
+                <motion.span
                   whileHover={{ scale: 1.05, rotate: 5 }}
                   whileTap={{ scale: 0.95 }}
                   className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 text-3xl text-white shadow-xl ring-4 ring-blue-100/50 transition-shadow hover:shadow-2xl"
@@ -133,7 +142,7 @@ export default function LoginPage() {
             </motion.div>
 
             {/* Heading */}
-            <motion.h1 
+            <motion.h1
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.6 }}
@@ -183,7 +192,7 @@ export default function LoginPage() {
             </AnimatePresence>
 
             {/* Login Buttons */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4, duration: 0.6 }}
@@ -242,12 +251,12 @@ export default function LoginPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25H4.5a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5H4.5a2.25 2.25 0 0 0-2.25 2.25m19.5 0-8.25 5.25a1.5 1.5 0 0 1-1.5 0L3.75 6.75" />
                 </svg>
                 Continue with email
-                <motion.svg 
+                <motion.svg
                   animate={{ rotate: showEmailForm ? 180 : 0 }}
                   transition={{ duration: 0.3 }}
-                  className="h-4 w-4 transition-transform" 
-                  fill="none" 
-                  stroke="currentColor" 
+                  className="h-4 w-4 transition-transform"
+                  fill="none"
+                  stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -258,7 +267,7 @@ export default function LoginPage() {
             {/* Email Form */}
             <AnimatePresence>
               {showEmailForm && (
-                <motion.form 
+                <motion.form
                   onSubmit={handleSubmit}
                   data-form-type="other"
                   initial={{ opacity: 0, height: 0, y: -20 }}
@@ -390,7 +399,7 @@ export default function LoginPage() {
             </AnimatePresence>
 
             {/* Footer link */}
-            <motion.p 
+            <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6, duration: 0.6 }}

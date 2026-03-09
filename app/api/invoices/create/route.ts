@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logActivityServer, ActivityActions } from '@/lib/activity-logger';
 
 export interface InvoiceItem {
   item_type: 'consultation' | 'lab_test' | 'prescription' | 'procedure' | 'registration' | 'other';
@@ -164,6 +165,17 @@ export async function POST(request: NextRequest) {
       await supabase.from('invoices').delete().eq('id', invoice.id);
       return NextResponse.json({ error: 'Failed to create invoice line items' }, { status: 500 });
     }
+
+    // Log invoice creation
+    await logActivityServer(supabase, {
+      user_id: user.id,
+      action: ActivityActions.INVOICE_CREATE,
+      target_table: 'invoices',
+      target_id: invoice.id,
+      resource_name: invoice.invoice_number,
+      description: `Invoice ${invoice.invoice_number} created for ${total.toFixed(2)}`,
+      metadata: { invoice_number: invoice.invoice_number, total, child_id: body.child_id, caregiver_id: body.caregiver_id },
+    });
 
     // Return created invoice with line items
     return NextResponse.json({

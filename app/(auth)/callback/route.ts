@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logActivityServer, ActivityActions } from '@/lib/activity-logger'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -43,6 +44,17 @@ export async function GET(request: NextRequest) {
 
     // Get user role from app_metadata
     const userRole = data.user?.app_metadata?.role || 'caregiver'
+
+    // Log successful OAuth login
+    await logActivityServer(supabase, {
+      user_id: data.user.id,
+      user_email: data.user.email,
+      user_role: userRole,
+      action: ActivityActions.USER_LOGIN,
+      target_table: 'auth',
+      description: `User ${data.user.email} logged in via OAuth`,
+      metadata: { login_method: 'oauth' },
+    })
 
     // Redirect based on role to appropriate dashboard
     const roleRedirects: Record<string, string> = {

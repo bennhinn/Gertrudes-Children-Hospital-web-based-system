@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logActivityServer, ActivityActions } from '@/lib/activity-logger';
 
 export async function GET() {
     try {
@@ -23,7 +24,7 @@ export async function GET() {
         console.log('🔍 User role from profiles:', profile?.role); // Debug log
 
         if (profile?.role !== 'admin') {
-            return NextResponse.json({ 
+            return NextResponse.json({
                 error: 'Forbidden',
                 debug: { role: profile?.role, userId: user.id }
             }, { status: 403 });
@@ -114,6 +115,16 @@ export async function POST(request: Request) {
             console.error('Error creating appointment:', createError);
             return NextResponse.json({ error: createError.message }, { status: 500 });
         }
+
+        // Log appointment creation
+        await logActivityServer(supabase, {
+            user_id: user.id,
+            action: ActivityActions.APPOINTMENT_CREATE,
+            target_table: 'appointments',
+            target_id: newAppointment.id,
+            description: `Admin created appointment for child ${child_id}`,
+            metadata: { child_id, caregiver_id, doctor_id, scheduled_for },
+        });
 
         return NextResponse.json(newAppointment, { status: 201 });
 

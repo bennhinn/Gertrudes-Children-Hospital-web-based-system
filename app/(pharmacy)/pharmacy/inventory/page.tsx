@@ -91,7 +91,8 @@ export default function PharmacyInventoryPage() {
   const [orderQuantity, setOrderQuantity] = useState(50)
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('')
   const [saving, setSaving] = useState(false)
-  const [formData, setFormData] = useState({ name: '', stock: 0 })
+  const [formData, setFormData] = useState({ name: '', stock: 0, supplier_id: '' })
+  const [selectedMedicationIdForAdd, setSelectedMedicationIdForAdd] = useState('')
 
   // 🆕 SUPPLIER INVOICE & PAYMENT STATE
   const [supplierInvoices, setSupplierInvoices] = useState<SupplierInvoice[]>([])
@@ -310,15 +311,45 @@ export default function PharmacyInventoryPage() {
     if (!formData.name.trim()) return
     setSaving(true)
     try {
-      await supabase.from('medications').insert([formData])
+      const stockToAdd = Number.isNaN(formData.stock) ? 0 : formData.stock
+
+      if (selectedMedicationIdForAdd) {
+        const selectedMedication = medications.find((m) => m.id === selectedMedicationIdForAdd)
+        if (!selectedMedication) {
+          throw new Error('Selected medication was not found')
+        }
+
+        await supabase
+          .from('medications')
+          .update({
+            stock: (selectedMedication.stock || 0) + stockToAdd,
+            supplier_id: formData.supplier_id || selectedMedication.supplier_id || null,
+          })
+          .eq('id', selectedMedicationIdForAdd)
+      } else {
+        await supabase.from('medications').insert([{
+          name: formData.name.trim(),
+          stock: stockToAdd,
+          supplier_id: formData.supplier_id || null,
+        }])
+      }
+
       setShowAddModal(false)
-      setFormData({ name: '', stock: 0 })
+      setFormData({ name: '', stock: 0, supplier_id: '' })
+      setSelectedMedicationIdForAdd('')
       loadData()
       // Log new medication added
       logActivity({
         action: ActivityActions.MEDICATION_CREATE || 'medication_create',
-        description: `Added new medication ${formData.name}`,
-        metadata: { name: formData.name },
+        description: selectedMedicationIdForAdd
+          ? `Restocked medication ${formData.name}`
+          : `Added new medication ${formData.name}`,
+        metadata: {
+          name: formData.name,
+          supplier_id: formData.supplier_id || null,
+          medication_id: selectedMedicationIdForAdd || null,
+          quantity: stockToAdd,
+        },
       }).catch(() => {})
     } catch (error: any) {
       alert(error.message)
@@ -854,19 +885,63 @@ export default function PharmacyInventoryPage() {
             <DialogTitle>Register New Stock Item</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
+            <Label>Select Existing Medication Name (Optional)</Label>
+            <select
+              value={selectedMedicationIdForAdd}
+              onChange={(e) => {
+                const medicationId = e.target.value
+                setSelectedMedicationIdForAdd(medicationId)
+
+                if (!medicationId) {
+                  setFormData({ ...formData, name: '' })
+                  return
+                }
+
+                const medication = medications.find((m) => m.id === medicationId)
+                if (medication) {
+                  setFormData({
+                    ...formData,
+                    name: medication.name,
+                    supplier_id: medication.supplier_id || formData.supplier_id,
+                  })
+                }
+              }}
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="">-- Add brand new medication --</option>
+              {medications.map((medication) => (
+                <option key={medication.id} value={medication.id}>
+                  {medication.name} - Current stock: {medication.stock}
+                </option>
+              ))}
+            </select>
             <Label>Medication Name</Label>
             <Input
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              disabled={!!selectedMedicationIdForAdd}
             />
             <Label>Initial Stock</Label>
             <Input
               type="number"
               value={formData.stock}
-              onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
+              onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
             />
+            <Label>Preferred Supplier</Label>
+            <select
+              value={formData.supplier_id}
+              onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="">-- Optional: choose supplier --</option>
+              {suppliers.map((supplier) => (
+                <option key={supplier.id} value={supplier.id}>
+                  {supplier.company_name || supplier.profiles?.full_name || 'Unknown Supplier'}
+                </option>
+              ))}
+            </select>
             <Button onClick={handleAddMedication} className="w-full bg-purple-600" disabled={saving}>
-              Confirm Registration
+              {selectedMedicationIdForAdd ? 'Confirm Restock' : 'Confirm Registration'}
             </Button>
           </div>
         </DialogContent>
