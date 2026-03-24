@@ -371,7 +371,7 @@ const AppointmentItem = memo(function AppointmentItem({
             </div>
             <Button
                 size="sm"
-                className="h-8 min-w-[64px] text-xs shadow-sm transition-all active:scale-95 active:bg-blue-700 sm:h-8 sm:px-3"
+                className="h-8 min-w-[64px] bg-blue-600 text-white text-xs shadow-sm transition-all hover:bg-blue-700 active:scale-95 active:bg-blue-800 sm:h-8 sm:px-3"
                 onClick={() => onCheckIn(appointment)}
                 disabled={isCheckingIn}
             >

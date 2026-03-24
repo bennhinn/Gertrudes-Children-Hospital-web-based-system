@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 import React from 'react'
 
-type Variant = 'primary' | 'secondary' | 'ghost' 
+type Variant = 'primary' | 'secondary' | 'ghost'
 type Size = 'sm' | 'md' | 'lg'
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -13,10 +13,10 @@ const base =
   'btn-focus inline-flex items-center justify-center rounded-lg font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] touch-manipulation'
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-primary text-white hover:bg-blue-700 active:bg-blue-800',
+  primary: 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800',
   secondary:
     'border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 active:bg-slate-100',
-  ghost: 'text-primary hover:bg-blue-50 active:bg-blue-100',
+  ghost: 'text-blue-600 hover:bg-blue-50 active:bg-blue-100',
 }
 
 const sizes: Record<Size, string> = {
